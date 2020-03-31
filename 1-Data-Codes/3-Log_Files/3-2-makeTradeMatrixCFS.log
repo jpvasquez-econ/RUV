@@ -1,0 +1,574 @@
+------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\1-Codes\3-Log_Files\3-2-makeTradeMatrixCFS.log
+  log type:  text
+ opened on:  12 Mar 2020, 14:42:54
+
+. 
+. /*
+> ***********************************************************************************************************************************************
+> ***     THIS DO FILE DOES THE FOLLOWING:
+> ***********************************************************************************************************************************************
+> 
+> Calculate X_{ij,k}^{CFS} for the 12 manufacturing sectors plus sector 14 (agriculture and mining)
+> 
+> */
+. *********************** 
+. ***  OUTPUT FILES   ***  
+. ***********************
+. global CFS_Xijk "2-Final_Data\CFS_Xijk.dta"
+
+. ********************** 
+. ***  INPUT FILES   ***  
+. **********************
+. global CFSapportionment "1-Intermediate_Processed_Data\CFSapportionment.dta"
+
+. global CFS2007 "import excel "0-Raw_Data\CFS\CFS2007.xlsx", sheet("CF0700A22") firstrow case(lower) clear"
+
+. global CFS2002 "import excel "0-Raw_Data\CFS\CFS2002mine.xlsx", sheet("sttbl1412281724") cellrange(A2:K114038) firstrow clear"
+
+. global CFS2012 "import delimited "0-Raw_Data\CFS\CF1200A24.dat", delimiter("|") varnames(1) rowrange(3) clear"
+
+. global statefips "0-Raw_Data\Fips\statefips.dta"
+
+. 
+. *fips
+. use $statefips, clear
+
+. levelsof statename, local(levels) 
+`"Alabama"' `"Alaska"' `"Arizona"' `"Arkansas"' `"California"' `"Colorado"' `"Connecticut"' `"Delaware"' `"District of Columbia"' `"Florida"' `"Georgi
+> a"' `"Hawaii"' `"Idaho"' `"Illinois"' `"Indiana"' `"Iowa"' `"Kansas"' `"Kentucky"' `"Louisiana"' `"Maine"' `"Maryland"' `"Massachusetts"' `"Michigan
+> "' `"Minnesota"' `"Mississippi"' `"Missouri"' `"Montana"' `"Nebraska"' `"Nevada"' `"New Hampshire"' `"New Jersey"' `"New Mexico"' `"New York"' `"Nor
+> th Carolina"' `"North Dakota"' `"Ohio"' `"Oklahoma"' `"Oregon"' `"Pennsylvania"' `"Rhode Island"' `"South Carolina"' `"South Dakota"' `"Tennessee"' 
+> `"Texas"' `"Utah"' `"Vermont"' `"Virginia"' `"Washington"' `"West Virginia"' `"Wisconsin"' `"Wyoming"'
+
+. preserve
+
+. rename statefip orig_state
+
+. rename statename origin
+
+. tempfile orig
+
+. save `orig', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000002.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000002.tmp saved
+
+. restore
+
+. rename statefip dest_state
+
+. rename statename destination
+
+. tempfile dest
+
+. save `dest', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000003.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000003.tmp saved
+
+. *
+. foreach year_ in 2002 2007 2012{
+  2. display "YEAR `year_' YEAR `year_' YEAR `year_' YEAR `year_' YEAR `year_'"
+  3. * Import CFS data from original table
+. *"STATE Table 22. Shipment Characteristics by Destination and Two-Digit Commodity for State of Origin: 2002"
+. *"Origin State","Destination State","Code","SCTG (2-Digit)","Value ($mil) 02","Value % 02","Tons (thous) 02","Tons % 02","Ton-miles (mil) 02","Ton-m
+> iles % 02","Avg miles 02"
+. ${CFS`year_'}
+  4. ***
+. *** Renaming variables
+. ***
+. *for 2002
+. capture rename OriginState origin
+  5. capture rename DestinationState destination
+  6. capture rename Code commodity
+  7. capture rename Valuemil02 value
+  8. *for 2007
+. capture rename geography origin
+  9. capture rename ddestgeo_meaning destination
+ 10. capture rename comm commodity
+ 11. capture rename val value
+ 12. *for 2012
+. capture rename ddestgeo_ttl destination 
+ 13. capture rename geo_ttl origin
+ 14. if `year_'==2012{
+ 15. gen yes_orig=0
+ 16. gen yes_dest=0
+ 17. foreach l of local levels {
+ 18. replace yes_orig=1 if origin == "`l'"
+ 19. replace yes_dest=1 if destination == "`l'"
+ 20. }
+ 21. keep if yes_ori==1
+ 22. keep if yes_des==1
+ 23. drop yes*
+ 24. }
+ 25. *Convert origin/dest to fips codes
+. keep origin destination value commo
+ 26. destring value, replace force
+ 27. 
+. foreach v in origin destination{
+ 28. replace `v' = subinstr(`v',"    ","",.)
+ 29. replace `v' = subinstr(`v',"   ","",.)
+ 30. replace `v' = subinstr(`v',".","",.)
+ 31. drop if `v' == "United States"
+ 32. drop if `v' == "Total"
+ 33. drop if `v'=="District of Columbia"
+ 34. drop if `v'==""
+ 35. }
+ 36. tostring commodity, replace
+ 37. foreach v in origin destination {
+ 38.         gen  statename=`v'
+ 39.         merge m:1 statename using $statefips
+ 40.         keep if _m==3
+ 41.         drop _merge statename
+ 42.         rename statefip `v'_fips
+ 43. }
+ 44. 
+. *Get two digit codes
+. gen code = substr(commodity, 1, 2)
+ 45. destring code, force replace
+ 46. 
+. keep origin destination code value
+ 47. order origin destination code value
+ 48. rename code COMM
+ 49. drop if COMM==99 | COMM==0
+ 50. gen year=`year_'
+ 51. 
+. merge m:1 COMM year using $CFSapportionment
+ 52. keep if _m==3
+ 53. drop _merge
+ 54. 
+. foreach v of varlist portion1-portion14 {
+ 55.         gen a`v'=value*`v'
+ 56. }
+ 57. 
+. drop value por*
+ 58. 
+. collapse (sum) aportion*, by(origin destination year)
+ 59. 
+. rename aportion* trade*
+ 60. rename trade*, lower
+ 61. 
+. ***
+. *** MATRIX
+. ***
+. 
+. reshape long trade , i(origin destination) j(sector)
+ 62. replace destination = subinstr(destination, " ", "", .)
+ 63. replace origin = subinstr(origin, " ", "", .)
+ 64. reshape wide trade, i(destination sector year) j(origin) string
+ 65. ds *
+ 66. local vari `r(varlist)'
+ 67. foreach v of local vari{
+ 68. capture replace `v'=0 if `v'==.
+ 69. }
+ 70. sort sector dest
+ 71. rename dest importer
+ 72. order year, first
+ 73. tempfile data`year_'
+ 74. save `data`year_'', replace
+ 75. }
+YEAR 2002 YEAR 2002 YEAR 2002 YEAR 2002 YEAR 2002
+value contains nonnumeric characters; replaced as long
+(95716 missing values generated)
+(114036 real changes made)
+(0 real changes made)
+(114036 real changes made)
+(0 observations deleted)
+(0 observations deleted)
+(2236 observations deleted)
+(0 observations deleted)
+(111800 real changes made)
+(2150 real changes made)
+(111800 real changes made)
+(0 observations deleted)
+(2150 observations deleted)
+(2150 observations deleted)
+(0 observations deleted)
+commodity already string; no replace
+(note: variable statename was str14, now str20 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                           107,500  (_merge==3)
+    -----------------------------------------
+(1 observation deleted)
+(note: variable statename was str14, now str20 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                           107,500  (_merge==3)
+    -----------------------------------------
+(1 observation deleted)
+(2500 missing values generated)
+code contains nonnumeric characters; replaced as byte
+(5000 missing values generated)
+(0 observations deleted)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         5,082
+        from master                     5,000  (_merge==1)
+        from using                         82  (_merge==2)
+
+    matched                           102,500  (_merge==3)
+    -----------------------------------------
+(5082 observations deleted)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+(87937 missing values generated)
+  (all newnames==oldnames)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+
+Data                               wide   ->   long
+-----------------------------------------------------------------------------
+Number of obs.                     2500   ->   35000
+Number of variables                  17   ->       5
+j variable (14 values)                    ->   sector
+xij variables:
+              trade1 trade2 ... trade14   ->   trade
+-----------------------------------------------------------------------------
+(7000 real changes made)
+(7000 real changes made)
+(note: j = Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky
+>  Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada NewHampshire NewJersey NewMexico NewYork Nor
+> thCarolina NorthDakota Ohio Oklahoma Oregon Pennsylvania RhodeIsland SouthCarolina SouthDakota Tennessee Texas Utah Vermont Virginia Washington West
+> Virginia Wisconsin Wyoming)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                    35000   ->     700
+Number of variables                   5   ->      53
+j variable (50 values)           origin   ->   (dropped)
+xij variables:
+                                  trade   ->   tradeAlabama tradeAlaska ... tradeWyoming
+-----------------------------------------------------------------------------
+destination   tradeArkan~s  tradeGeorgia  tradeKansas   tradeMichi~n  tradeNevada   tradeNort~ta  tradeSout~na  tradeVirgi~a
+sector        tradeCalif~a  tradeHawaii   tradeKentu~y  tradeMinne~a  tradeNewHa~e  tradeOhio     tradeSout~ta  tradeWashi~n
+year          tradeColor~o  tradeIdaho    tradeLouis~a  tradeMissi~i  tradeNewJe~y  tradeOklah~a  tradeTenne~e  tradeWestV~a
+tradeAlabama  tradeConne~t  tradeIllin~s  tradeMaine    tradeMisso~i  tradeNewMe~o  tradeOregon   tradeTexas    tradeWisco~n
+tradeAlaska   tradeDelaw~e  tradeIndiana  tradeMaryl~d  tradeMontana  tradeNewYork  tradePenns~a  tradeUtah     tradeWyoming
+tradeArizona  tradeFlorida  tradeIowa     tradeMassa~s  tradeNebra~a  tradeNort~na  tradeRhode~d  tradeVermont
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000004.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000004.tmp saved
+YEAR 2007 YEAR 2007 YEAR 2007 YEAR 2007 YEAR 2007
+value already numeric; no replace
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 observations deleted)
+(0 observations deleted)
+(289 observations deleted)
+(0 observations deleted)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(2091 observations deleted)
+(0 observations deleted)
+(647 observations deleted)
+(0 observations deleted)
+commodity was byte now str2
+(note: variable statename was str14, now str20 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                            63,478  (_merge==3)
+    -----------------------------------------
+(1 observation deleted)
+(note: variable statename was str14, now str20 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                            63,478  (_merge==3)
+    -----------------------------------------
+(1 observation deleted)
+code contains nonnumeric characters; replaced as byte
+(2835 observations deleted)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                            82
+        from master                         0  (_merge==1)
+        from using                         82  (_merge==2)
+
+    matched                            60,643  (_merge==3)
+    -----------------------------------------
+(82 observations deleted)
+  (all newnames==oldnames)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+
+Data                               wide   ->   long
+-----------------------------------------------------------------------------
+Number of obs.                     2491   ->   34874
+Number of variables                  17   ->       5
+j variable (14 values)                    ->   sector
+xij variables:
+              trade1 trade2 ... trade14   ->   trade
+-----------------------------------------------------------------------------
+(6958 real changes made)
+(7000 real changes made)
+(note: j = Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky
+>  Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada NewHampshire NewJersey NewMexico NewYork Nor
+> thCarolina NorthDakota Ohio Oklahoma Oregon Pennsylvania RhodeIsland SouthCarolina SouthDakota Tennessee Texas Utah Vermont Virginia Washington West
+> Virginia Wisconsin Wyoming)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                    34874   ->     700
+Number of variables                   5   ->      53
+j variable (50 values)           origin   ->   (dropped)
+xij variables:
+                                  trade   ->   tradeAlabama tradeAlaska ... tradeWyoming
+-----------------------------------------------------------------------------
+destination   tradeArkan~s  tradeGeorgia  tradeKansas   tradeMichi~n  tradeNevada   tradeNort~ta  tradeSout~na  tradeVirgi~a
+sector        tradeCalif~a  tradeHawaii   tradeKentu~y  tradeMinne~a  tradeNewHa~e  tradeOhio     tradeSout~ta  tradeWashi~n
+year          tradeColor~o  tradeIdaho    tradeLouis~a  tradeMissi~i  tradeNewJe~y  tradeOklah~a  tradeTenne~e  tradeWestV~a
+tradeAlabama  tradeConne~t  tradeIllin~s  tradeMaine    tradeMisso~i  tradeNewMe~o  tradeOregon   tradeTexas    tradeWisco~n
+tradeAlaska   tradeDelaw~e  tradeIndiana  tradeMaryl~d  tradeMontana  tradeNewYork  tradePenns~a  tradeUtah     tradeWyoming
+tradeArizona  tradeFlorida  tradeIowa     tradeMassa~s  tradeNebra~a  tradeNort~na  tradeRhode~d  tradeVermont
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000005.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000005.tmp saved
+YEAR 2012 YEAR 2012 YEAR 2012 YEAR 2012 YEAR 2012
+(29 vars, 809021 obs)
+(4927 real changes made)
+(4812 real changes made)
+(1192 real changes made)
+(2362 real changes made)
+(4369 real changes made)
+(4781 real changes made)
+(4480 real changes made)
+(4362 real changes made)
+(5977 real changes made)
+(5669 real changes made)
+(4896 real changes made)
+(4791 real changes made)
+(4676 real changes made)
+(4407 real changes made)
+(3337 real changes made)
+(3326 real changes made)
+(702 real changes made)
+(2343 real changes made)
+(5638 real changes made)
+(5334 real changes made)
+(5572 real changes made)
+(5291 real changes made)
+(1581 real changes made)
+(2525 real changes made)
+(3838 real changes made)
+(3605 real changes made)
+(6121 real changes made)
+(5560 real changes made)
+(5464 real changes made)
+(5185 real changes made)
+(4991 real changes made)
+(4678 real changes made)
+(5260 real changes made)
+(4615 real changes made)
+(5389 real changes made)
+(4885 real changes made)
+(4409 real changes made)
+(4842 real changes made)
+(3479 real changes made)
+(3856 real changes made)
+(4625 real changes made)
+(4812 real changes made)
+(5090 real changes made)
+(4767 real changes made)
+(5453 real changes made)
+(5183 real changes made)
+(5525 real changes made)
+(4894 real changes made)
+(4216 real changes made)
+(4305 real changes made)
+(5568 real changes made)
+(5073 real changes made)
+(3272 real changes made)
+(3950 real changes made)
+(4580 real changes made)
+(4176 real changes made)
+(3725 real changes made)
+(3955 real changes made)
+(3981 real changes made)
+(3816 real changes made)
+(5377 real changes made)
+(5046 real changes made)
+(3126 real changes made)
+(3704 real changes made)
+(5750 real changes made)
+(5491 real changes made)
+(5537 real changes made)
+(5218 real changes made)
+(3064 real changes made)
+(3477 real changes made)
+(5977 real changes made)
+(5464 real changes made)
+(4818 real changes made)
+(4627 real changes made)
+(4575 real changes made)
+(4480 real changes made)
+(6021 real changes made)
+(5542 real changes made)
+(3200 real changes made)
+(3077 real changes made)
+(4984 real changes made)
+(4675 real changes made)
+(3542 real changes made)
+(3302 real changes made)
+(5592 real changes made)
+(5141 real changes made)
+(6290 real changes made)
+(5850 real changes made)
+(4720 real changes made)
+(4279 real changes made)
+(3580 real changes made)
+(3261 real changes made)
+(5442 real changes made)
+(5161 real changes made)
+(4905 real changes made)
+(4866 real changes made)
+(3724 real changes made)
+(3752 real changes made)
+(5472 real changes made)
+(4961 real changes made)
+(2626 real changes made)
+(3086 real changes made)
+(578366 observations deleted)
+(166350 observations deleted)
+value already numeric; no replace
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 observations deleted)
+(0 observations deleted)
+(214 observations deleted)
+(0 observations deleted)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 observations deleted)
+(0 observations deleted)
+(686 observations deleted)
+(0 observations deleted)
+commodity already string; no replace
+(note: variable statename was str14, now str20 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                            63,405  (_merge==3)
+    -----------------------------------------
+(1 observation deleted)
+(note: variable statename was str14, now str20 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             1
+        from master                         0  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                            63,405  (_merge==3)
+    -----------------------------------------
+(1 observation deleted)
+code contains nonnumeric characters; replaced as byte
+(2506 observations deleted)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                            82
+        from master                         0  (_merge==1)
+        from using                         82  (_merge==2)
+
+    matched                            60,899  (_merge==3)
+    -----------------------------------------
+(82 observations deleted)
+  (all newnames==oldnames)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+
+Data                               wide   ->   long
+-----------------------------------------------------------------------------
+Number of obs.                     2498   ->   34972
+Number of variables                  17   ->       5
+j variable (14 values)                    ->   sector
+xij variables:
+              trade1 trade2 ... trade14   ->   trade
+-----------------------------------------------------------------------------
+(6986 real changes made)
+(7000 real changes made)
+(note: j = Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky
+>  Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada NewHampshire NewJersey NewMexico NewYork Nor
+> thCarolina NorthDakota Ohio Oklahoma Oregon Pennsylvania RhodeIsland SouthCarolina SouthDakota Tennessee Texas Utah Vermont Virginia Washington West
+> Virginia Wisconsin Wyoming)
+
+Data                               long   ->   wide
+-----------------------------------------------------------------------------
+Number of obs.                    34972   ->     700
+Number of variables                   5   ->      53
+j variable (50 values)           origin   ->   (dropped)
+xij variables:
+                                  trade   ->   tradeAlabama tradeAlaska ... tradeWyoming
+-----------------------------------------------------------------------------
+destination   tradeArkan~s  tradeGeorgia  tradeKansas   tradeMichi~n  tradeNevada   tradeNort~ta  tradeSout~na  tradeVirgi~a
+sector        tradeCalif~a  tradeHawaii   tradeKentu~y  tradeMinne~a  tradeNewHa~e  tradeOhio     tradeSout~ta  tradeWashi~n
+year          tradeColor~o  tradeIdaho    tradeLouis~a  tradeMissi~i  tradeNewJe~y  tradeOklah~a  tradeTenne~e  tradeWestV~a
+tradeAlabama  tradeConne~t  tradeIllin~s  tradeMaine    tradeMisso~i  tradeNewMe~o  tradeOregon   tradeTexas    tradeWisco~n
+tradeAlaska   tradeDelaw~e  tradeIndiana  tradeMaryl~d  tradeMontana  tradeNewYork  tradePenns~a  tradeUtah     tradeWyoming
+tradeArizona  tradeFlorida  tradeIowa     tradeMassa~s  tradeNebra~a  tradeNort~na  tradeRhode~d  tradeVermont
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000006.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000006.tmp saved
+
+. use `data2002', clear
+
+. append using `data2007'
+
+. append using `data2012'
+(note: variable importer was str30, now str75 to accommodate using data's values)
+
+. 
+. save $CFS_Xijk, replace
+file 2-Final_Data\CFS_Xijk.dta saved
+
+. 
+end of do-file
+
+. tab year
+
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       2002 |        700       33.33       33.33
+       2007 |        700       33.33       66.67
+       2012 |        700       33.33      100.00
+------------+-----------------------------------
+      Total |      2,100      100.00
+
+. do "C:\Users\Jose Pablo\Dropbox\0-mycomputer\mydocuments\Berkeley\6 Fifth Year\RUV\Data_Construction\1-Codes\4-1-state_exp_gdp.do"
+
+. capture log close

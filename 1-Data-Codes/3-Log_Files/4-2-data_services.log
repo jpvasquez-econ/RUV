@@ -1,0 +1,599 @@
+------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\1-Codes\3-Log_Files\4-2-data_services.log
+  log type:  text
+ opened on:  13 Mar 2020, 18:22:29
+
+. /*
+> ***********************************************************************************************************************************************
+> ***     THIS DO FILE DOES THE FOLLOWING:
+> ***********************************************************************************************************************************************
+> 1. Imports coordinates by county and crosses each county with the others
+> 2. Calculates distance in km
+> 3. Renames variables
+> 4. Merging populations
+> 5. Applying formula
+> 
+> FORMULA 
+> d_{ij} = (\sum_{r \in i} \sum_{s \in j} (\dfrac{pop_r}{pop_i}) (\dfrac{pop_s}{pop_j}) d_{rs}^\theta)^{1/ \theta}
+> 
+> */
+. ********************** 
+. ***  INPUT FILES   ***  
+. **********************
+. global state_code ""0-Raw_Data\Fips\state_codes.txt""
+
+. global coordinates_counties "0-Raw_Data\Fips\us_states_coordinates_counties.xlsx"
+
+. global state_exp_gdp_services "2-Final_Data\state_exp_gdp_services.dta"
+
+. global country_coordinates "1-Intermediate_Processed_Data\country_coordinates.dta"
+
+. global WIOD "2-Final_Data\WIOD_countries.dta"
+
+. ********************** 
+. ***  OUTPUT FILES  ***  
+. **********************
+. global outputfile ""2-Final_Data\data_services.csv""
+
+. 
+. *************************************************** 
+. ***  EXPENDITURE AND GDP AT THE COUNTRY LEVEL   ***  
+. ***************************************************
+. use $WIOD, clear
+
+. keep if sector==13
+(5928 observations deleted)
+
+. ***Services consumption
+. preserve
+
+. keep if importer_country!= "USA"
+(12 observations deleted)
+
+. egen exp=rowtotal(value*)
+
+. rename importer_c country
+
+. keep country year exp
+
+. tempfile exp
+
+. save `exp', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000002.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000002.tmp saved
+
+. restore
+
+. ***countries
+. preserve
+
+. drop if importer==1
+(12 observations deleted)
+
+. collapse year, by(importer_country importer)
+
+. drop year
+
+. rename importer num_country
+
+. rename importer_c country
+
+. tempfile countries
+
+. save `countries', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000004.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000004.tmp saved
+
+. restore
+
+. ***Services production
+. collapse (sum) value* , by(year)
+
+. drop value_USA
+
+. ds value*
+value_AUS  value_BGR  value_CHN  value_DEU  value_EST  value_GBR  value_IDN  value_ITA  value_LTU  value_POL  value_RoW  value_SVN  value_TWN
+value_AUT  value_BRA  value_CYP  value_DNK  value_FIN  value_GRC  value_IND  value_JPN  value_MEX  value_PRT  value_RUS  value_SWE
+value_BEL  value_CAN  value_CZE  value_ESP  value_FRA  value_HUN  value_IRL  value_KOR  value_NLD  value_ROU  value_SVK  value_TUR
+
+. local vari `r(varlist)'
+
+. scalar j=51
+
+. foreach v of local vari{
+  2. rename `v' gdp`=j'
+  3. scalar j=`=j'+1
+  4. }
+
+. reshape long gdp , i(year) j(num_country)
+(note: j = 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87)
+
+Data                               wide   ->   long
+-----------------------------------------------------------------------------
+Number of obs.                       12   ->     444
+Number of variables                  38   ->       3
+j variable (37 values)                    ->   num_country
+xij variables:
+                  gdp51 gdp52 ... gdp87   ->   gdp
+-----------------------------------------------------------------------------
+
+. merge m:1 num_country using `countries'
+(note: variable num_country was byte, now float to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               444  (_merge==3)
+    -----------------------------------------
+
+. summ _m
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+      _merge |       444           3           0          3          3
+
+. assert `r(mean)'==3
+
+. keep country year gdp
+
+. merge 1:1 country year using `exp'
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               444  (_merge==3)
+    -----------------------------------------
+
+. summ _m
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+      _merge |       444           3           0          3          3
+
+. assert `r(mean)'==3
+
+. keep country year gdp exp
+
+. tempfile country_gdp_exp_services
+
+. save `country_gdp_exp_services', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000005.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000005.tmp saved
+
+. ****************************** 
+. ***  EXPENDITURE AND GDP   ***  
+. ******************************
+. {
+. ***
+. *** STATES
+. ***
+. use $state_exp_gdp_services, clear
+. keep if year>=2000
+(0 observations deleted)
+. preserve
+. rename state iso_o
+. rename gdp Y_i
+. keep iso_o Y_i year
+. tempfile gdp
+. save `gdp', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000007.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000007.tmp saved
+. restore
+. rename state iso_d
+. rename exp X_j
+. keep iso_d X_j year
+. tempfile exp
+. save `exp', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000008.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000008.tmp saved
+. ***
+. *** COUNTRIES
+. ***
+. use `country_gdp_exp_services', clear
+. preserve
+. rename country iso_o
+. rename gdp Y_i
+. keep iso_o Y_i year
+. append using `gdp'
+(note: variable iso_o was str3, now str14 to accommodate using data's values)
+. save `gdp', replace
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000007.tmp saved
+. restore
+. rename country iso_d
+. rename exp X_j
+. keep iso_d X_j year
+. append using `exp'
+(note: variable iso_d was str3, now str14 to accommodate using data's values)
+(note: variable X_j was float, now double to accommodate using data's values)
+. save `exp', replace
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000008.tmp saved
+. }
+
+. ********************** 
+. ***  State codes   ***  
+. **********************
+. {
+. import delimited $state_code , delimiter("-") clear
+(2 vars, 50 obs)
+. rename v1 State
+. gen code = subinstr(v2," ","",.) 
+. replace State=substr(State,1,strlen(State) - 1)
+(50 real changes made)
+. drop v2
+. tempfile codes
+. save `codes', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000a.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000a.tmp saved
+. }
+
+. ***********************************************************************************************************************************************
+. ***     1. Imports coordinates by county and crosses each county with the others
+. ***********************************************************************************************************************************************
+. *****************
+. ***  States   ***  
+. *****************
+. import excel $coordinates_counties , sheet("Sheet1") firstrow clear
+
+. rename *, lower
+
+. drop if state=="DC"
+(1 observation deleted)
+
+. rename state code
+
+. *merging codes
+. merge m:1 code using `codes' 
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                             3,142  (_merge==3)
+    -----------------------------------------
+
+. summ _m
+
+    Variable |       Obs        Mean    Std. Dev.       Min        Max
+-------------+--------------------------------------------------------
+      _merge |      3142           3           0          3          3
+
+. assert `r(mean)'==3
+
+. egen state=group(State)
+
+. tempfile state_0
+
+. save `state_0', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000b.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000b.tmp saved
+
+. ***
+. *** ISO AND REGION NUMBER
+. ***
+. * COUNTRIES
+. preserve
+
+. use `country_gdp_exp_services', clear
+
+. collapse year, by(country)
+
+. drop year
+
+. rename country iso_o
+
+. gen state_i=_n+50
+
+. tempfile country_number
+
+. save `country_number', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000d.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000d.tmp saved
+
+. restore
+
+. * STATES
+. preserve
+
+. collapse fips, by(state State)
+
+. keep state State
+
+. rename state state_i
+
+. rename State iso_o
+
+. *APPENDING COUNTRIES
+. append using `country_number'
+
+. tempfile state_i
+
+. save `state_i'
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000f.tmp saved
+
+. rename state_i state_j
+
+. rename iso_o iso_d
+
+. tempfile state_j
+
+. save `state_j'
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000g.tmp saved
+
+. restore
+
+. ***
+. *** POPULATIONS
+. ***
+. {
+. *COUNTRIES
+. use $country_coordinates, clear
+(Written by R.              )
+. drop if country_name_ori=="United States of America"
+(10224 observations deleted)
+. destring year, replace
+year has all characters numeric; replaced as int
+. keep if year==2010
+(120890 observations deleted)
+. *one missing value
+. replace city_pop=124.391 if country=="IRL" & city=="Cork"
+(1 real change made)
+. egen state=group(country)
+. replace state=state+50
+(1727 real changes made)
+. replace city=country_name_original+"_"+city if country=="RoW"
+city was str38 now str43
+(618 real changes made)
+. replace city="Xinyi2" if city=="Xinyi" & round(Lati)==22
+(1 real change made)
+. egen double fips=group(country city)
+. replace fips=fips*1000000
+(1727 real changes made)
+. rename city_pop pop
+. replace pop=pop/country_population
+(1727 real changes made)
+. preserve
+. keep state fips  Latitude Longitude
+. rename  Latitude lat
+. rename  Longitude lon
+. tempfile country_coor
+. save `country_coor', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000i.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000i.tmp saved
+. restore
+. keep state fips pop
+. tempfile country_pop
+. save `country_pop', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000j.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000j.tmp saved
+. 
+. *STATES
+. use `state_0', clear
+. keep state fips pop
+. rename popu pop
+. bys state: egen double tot_pop=total(pop)
+. replace pop=pop/tot_pop
+pop was long now double
+(3142 real changes made)
+. drop tot_pop
+. *appending countries
+. append using `country_pop'
+(note: variable fips was long, now double to accommodate using data's values)
+. rename state state_i
+. rename fips fips_r_in_i
+. rename pop pop_r_i
+. tempfile pops_i
+. save `pops_i', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000k.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000k.tmp saved
+. rename state_i state_j 
+. rename fips_r_in_i fips_s_in_j 
+. rename pop_r_i pop_s_j
+. tempfile pops_j
+. save `pops_j', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000l.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000l.tmp saved
+. }
+
+. **********************
+. ***  COORDINATES   ***  
+. **********************
+. 
+. use `state_0', clear
+
+. keep state fips lat lon
+
+. rename lati lat
+
+. rename long lon
+
+. replace lon = substr(lon,2,.)
+(3142 real changes made)
+
+. destring lon, replace 
+lon has all characters numeric; replaced as double
+
+. replace lon=-lon
+(3142 real changes made)
+
+. append using `country_coor'
+(note: variable fips was long, now double to accommodate using data's values)
+
+. tempfile cities
+
+. save `cities', replace
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000m.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000m.tmp saved
+
+. rename * *_s
+
+. cross using `cities'
+
+. 
+. ***********************************************************************************************************************************************
+. ***     2. Calculates distance in km
+. ***********************************************************************************************************************************************
+. 
+. **** generate distances in km between cities
+. geodist lat lon lat_s lon_s, gen(d_rs)
+Warning: failed to converge due to near-antipodal points
+Replaced distance(s) with missing value .a
+Number of distance(s) affected = 220
+
+. 
+. keep state fips state_s fips_s d_rs 
+
+. sort state state_s fips  fips_s
+
+. order state fips state_s fips_s  , first
+
+. compress
+  state was float now byte
+  state_s was float now byte
+  fips was double now long
+  fips_s was double now long
+  (331,900,254 bytes saved)
+
+. 
+. ***********************************************************************************************************************************************
+. ***     3. Renames variables
+. ***********************************************************************************************************************************************
+. rename state state_i
+
+. rename state_s state_j
+
+. rename fips fips_r_in_i
+
+. rename fips_s fips_s_in_j
+
+. 
+. ***********************************************************************************************************************************************
+. ***     4. Merging populations
+. ***********************************************************************************************************************************************
+. merge m:1 state_i fips_r_in_i using `pops_i'
+(note: variable fips_r_in_i was long, now double to accommodate using data's values)
+(note: variable state_i was byte, now float to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                        23,707,161  (_merge==3)
+    -----------------------------------------
+
+. drop _m
+
+. merge m:1 state_j fips_s_in_j using `pops_j'
+(note: variable fips_s_in_j was long, now double to accommodate using data's values)
+(note: variable state_j was byte, now float to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                        23,707,161  (_merge==3)
+    -----------------------------------------
+
+. drop _m
+
+. 
+. ***********************************************************************************************************************************************
+. ***     5. Applying formula
+. ***********************************************************************************************************************************************
+. scalar theta=-1
+
+. gen double dist= pop_r_i* pop_s_j*d_rs^(`=theta')
+(5089 missing values generated)
+
+. collapse (sum) dist, by(state_i state_j)
+
+. replace dist=dist^(1/`=theta')
+(7569 real changes made)
+
+. ***
+. *** Merging back states
+. ***
+. merge m:1 state_i using `state_i'
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                             7,569  (_merge==3)
+    -----------------------------------------
+
+. drop _m
+
+. merge m:1 state_j using `state_j'
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                             7,569  (_merge==3)
+    -----------------------------------------
+
+. drop _m
+
+. 
+. keep iso_o iso_d dist
+
+. sort iso_o iso_d
+
+. 
+. tempfile years
+
+. save `years'
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000n.tmp saved
+
+. gen year=.
+(7569 missing values generated)
+
+. forvalue i=2000/2011{
+  2. replace year=`i' if year==.
+  3. append using `years'
+  4. }
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+(7569 real changes made)
+
+. drop if year==.
+(7569 observations deleted)
+
+. ***
+. *** Merging EXPENDITURE AND GDP
+. ***
+. merge m:1 year iso_o using `gdp'
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                            90,828  (_merge==3)
+    -----------------------------------------
+
+. drop _m
+
+. merge m:1 year iso_d using `exp'
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                            90,828  (_merge==3)
+    -----------------------------------------
+
+. drop _m
+
+. sort year iso_o iso_d
+
+. order year iso_o iso_d dist Y_i X_j, first
+
+. 
+. export delimited using $outputfile, replace
+file 2-Final_Data\data_services.csv saved
+
+. 
+end of do-file

@@ -1,0 +1,19 @@
+
+. save $CFSapportionment, replace
+(note: file 1-Intermediate_Processed_Data\CFSapportionment.dta not found)
+file 1-Intermediate_Processed_Data\CFSapportionment.dta saved
+
+. 
+end of do-file
+
+. tab year
+
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       2002 |         41       33.33       33.33
+       2007 |         41       33.33       66.67
+       2012 |         41       33.33      100.00
+------------+-----------------------------------
+      Total |        123      100.00
+
+. exit, clear
