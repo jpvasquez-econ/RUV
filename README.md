@@ -17,7 +17,7 @@
 - **3-1-CFS_to_Sectors_Cross.do**: Take CFS 2007 and 2012. Assign classification from product code to NAICS level. We use the same mapping in 2002 as the one of 2007. Table CF0700A18. We take commodities 1-7 as agriculture and commodities 10-19 as mining.
 - **3-2-makeTradeMatrixCFS.do**: Calculate the trade flows between states for the 12 manufacturing sectors in our data and sector 14: agriculture and mining. 
 
-## Data: Sector 13. Services
+## Data: Services
 
 - **4-1-state_exp_gdp.do**: Constructs the data of services GDP and expenditure by state. Data of expenditure comes from BEA and data of GDP from SAGDP. We then use proportionality to ensure that values sum up to the USA production/consumption totals in WIOD.
 - **4-2-country_coordinates.Rmd**:  Produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population. The file contains instructions describing the raw data and its sources.
