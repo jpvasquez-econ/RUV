@@ -5,7 +5,7 @@
 - **WIODFixNegative-1-1.m**: This program removes the negatives from WIOD. It has to be run separately for each year (it does not have a loop). For details see: "Trade Theory with Numbers: Quantifying the Consequences of Globalization' by Arnaud Costinot and Andrés Rodríguez-Clare. (The name of the file should be **1-1-WIODFixNegative** but Matlab does not allow file names to start with a number). 
 - **1-2-WiodFixedtoStata.do**: Creates the full WIOD data without negatives by putting together all years.
 - **1-3-WIOD.do**: Takes WIOD and maps to the 14 relevant sectors that we consider and for the countries we use.
-
+<img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">
 ## Data: state-level imports and exports
 
 - **2-1-state_imports_exports_raw_data.do**: Compiles imports and exports data from raw census data. The folder "0-Raw_Data\State-Exports-Imports" indicates how to download the raw data.
