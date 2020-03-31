@@ -5,7 +5,7 @@
 - **WIODFixNegative-1-1.m**: This program removes the negatives from WIOD. It has to be run separately for each year (it does not have a loop). For details see: "Trade Theory with Numbers: Quantifying the Consequences of Globalization' by Arnaud Costinot and Andrés Rodríguez-Clare. (The name of the file should be **1-1-WIODFixNegative** but Matlab does not allow file names to start with a number). 
 - **1-2-WiodFixedtoStata.do**: Creates the full WIOD data without negatives by putting together all years.
 - **1-3-WIOD.do**: Takes WIOD and maps to the 14 relevant sectors that we consider and for the countries we use.
-<img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">
+
 ## Data: state-level imports and exports
 
 - **2-1-state_imports_exports_raw_data.do**: Compiles imports and exports data from raw census data. The folder "0-Raw_Data\State-Exports-Imports" indicates how to download the raw data.
@@ -21,7 +21,7 @@
 
 - **4-1-state_exp_gdp.do**: Constructs the data of services GDP and expenditure by state. Data of expenditure comes from BEA and data of GDP from SAGDP. We then use proportionality to ensure that values sum up to the USA production/consumption totals in WIOD.
 - **4-2-country_coordinates.Rmd**:  Produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population. The file contains instructions describing the raw data and its sources.
-- **4-3-data_services.do**:  The do file does the following: 1) Imports coordinates by county and crosses each county with the others 2) Calculates distance in km, 3) Renames variables, 4) Merging populations, 5) Applying formula of distances: $d_{ij} = \Big(\sum_{r \in i} \sum_{s \in j} \big(\tfrac{pop_r}{pop_i}\big)\big(\tfrac{pop_s}{pop_j}\big) d_{rs}^\theta\Big)^{1/ \theta}$
+- **4-3-data_services.do**:  The do file does the following: 1) Imports coordinates by county and crosses each county with the others 2) Calculates distance in km, 3) Renames variables, 4) Merging populations, 5) Applying formula of distances: <img src="https://render.githubusercontent.com/render/math?math=d_{ij} = \Big(\sum_{r \in i} \sum_{s \in j} \big(\tfrac{pop_r}{pop_i}\big)\big(\tfrac{pop_s}{pop_j}\big) d_{rs}^\theta\Big)^{1/ \theta}">
 - **4-4-Country_Gravity_Services_WIOD.Rmd**: This file estimates the distance elasticity and the own-country dummy for a gravity regression using country-level data from WIOD and focused on the services sector (sector 13).  The regression equation is $\ln X_{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}$ . We estimate $\hat\beta_{0} \approx 7$ and $\hat\beta_{1}\approx -0.45$. 
 - **4-5-Gravity_services_inputs.Rmd**: This file generates the inputs of the gravity system that we take to solve in Matlab.
 - **solving_gravity_system_4_6.m**: Finds a solution for the gravity system. 
