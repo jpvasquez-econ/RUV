@@ -1,0 +1,189 @@
+---
+title: "Country Coordinates"
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+remove(list = ls())
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'reshape', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign');
+#Installing libraries in case they are not installed
+for( i in length(libs)){ 
+if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+#Loading libraries
+lapply( libs, require, character.only=TRUE );
+```
+
+# General Description
+
+The code in this document produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population; the previous information is available for the period 1950-2017 for almost all countries except: Austria, Cyprus, Denmark, Estonia, Hungary, Ireland, Lithuania, Slovakia and Slovenia. The missing information is only for the variable, "city population", for certain years. 
+
+Almost all information to construct the final base comes from data sets of the UN; specifically, the inputs are the following:
+
+a) United Nations: Population Division. "Population of Urban Agglomerations with 300,000 Inhabitants or More in 2018, by country, 1950-2035 (thousands)." Base found in: https://population.un.org/wup/Download/
+
+b) United Nations: Population Division. "Total Population - Both Sexes. De facto population in a country, area or region as of 1 July of the year indicated. Figures are presented in thousands." Base found in: https://population.un.org/wpp/Download/Standard/Population/
+
+c) Republic of Cyprus: Statistical Service. "POPULATION BY DISTRICT, 1996-2017." Base found in: https://www.mof.gov.cy/mof/cystat/statistics.nsf/populationcondition_21main_en/populationcondition_21main_en?OpenForm&sub=1&sel=2
+
+The final output is based mainly on input a), with some information of b) and c), since the countries named before didn't meet the requirement of providing information of at least two cities. For all these special cases (with the exception of Cyprus), b) gives the information needed since it has the cities' population by sex (we just take the aggregation of male and female); from b) we take the urban agglomeration category when possible to make it comparable with the main UN base we are using. For the specific case of Cyprus, the cities' information comes from the country's Statistical Service; since the population statistics available refer to the provinces (named after the main city in them), and not to the city itself, we take the province's urban population and not the whole province population. Finally, regarding the output, all population statistics have to be read in thousands of humans beings.  
+
+***Note that for the case of Cyprus, a more precise statistic for the cities' population can be given through municipalities' population instead of districts (province), but only for 2011.  
+
+## Inputs
+```{r include=FALSE}
+library(readxl)
+UN <- read_excel("0-Raw_Data\\Population_geography\\UN_coordinates.xls")
+UN = data.frame(UN)
+UN <- UN %>%
+  dplyr::rename(country=Country.or.area, city=Urban.Agglomeration)
+
+#WIOD
+WIOD <- read_dta("2-Final_Data\\WIOD_countries.dta")
+WIOD=data.frame(WIOD)
+
+#Full population
+Full_pop <- read_excel("0-Raw_Data\\Population_geography\\Full_population.xlsx")
+Full_pop = data.frame(Full_pop)
+
+all_country_names=c("Aruba", "Afghanistan", "Angola", "Anguilla", "Aland Islands", "Albania", "Andorra", "United Arab Emirates", "Argentina", "Armenia", "American_Samoa", "Antarctica", "French Southern Territories", "Antigua and Barbuda", "Australia", "Austria", "Azerbaijan", "Burundi", "Belgium", "Benin", "Bonaire, Sint Eustatius and Saba", "Burkina_Faso", "Bangladesh", "Bulgaria", "Bahrain", "Bahamas", "Bosnia and Herzegovina", "Saint Barthelemy", "Belarus", "Belize", "Bermuda", "Bolivia", "Brazil", "Barbados", "Brunei Darussalam", "Bhutan", "Bouvet Island", "Botswana", "Central African Republic", "Canada", "Cocos Islands", "Switzerland", "Chile", "China", "Cote d Ivoire", "Cameroon", "Democratic Republic of the Congo", "Congo", "Cook Islands", "Colombia", "Comoros", "Cabo Verde", "Costa Rica", "Cuba", "Curacao", "Christmas Island", "Cayman Islands", "Cyprus", "Czechia", "Germany", "Djibouti", "Dominica", "Denmark", "Dominican Republic", "Algeria", "Ecuador", "Egypt", "Eritrea", "Western Sahara", "Spain", "Estonia", "Ethiopia", "Finland", "Fiji", "Falkland Islands", "France", "Faroe Islands", "Micronesia", "Gabon", "United Kingdom", "Georgia", "Guernsey", "Ghana", "Gibraltar", "Guinea", "Guadeloupe", "Gambia", "Guinea-Bissau", "Equatorial Guinea", "Greece", "Grenada", "Greenland", "Guatemala", "French Guiana", "Guam", "Guyana", "Hong Kong", "Heard Island and McDonald Islands", "Honduras", "Croatia", "Haiti", "Hungary", "Indonesia", "Isle of Man", "India", "British Indian Ocean Territory", "Ireland", "Iran", "Iraq", "Iceland", "Israel", "Italy", "Jamaica", "Jersey", "Jordan", "Japan", "Kazakhstan", "Kenya", "Kyrgyzstan", "Cambodia", "Kiribati", "Saint Kitts and Nevis", "South Korea", "Kuwait", "Laos", "Lebanon", "Liberia", "Libya", "Saint Lucia", "Liechtenstein", "Sri Lanka", "Lesotho", "Lithuania", "Luxembourg", "Latvia", "Macao", "Saint Martin", "Morocco", "Monaco", "Moldova", "Madagascar", "Maldives", "Mexico", "Marshall Islands", "North Macedonia", "Mali", "Malta", "Myanmar", "Montenegro", "Mongolia", "Northern Mariana Islands", "Mozambique", "Mauritania", "Montserrat", "Martinique", "Mauritius", "Malawi", "Malaysia", "Mayotte", "Namibia", "New Caledonia", "Niger", "Norfolk Island", "Nigeria", "Nicaragua", "Niue", "Netherlands", "Norway", "Nepal", "Nauru", "New Zealand", "Oman", "Pakistan", "Panama", "Pitcairn", "Peru", "Philippines", "Palau", "Papua New Guinea", "Poland", "Puerto Rico", "North Korea", "Portugal", "Paraguay", "Palestine", "French Polynesia", "Qatar", "Reunion", "Romania", "Russia", "Rwanda", "Saudi Arabia", "Sudan", "Senegal", "Singapore", "South Georgia and the South Sandwich Islands", "Saint Helena, Ascension and Tristan da Cunha", "Svalbard and Jan Mayen", "Solomon Islands", "Sierra Leone", "El Salvador", "San Marino", "Somalia", "Saint Pierre and Miquelon", "Serbia", "South Sudan", "Sao Tome and Principe", "Suriname", "Slovakia", "Slovenia", "Sweden", "Eswatini", "Sint Maarten", "Seychelles", "Syria", "Turks and Caicos Islands", "Chad", "Togo", "Thailand", "Tajikistan", "Tokelau", "Turkmenistan", "Timor-Leste", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Tuvalu", "Taiwan", "Tanzania", "Uganda", "Ukraine", "United States Minor Outlying Islands", "Uruguay", "United States of America", "Uzbekistan", "Holy See", "Saint Vincent and the Grenadines", "Venezuela", "British Virgin Islands", "American Virgin Islands", "Vietnam", "Vanuatu", "Wallis and Futuna", "Samoa", "Yemen", "South Africa", "Zambia", "Zimbabwe")
+
+all_country_codes=c("ABW", "AFG", "AGO", "AIA", "ALA", "ALB", "AND", "ARE", "ARG", "ARM", "ASM", "ATA", "ATF", "ATG", "AUS", "AUT", "AZE", "BDI", "BEL", "BEN", "BES", "BFA", "BGD", "BGR", "BHR", "BHS", "BIH", "BLM", "BLR", "BLZ", "BMU", "BOL", "BRA", "BRB", "BRN", "BTN", "BVT", "BWA", "CAF", "CAN", "CCK", "CHE", "CHL", "CHN", "CIV", "CMR", "COD", "COG", "COK", "COL", "COM", "CPV", "CRI", "CUB", "CUW", "CXR", "CYM", "CYP", "CZE", "DEU", "DJI", "DMA", "DNK", "DOM", "DZA", "ECU", "EGY", "ERI", "ESH", "ESP", "EST", "ETH", "FIN", "FJI", "FLK", "FRA", "FRO", "FSM", "GAB", "GBR", "GEO", "GGY", "GHA", "GIB", "GIN", "GLP", "GMB", "GNB", "GNQ", "GRC", "GRD", "GRL", "GTM", "GUF", "GUM", "GUY", "HKG", "HMD", "HND", "HRV", "HTI", "HUN", "IDN", "IMN", "IND", "IOT", "IRL", "IRN", "IRQ", "ISL", "ISR", "ITA", "JAM", "JEY", "JOR", "JPN", "KAZ", "KEN", "KGZ", "KHM", "KIR", "KNA", "KOR", "KWT", "LAO", "LBN", "LBR", "LBY", "LCA", "LIE", "LKA", "LSO", "LTU", "LUX", "LVA", "MAC", "MAF", "MAR", "MCO", "MDA", "MDG", "MDV", "MEX", "MHL", "MKD", "MLI", "MLT", "MMR", "MNE", "MNG", "MNP", "MOZ", "MRT", "MSR", "MTQ", "MUS", "MWI", "MYS", "MYT", "NAM", "NCL", "NER", "NFK", "NGA", "NIC", "NIU", "NLD", "NOR", "NPL", "NRU", "NZL", "OMN", "PAK", "PAN", "PCN", "PER", "PHL", "PLW", "PNG", "POL", "PRI", "PRK", "PRT", "PRY", "PSE", "PYF", "QAT", "REU", "ROU", "RUS", "RWA", "SAU", "SDN", "SEN", "SGP", "SGS", "SHN", "SJM", "SLB", "SLE", "SLV", "SMR", "SOM", "SPM", "SRB", "SSD", "STP", "SUR", "SVK", "SVN", "SWE", "SWZ", "SXM", "SYC", "SYR", "TCA", "TCD", "TGO", "THA", "TJK", "TKL", "TKM", "TLS", "TON", "TTO", "TUN", "TUR", "TUV", "TWN", "TZA", "UGA", "UKR", "UMI", "URY", "USA", "UZB", "VAT", "VCT", "VEN", "VGB", "VIR", "VNM", "VUT", "WLF", "WSM", "YEM", "ZAF", "ZMB", "ZWE") 
+
+codes=cbind(all_country_names, all_country_codes)
+
+```
+
+
+## Verification of how many cities for each country
+```{r }
+
+wiod <- WIOD %>% filter(importer_country!= "USA")
+countries=unique(wiod$importer_country)
+
+UN.0=UN
+UN.0$Country.name=UN.0$country
+UN.0 <- UN.0 %>%
+  dplyr::rename(Country.code.num=Country.Code) %>%
+  select(Index, Country.code.num, Country.name, everything())
+
+
+#Verification of how many cities for each country
+UN.0=UN.0
+for (i in 1:dim(UN.0)[1]) {
+  for (j in 1:dim(codes)[1]) {
+    if(UN.0$country[i]==codes[j,1])
+      UN.0$country[i]=codes[j,2]
+  }
+}
+city.count=c()
+for (ctry in countries) {
+  UN.1 <- UN.0 %>%
+    filter(country==ctry)
+  count=dim(UN.1)[1]
+  city.count=rbind(city.count, count)
+}
+rownames(city.count)=c(1:dim(matrix(countries)))
+city.count=data.frame(city.count)
+city.count$country=countries
+city.count <- city.count %>% select(country, everything())
+
+```
+
+## Output
+```{r }
+
+UN.1 <- UN.0 %>%
+  select(-Index, -Note, -City.Code)
+
+UN.1 <- data.frame(melt(UN.1, id.vars = c("Country.code.num", "Country.name", "country", "city", "Latitude", "Longitude")))
+UN.1 <- UN.1 %>%
+  dplyr::rename(year=variable, city.population=value) %>%
+  select(year, everything())
+UN.1$year=substr(UN.1$year, 2, 5)
+UN.1$country.population=NA
+
+#Incorporation of country's population
+Full_pop1 <- data.frame(melt(Full_pop, id.vars = "Country"))
+Full_pop1 <- Full_pop1 %>%
+  dplyr::rename(year=variable, country.population=value) %>%
+  select(year, everything())
+Full_pop1$year=substr(Full_pop1$year, 2, 5)
+
+for (i in 1:dim(UN.1)[1]) {
+  Full_pop.temp <- Full_pop1 %>%
+    filter(year==UN.1$year[i], Country==UN.1$Country.name[i])
+  UN.1$country.population[i]=Full_pop.temp[1,3]
+}
+
+
+#Verification that none NA is left in the variable: country.population
+UN.2 <- UN.1 %>%
+  filter(is.na(country.population))
+
+
+UN.special=UN.1
+
+UN.1$country.name.original=UN.1$Country.name
+UN.1$country.population.original=UN.1$country.population
+UN.1 <- UN.1 %>% select(year, Country.code.num, Country.name, country.name.original, everything())
+
+
+#Change other countries to Rest of the World (RoW)
+countries_states= c("USA", countries)
+for (i in 1:dim(UN.1)[1]) {
+  if((is.element(UN.1$country[i], countries_states))==FALSE){
+    UN.1$Country.name[i]="Rest of the World"
+    UN.1$country[i]="RoW"
+  }
+}
+#Total population for RoW
+UN.temp <- UN.special %>%
+  group_by(year) %>%
+  distinct(country, .keep_all = TRUE) %>%
+  ungroup()
+for (i in 1:dim(UN.temp)[1]) {
+  if((is.element(UN.temp$country[i], countries_states))==FALSE){
+    UN.temp$Country.name[i]="Rest of the World"
+    UN.temp$country[i]="RoW"
+  }
+}
+UN.temp <- UN.temp %>%
+  filter(country=="RoW") %>%
+  group_by(year) %>%
+  mutate(tot.pop=sum(country.population)) %>%
+  ungroup() %>%
+  distinct(year, .keep_all = TRUE) %>%
+  select(year, tot.pop)
+
+for (i in 1:dim(UN.1)[1]) {
+  if(UN.1$country[i]=="RoW"){
+      UN.temp.1 <- UN.temp %>% filter(year==UN.1$year[i])
+      UN.1$country.population[i]= (UN.temp.1[1,2])
+  }
+}
+UN.1$trans <- as.numeric(UN.1$country.population)
+UN.1 <- UN.1 %>%
+  select(-country.population) %>%
+  dplyr::rename(country.population=trans)
+
+write.dta(UN.1, "1-Intermediate_Processed_Data\\country_coordinates.dta")
+
+```

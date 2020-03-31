@@ -1,0 +1,162 @@
+---
+title: "Putting all together"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+# General Instructions
+
+The final goal is to combine the previous steps in order to obtain a new Final Matrix for 2000 through 2007: $X_{ij,k}^{year}$.
+
+## Importing datasets to R
+```{r}
+
+Base.country <- read.csv("1-Intermediate_Processed_Data//state_country_step_y_2000.txt", header = TRUE, sep = ",", dec = ".")
+Base.state <- read.csv("1-Intermediate_Processed_Data//state_country_step_e_2000.txt", header = TRUE, sep = ",", dec = ".")
+n_states=50
+n_countries=37
+states=data.frame(Base.state$importer[1:n_states])
+colnames(states) <- c("region")
+countries=data.frame(Base.country$importer[1:n_countries])
+colnames(countries) <- c("region")
+regions<- data.frame(rbind(states, countries))
+
+services.all=c()
+state.state.all=c()
+country.country.all=c()
+state.country.e.all=c()
+state.country.y.all=c()
+
+for (yr in 2000:2007) {
+##Gravity step  
+services <- read.csv(paste('1-Intermediate_Processed_Data//Xij_matrix_services_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
+services <- data.frame(services)
+colnames(services)= regions$region
+services <- services %>%
+  mutate(year=yr, sector=13, importer=regions$region) %>%
+  select(year, importer, sector, everything())
+#country-country
+country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+#state-state
+state.state <- read.csv(paste('1-Intermediate_Processed_Data//state_cfs_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+#state-country-state
+state.country.e <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+state.country.y <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+#appending
+state.state.all <- rbind(state.state.all, state.state)
+country.country.all <- rbind(country.country.all, country.country)
+state.country.e.all <- rbind(state.country.e.all, state.country.e)
+state.country.y.all <- rbind(state.country.y.all, state.country.y)
+services.all <- rbind(services.all, services)
+}
+```
+
+##Incorporating services (sector 13)
+
+```{r}
+states=(Base.state$importer[1:n_states])
+countries=(Base.country$importer[1:n_countries])
+#services state-state
+serv_state <- services.all%>%
+  filter(importer %in% states)
+serv_state <- serv_state[ ,1:(n_states+3)]
+state.state.all <- rbind(state.state.all, serv_state)
+state.state.all <- state.state.all %>%
+  arrange(year, sector)
+#imports of states from countries
+serv_state_country_e <- services.all%>%
+  filter(importer %in% states)
+temp <- serv_state_country_e[ ,1:3]
+serv_state_country_e <- serv_state_country_e[ ,(n_states+3+1):dim(serv_state_country_e)[2]]
+serv_state_country_e <- cbind(temp, serv_state_country_e)
+state.country.e.all <- rbind(state.country.e.all, serv_state_country_e)
+state.country.e.all <- state.country.e.all %>%
+  arrange(year, sector)
+#exports of states to countries
+serv_state_country_y <- services.all%>%
+  filter(importer %in% countries)
+serv_state_country_y <- serv_state_country_y[ ,1:(n_states+3)]
+state.country.y.all <- rbind(state.country.y.all, serv_state_country_y)
+state.country.y.all <- state.country.y.all %>%
+  arrange(year, sector)
+```
+
+# Putting all together
+
+Constructing the full matrix $X_{ij,k}^{year}$ by putting together all elements using the steps described in the previous codes. 
+```{r}
+
+for (yr in 2000:2007) {
+
+country.country <- subset(country.country.all, year==yr)
+country.country <- subset(country.country, select= -year)  
+  
+state.state <- subset(state.state.all, year==yr)
+state.state <- subset(state.state, select= -year)   
+  
+state.country.y <- subset(state.country.y.all, year==yr)
+state.country.y <- subset(state.country.y, select= -year)   
+  
+state.country.e <- subset(state.country.e.all, year==yr)
+state.country.e <- subset(state.country.e, select= -year) 
+
+
+final_matrix=c()
+#loop across sectors
+for (k in 1:14) {
+  state.country.e.0 <- state.country.e %>%
+    filter(sector==k) %>%
+    select(-importer, -sector)
+  state.state.0 <- state.state %>%
+    filter(sector==k)
+  matrix_top=cbind(state.state.0, state.country.e.0)
+   
+  country.country.0 <- country.country %>%
+    filter(sector==k) %>%
+    select(-importer, -sector)
+  state.country.y.0 <- state.country.y %>%
+    filter(sector==k)
+  matrix_sub=cbind(state.country.y.0, country.country.0)
+  
+  colnames(matrix_top) = colnames(matrix_sub) #matching names
+
+  ma02=rbind(matrix_top, matrix_sub)
+  
+  final_matrix=rbind(final_matrix, ma02 ) #Final 
+  
+}
+final_matrix$sector=100+final_matrix$sector;
+
+write.table(final_matrix, file = paste("2-Final_Data//final_matrix_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+}
+
+```
+

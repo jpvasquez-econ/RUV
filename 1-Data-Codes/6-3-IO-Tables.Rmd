@@ -1,0 +1,119 @@
+---
+title: "6-3-IO-Tables"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    number_sections: yes
+  word_document: default
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'readxl', 'foreign');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+# General Instructions
+
+This code calculates the input output trade shares for each sector, country and year. Specifically, a share for year, t, country, c, and sector, k, represents the proportion of c's sector k imports from all countries'sector $k^I$, of c's sector k total imports from all countries. The final output of this code, for each year separately, is a (14*38)x(14+2) matrix, where the first two columns indicate the year and country, and the rest the sectors associated with the shares of the country.    
+
+Each share is defined as follows:
+$$ s_{k^I,k,c,t}= \frac{ M_{k^I,k,c,t}^{allcountries}}{\sum_{k^I} M_{k^I,k,c,t}^{allcountries}}$$
+
+## Importing datasets to R
+```{r}
+#WIOD Full
+WIOD.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
+
+```
+
+#Calculating input-output matrices
+```{r}
+#Transforming WIOD sectors to 1-14 CDP sectors
+WIOD.full1 <- WIOD.full %>%
+  mutate(col_country= recode(col_country, "ROM"="ROU")) %>%
+  mutate(row_country= recode(row_country, "ROM"="ROU")) %>%
+  filter(col_country != "LVA" & col_country != "LUX" & col_country != "MLT") %>%
+  filter(row_country != "LVA" & row_country != "LUX" & row_country != "MLT") %>%
+  mutate(row_item= recode(row_item, '1'=14L, '2'=14L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=0L, '38'=0L, '39'=0L, '40'=0L, '41'=0L, '42'=0L )) %>%
+  mutate(col_item= recode(col_item, '1'=14L, '2'=14L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=0L, '38'=0L, '39'=0L, '40'=0L, '41'=0L, '42'=0L )) %>%
+  filter(col_item!=0 & row_item!=0) %>%
+  arrange(year, row_country, col_country, row_item, col_item) %>%
+  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
+  mutate(value1= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
+  select(-value)
+
+#Country names
+temp <- data.frame(unique(WIOD.full1$row_country))
+colnames(temp) <- c("country")
+temp <- temp %>% 
+  filter(country!="USA")
+names.countries <- rbind("USA", temp)
+names.countries <- names.countries[1:dim(names.countries)[1], 1]
+
+#Calculating shares
+for(yr in 2000:2007){
+  WIOD.full2 <- WIOD.full1 %>%
+    filter(year==yr)
+  m.coun <- c()
+  for (country in names.countries) {
+    WIOD.full3 <- WIOD.full2 %>%
+      filter(col_country==country) %>%
+      group_by(col_item, row_item) %>%
+      mutate(value2= sum(value1)) %>%
+      ungroup() %>%
+      select(-value1) %>%
+      distinct(col_item, row_item, .keep_all = TRUE)
+    m.country <- matrix(0, nrow = 14, ncol = 14)
+    for(r.sec in 1:14){
+      for (c.sec in 1:14) {
+        WIOD.full4 <- WIOD.full3 %>%
+          filter(col_item==c.sec, row_item==r.sec)
+        if(dim(WIOD.full4)[1]!=0){m.country[r.sec, c.sec]= WIOD.full4$value2[1]}
+      }
+    }
+    c.sum <- colSums(m.country)
+    c.sum= t(matrix(replicate(14, c.sum), nrow = length(c.sum), ncol = 14))
+    m.country <- m.country/c.sum
+    m.country <- data.frame(m.country)
+    colnames(m.country) <- c(1:14)
+    m.country$country <- country
+    m.country$year <- yr
+    m.country <- m.country %>% select(year, country, everything())
+    m.coun <- rbind(m.coun, m.country)  
+  }
+  #Check point
+  h1= matrix(38, nrow = 14)
+  h2= colSums(m.coun[, 3:dim(m.coun)[2]])
+  print(sum(h1-h2))
+  write.table(m.coun, file = paste("2-Final_Data//io_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE) 
+}
+
+
+
+```
+
+
+

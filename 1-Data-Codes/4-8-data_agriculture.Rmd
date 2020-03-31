@@ -1,0 +1,130 @@
+---
+title: "data_agriculture"
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+remove(list = ls())
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'reshape', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl');
+#Installing libraries in case they are not installed
+#for( i in length(libs)){ 
+  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+#Loading libraries
+lapply( libs, require, character.only=TRUE );
+```
+
+## Final Objective
+To create the file data_agriculture.csv that will contain information about distances between regions, agricultural production for all regions and agricultural consumption for countries.
+
+#importing bases
+```{r}
+num.states <- 50
+
+#WIOD
+WIOD <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
+WIOD=data.frame(WIOD)
+WIOD <- WIOD %>% filter(year>=2000) #since distances are available from that year on
+
+#Agriculture production states
+data_agri <- read.csv("0-Raw_Data//Agriculture Census//data_agriculture.csv")
+data_agri$iso_o <- as.character(data_agri$iso_o)
+
+states.names <- unique(data_agri$iso_o)
+
+#Trade distances
+data_agriculture <- read.csv("2-Final_Data//data_services.csv")
+data_agriculture <- data_agriculture %>%
+  mutate(Y_i=0, X_j=0)
+data_agriculture$iso_o <- as.character(data_agriculture$iso_o)
+data_agriculture$iso_d <- as.character(data_agriculture$iso_d)
+```
+
+#Preparing proportionality for state agriculture using WIOD
+```{r}
+WIOD.agri <- WIOD %>%
+  filter(row_country=="USA", row_item==1) %>%
+  group_by(year) %>%
+  mutate(production= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, .keep_all = TRUE)
+
+```
+
+```{r}
+# agricultural production for states (values add to WIOD US production)
+# 2000-2004 use Agriculture Census 2002
+agri.2002 <- data_agri %>% filter(year==2002)
+for (i in 1:num.states) {
+  num <- agri.2002$rel[i]
+  data_agriculture <- data_agriculture %>%
+    mutate(Y_i= ifelse(year<=2004 & iso_o==agri.2002$iso_o[i], num, Y_i))
+}
+# 2005-2007 use Agriculture Census 2007
+agri.2007 <- data_agri %>% filter(year==2007)
+for (i in 1:num.states) {
+  num <- agri.2007$rel[i]
+  data_agriculture <- data_agriculture %>%
+    mutate(Y_i= ifelse(year>=2005 & iso_o==agri.2007$iso_o[i], num, Y_i))
+}  
+#Applying proportionality
+for (yr in 2000:2007) {
+  wiod.value <- WIOD.agri %>%
+    filter(year==yr)
+  wiod.value <- wiod.value$production[1]
+  data_agriculture <- data_agriculture %>%
+    mutate(Y_i= ifelse(year==yr & (iso_o %in% states.names), Y_i*wiod.value, Y_i))
+}
+
+#agricultural production for countries 
+WIOD.p <- WIOD %>%
+  filter(row_item==1) %>%
+  group_by(year, row_country) %>%
+  mutate(production= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, .keep_all = TRUE) 
+for (i in 1:dim(WIOD.p)[1]) {
+  yr=WIOD.p$year[i]
+  country=WIOD.p$row_country[i]
+  num=WIOD.p$production[i]
+  data_agriculture <- data_agriculture %>%
+    mutate(Y_i= ifelse(year==yr & iso_o==country, num, Y_i))
+}
+#agricultural consumption for countries 
+WIOD.c <- WIOD %>%
+  filter(col_item==1) %>%
+  group_by(year, col_country) %>%
+  mutate(consumption= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, col_country, .keep_all = TRUE) 
+for (i in 1:dim(WIOD.c)[1]) {
+  yr=WIOD.c$year[i]
+  country=WIOD.c$col_country[i]
+  num=WIOD.c$consumption[i]
+  data_agriculture <- data_agriculture %>%
+    mutate(X_j= ifelse(year==yr & iso_d==country, num, X_j))
+}
+
+
+write.table(data_agriculture, file = paste("2-Final_Data//data_agriculture.csv", sep=""), sep = ",", row.names = FALSE)
+```
+
+  
+

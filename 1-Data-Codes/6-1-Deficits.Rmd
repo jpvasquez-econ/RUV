@@ -1,0 +1,79 @@
+---
+title: "6-1-Deficits"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'readxl', 'writexl');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+
+## Importing datasets to R
+```{r}
+Base=c()
+for (yr in 2000:2007) {
+##Final Matrix  
+m <- read.csv(paste("2-Final_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+m$year=yr
+m <- m %>% select(year, everything())
+
+Base=rbind(Base, m)
+
+}
+```
+
+
+# General Instructions
+The purpose of this task is to calculate region-sector level deficits. The deficit for a region $i$ in a sector $k$ would be defined as: 
+$$
+D_{i,k}=\sum_j X_{ij,k} - \sum_j X_{ji,k}
+$$
+```{r}
+for (yr in 2000:2007) {
+  final_matrix=c()
+  for (k in 101:114) {
+    matrix <- Base %>%
+      filter(year==yr, sector==k) %>%
+      select(-importer, -sector, -year)
+    tot_exp=colSums(matrix)
+    tot_imp=rowSums(matrix)
+    deficit=tot_exp-tot_imp
+    final=data.frame(deficit)
+    final$sector=k
+    final$year=yr
+    final$region=Base$importer[1:87]
+    final <- final %>% select(year, region, sector, deficit)
+    final_matrix=rbind(final_matrix, final)
+  }
+write.table(final_matrix, file = paste("2-Final_Data//deficits_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+}
+
+```
+
+

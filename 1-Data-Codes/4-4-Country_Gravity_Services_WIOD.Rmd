@@ -1,0 +1,248 @@
+---
+title: "Country Gravity Services WIOD"
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+remove(list = ls())
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'reshape', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl');
+#Installing libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+#Loading libraries
+lapply( libs, require, character.only=TRUE );
+install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.3.9.zip", repos=NULL)
+  library(Statamarkdown)
+```
+
+## Final Objective
+
+To estimate
+$$
+\ln X_{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}
+$$
+where $\lambda_t$ is a time FE, $\delta_{i}^{o}$ is an origin FE, $\delta_{j}^{d}$ is a destination FE, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$. Then, construct: $\phi_{ij}=\exp(\hat{\beta}_{0}\iota_{ij}+\hat{\beta}_{1}\ln dist_{ij})$.
+
+We will focus on countries only (we forget about the states but care about USA as a country), and our focus is on sector 13 only.
+
+```{r}
+#WIOD
+WIOD <- read_dta("1-Intermediate_Processed_Data\\wiot_full.dta")
+WIOD=data.frame(WIOD)
+WIOD <- WIOD %>% filter(year>=2000) #since distances are available from that year on  
+
+#Trade distances
+data_services <- read.csv("2-Final_Data\\data_services.csv")
+data_services=data.frame(data_services)
+data_servicesUS <- data_services %>% filter(year==2000)
+
+#US population in 2010
+us_pop <- read_excel("0-Raw_Data\\Fips\\us_states_coordinates_counties.xlsx")
+us_pop=data.frame(us_pop)
+
+```
+*	((NAICS 90) Construction (c18); 
+  row_item=18
+*	(NAICS 42-45) Wholesale and Retail Trade (c19-c21); 
+  row_item=19 | row_item=20 | row_item=21 
+*	(NAICS 481-488) Transport Services (c23-c26);
+  row_item=23 | row_item=24 | row_item=25 | row_item=26 
+*	(NAICS 511-518) Information Services (c27);
+  row_item=27 
+*	(NAICS 521-525) Finance and Insurance (c28); 
+  row_item=28 
+*	(NAICS 531-533)  Real Estate (c29-c30); 
+  row_item=29 | row_item=30  
+*	(NAICS 61) Education (c32); 
+  row_item=32 
+*	(NAICS 621-624) Health Care (c33);
+  row_item=33 
+*	(NAICS 721-722) Accommodation and Food Services (c22); 
+  row_item=22 
+*	(NAICS 493, 541, 55, 561, 562, 711-713, 811-814) Other Services (c34).
+  row_item=34
+  
+```{r}
+#only sector 13: origin
+WIOD1 <- WIOD %>%
+  filter(row_item>=18 & row_item<=34 & row_item!=31) %>%
+  group_by(year, row_country, col_country) %>%
+  mutate(ag_value=sum(value)) %>% 
+  ungroup() %>% 
+  distinct(year, row_country, col_country, .keep_all=TRUE ) %>% 
+  select(-col_item, -value, -row_item) %>%
+  mutate(iota=0) %>%
+  mutate(iota=replace(iota, row_country==col_country, 1)) %>%
+  unite(ori_dest, c("row_country", "col_country"), remove = FALSE) %>%
+  mutate(dist=0)
+
+#preparing distances 
+data_services1 <- data_services %>%
+  unite(ori_dest, c("iso_o", "iso_d"), remove = FALSE) %>%
+  mutate(ch_o=nchar(as.character(iso_o))) %>%
+  mutate(ch_d=nchar(as.character(iso_d))) %>%
+  filter(ch_d<=3 & ch_o<=3) %>%
+  select(year, dist, ori_dest)
+
+#add distances (country-country, excluding US)
+WIOD2=WIOD1
+for (i in 1:dim(data_services1)[1]){  
+  WIOD2 <- WIOD2 %>%
+    mutate(dist=replace(dist, ori_dest==data_services1$ori_dest[i] & year==data_services1$year[i], data_services1$dist[i]))
+}
+
+```
+adding US-country distances 
+```{r}
+
+#creating weights
+us_pop1 <- us_pop %>%
+  select(State, Population_2010) %>%
+  group_by(State) %>%
+  mutate(state_pop=sum(Population_2010)) %>%
+  ungroup() %>%
+  select(-Population_2010) %>%
+  distinct(State, .keep_all=TRUE) %>%
+  filter(State!="DC")
+
+data_servicesUS1 <- data_servicesUS %>%
+  mutate(ch_d=nchar(as.character(iso_d))) %>%
+  filter(ch_d>3) %>%
+  distinct(iso_d, .keep_all=TRUE)
+us_pop1$State=data_servicesUS1$iso_d
+us_pop1 <- us_pop1 %>% mutate(tot_pop=sum(state_pop))
+us_pop1 <- us_pop1 %>% mutate(pond=(state_pop/tot_pop)) #pond sum==1
+
+# adding US-country distances
+data_servicesUS2 <- data_services %>%
+  mutate(ch_o=nchar(as.character(iso_o))) %>%
+  mutate(ch_d=nchar(as.character(iso_d))) %>%
+  filter(ch_d>3 & ch_o==3) %>% #only countries in origin and only states in destination 
+  mutate(pond=0)
+
+data_servicesUS3=data_servicesUS2
+for(i in 1:50){
+  data_servicesUS3 <- data_servicesUS3 %>%
+    mutate(pond=replace(pond, iso_d==us_pop1$State[i], us_pop1$pond[i]))
+}
+
+data_servicesUS3 <- data_servicesUS3 %>%
+  mutate(component = pond*dist) %>%
+  group_by(year, iso_o) %>%
+  mutate(dist_US=sum(component)) %>%
+  ungroup() %>%
+  distinct(year, iso_o, .keep_all=TRUE) %>%
+  mutate(iso_d="USA") %>%
+  unite(name1, c("iso_o", "iso_d"), remove = FALSE) %>%
+  unite(name2, c("iso_d", "iso_o"), remove = FALSE) %>%
+  select(year, name1, name2, dist_US)
+
+#add distances (US-country)
+WIOD3 <- WIOD2
+for (i in 1:dim(data_servicesUS3)[1]){  
+  WIOD3 <- WIOD3 %>%
+    mutate(dist=replace(dist, (ori_dest==data_servicesUS3$name1[i] | ori_dest==data_servicesUS3$name2[i]) & year==data_servicesUS3$year[i], data_servicesUS3$dist_US[i]))
+}
+
+```
+
+
+Specific US_US distance using the following formula:
+$$dist\left(US,US\right) = \left(\sum_{r\, \in\, US} \sum_{s \, \in \, US} \left(\dfrac{pop_r}{pop_{US}}\right) \left(\dfrac{pop_s}{pop_{US}}\right) d_{rs}^{-1}\right)^{-1},$$
+```{r }
+# US-US distance
+USserv <- data_services %>%
+  mutate(ch_o=nchar(as.character(iso_o))) %>%
+  mutate(ch_d=nchar(as.character(iso_d))) %>%
+  filter(ch_d>3 & ch_o>3) %>%
+  mutate(pond_r=0, pond_s=0) %>%
+  mutate(dist=(1/dist))
+  
+
+for(i in 1:50){
+  USserv <- USserv %>%
+    mutate(pond_r=replace(pond_r, iso_o==us_pop1$State[i], us_pop1$pond[i])) %>%
+    mutate(pond_s=replace(pond_s, iso_d==us_pop1$State[i], us_pop1$pond[i]))
+}
+
+USserv.final <- USserv %>%
+  mutate(component = pond_r*pond_s*dist) %>%
+  group_by(year) %>%
+  mutate(dist_US_US=sum(component)) %>%
+  ungroup() %>%
+  distinct(year, .keep_all=TRUE) %>%
+  mutate(dist_US_US=1/dist_US_US) 
+
+USserv.final$iso_o="USA"
+USserv.final$iso_d="USA"
+USserv <- USserv.final %>%
+  unite(name1, c("iso_o", "iso_d"), remove = FALSE) 
+  
+#adding US_US  
+for (i in 1:dim(USserv)[1]){  
+  WIOD3 <- WIOD3 %>%
+    mutate(dist=replace(dist, ori_dest==USserv$name1[i] & year==USserv$year[i], USserv$dist_US_US[i]))
+}
+```
+
+Final base for regression
+```{r }
+#taking out countries not of interest
+Final <- WIOD3 %>%
+  filter(dist!=0) %>%
+  dplyr::rename(X=ag_value) %>%
+  arrange(year, row_country) %>%
+  dplyr::rename(origin=row_country , destination=col_country)
+write.csv(Final, "1-Intermediate_Processed_Data\\Country_Gravity_Services_WIOD.csv")
+```
+
+##Stata code
+
+```{stata, collectcode=TRUE}
+import delimited "1-Intermediate_Processed_Data\\Country_Gravity_Services_WIOD.csv"
+
+drop if x<0.0001
+
+gen log_X=ln(x)
+
+gen log_dist=ln(dist)
+
+drop ori_dest x dist
+
+*ssc install reghdfe
+
+*ssc install ftools
+
+*reghdfe, compile
+
+egen ori=group(origin)
+egen des=group(destin)
+
+reghdfe log_X iota log_dist , absorb(year ori des) vce(robust)
+reghdfe log_X iota log_dist , absorb(year#ori year#des) vce(robust)
+
+
+gen b0 = _b[iota]
+
+gen b1 = _b[log_dist]
+
+gen phi = exp((b0*iota) + (b1*log_dist))
+```

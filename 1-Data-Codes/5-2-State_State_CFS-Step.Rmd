@@ -1,0 +1,184 @@
+---
+title: "State-State bilateral trade with CFS"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+
+## General Instructions
+
+To use CFS plus proportionality to calculate $X_{ij,k}^{year}$ for $i\in US\;  \&\;   j \in US$,  $\forall k=1,...,12,14$.  I call the output of this part $X_{ij,k}^{Step2}$.
+
+## Importing datasets to R
+```{r}
+#CFS
+CFS.base <- read_dta("2-Final_Data//CFS_Xijk.dta")
+#WIOD
+WIOD.base <- read_dta("2-Final_Data//WIOD_countries.dta")
+
+#General parameters
+nstates=50
+```
+
+##Step 2 
+
+The dataset "CFS" has elements $X_{ij,k}^{CFS}$, with the three usual dimensions. The matrix of data "CFS" (excluding the column of names and sectors) is of dimension $50 \cdot 14 \times 50$. In this step we also use $X_{US,US,k}^{WIOD} \quad \forall k$.
+
+##Construction of intermediate variables
+First construct: $$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}}.$$
+
+
+##Main variable 
+Define: $$X_{ij,k}^{Step2}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD}.$$
+
+##Check that the following condition holds:
+We should have that: $$\sum_{i} \sum_{j} X_{ij,k}^{Step3}=X_{US,US,k}^{WIOD} \quad \forall k=1,...,12,14.$$
+
+
+```{r}
+#x_ijk
+
+for (yr in 2000:2007) {
+
+#################################Bases  
+#Aproximation
+c=c(2002,2007,2012)
+ap=1000
+for (i in 1:3) {
+  p=yr-c[i]
+  if(abs(p)<ap) {
+    aprox=p
+    ap=abs(p)
+  }
+}
+yr. = yr-aprox
+
+#CFS
+CFS <- subset(CFS.base, year==yr.)
+CFS <- subset(CFS, select = -year )
+
+
+#WIOD
+WIOD <- subset(WIOD.base, year==yr)
+WIOD <- subset(WIOD, select = -year)  
+  
+  
+##########################Construction of intermediate variables    
+# Create data frame
+df = data.frame(CFS)
+
+# Dimensions of data frame
+n_rows = dim(df)[1]
+n_columns = dim(df)[2]
+
+# Sectors
+n_sectors = length(unique(df$sector))
+
+# Unique sectors
+unique_sectors = unique(df$sector)
+
+# Create XijkCFS and xijkCFS
+XijkCFS = df[,3:n_columns]
+sum_hl_XhlkCFS = numeric(n_sectors)
+for(k in 1:n_sectors) {
+  sum_hl_XhlkCFS[k] = sum(XijkCFS[df$sector==k,])
+}
+
+relevant_sectors = 1:14
+
+XijkCFS_1 = c()
+denominator = c()
+n_relevant_sectors = 14
+for (i in 1:length(relevant_sectors)) {
+  denominator = rbind(denominator,matrix(replicate(nstates*nstates,sum_hl_XhlkCFS[i]), 
+                                         nrow = nstates, ncol = nstates))
+  XijkCFS_1 = rbind(XijkCFS_1,XijkCFS[df$sector==relevant_sectors[i],])
+}
+
+# Compute xijkCFS
+xijkCFS = XijkCFS_1/denominator  
+
+##################################Main variable  
+#X_ijk  
+# Create data frame
+df_WIOD = data.frame(WIOD)
+
+# Ignore non-USA exporters (columns)
+df_WIOD = df_WIOD[,1:4]
+
+#Filter out non-USA importers
+USA_exporter_indices = df_WIOD$importer_country == "USA"
+
+# Take into account only the first 14 sectors (13 will be excluded later)
+X_USA_USA_k = df_WIOD$value_USA[USA_exporter_indices]
+X_USA_USA_k = X_USA_USA_k[1:14]
+
+Xijk = c()
+for(i in 1:14) {
+  Xijk = rbind(Xijk, xijkCFS[((i-1)*nstates + 1):(nstates*i),]*X_USA_USA_k[i])
+}
+
+###########################################Check that the following condition holds:
+  
+Xijk$sector = df$sector[1:700]
+Xijk$importer = df$importer[1:700]
+Xijk = Xijk %>% select(importer, sector, everything())
+
+xijkCFS$sector = df$sector[1:700]
+xijkCFS$importer = df$importer[1:700]
+xijkCFS = xijkCFS %>% select(importer, sector, everything())
+
+# Check sum_ij xijk = 1, which is the same as sum_ij Xijk = X_USUSk
+for(k in 1:14) {
+  sum(xijkCFS[xijkCFS$sector==1,3:52])
+}
+# Check for all  k
+#for(k in 1:14) {
+#  print(c(sum(Xijk[Xijk$sector==k,3:52]),X_USA_USA_k[k]))
+#}
+
+Step2 <- Xijk %>%
+  filter(sector!=13)
+
+
+Step2 <- Step2 %>%
+  mutate(year=yr) %>%
+  select(year, importer, sector, everything())
+
+
+#Exporting 
+colnames(Step2)[4:dim(Step2)[2]]= CFS.base$importer[1:50]
+
+  #Exporting
+write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)
+}
+```
+
