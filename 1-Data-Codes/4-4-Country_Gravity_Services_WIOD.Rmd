@@ -415,7 +415,7 @@ write.csv(Final, "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIO
 ##Stata code
 
 ```{stata, collectcode=TRUE}
-import delimited "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv"
+import delimited "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv", clear
 
 drop if x<0.0001
 
@@ -425,22 +425,10 @@ gen log_dist=ln(dist)
 
 drop ori_dest x dist
 
-*ssc install reghdfe
-
-*ssc install ftools
-
-*reghdfe, compile
-
 egen ori=group(origin)
 egen des=group(destin)
 
 reghdfe log_X iota log_dist , absorb(year ori des) vce(robust)
 reghdfe log_X iota log_dist , absorb(year#ori year#des) vce(robust)
 
-
-gen b0 = _b[iota]
-
-gen b1 = _b[log_dist]
-
-gen phi = exp((b0*iota) + (b1*log_dist))
 ```
