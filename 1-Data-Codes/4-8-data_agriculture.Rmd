@@ -44,7 +44,7 @@ WIOD=data.frame(WIOD)
 WIOD <- WIOD %>% filter(year>=2000) #since distances are available from that year on
 
 #Agriculture production states
-data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
+data_agri <- read.csv("0-Raw_Data//Agriculture Census//data_agriculture.csv")
 data_agri$iso_o <- as.character(data_agri$iso_o)
 
 states.names <- unique(data_agri$iso_o)
@@ -52,7 +52,7 @@ states.names <- unique(data_agri$iso_o)
 #Trade distances
 data_agriculture <- read.csv("2-Final_Data//data_services.csv")
 data_agriculture <- data_agriculture %>%
-  mutate(Y_i=0, X_j=0)
+  mutate(Y_i=NA, X_j=NA)
 data_agriculture$iso_o <- as.character(data_agriculture$iso_o)
 data_agriculture$iso_d <- as.character(data_agriculture$iso_d)
 ```
