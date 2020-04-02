@@ -15,6 +15,115 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This file generates the inputs of the gravity system that we take to solve in matlab.
 
+Start with the standard gravity equation,
+$$
+X_{ij}=\left(\frac{w_{i}\tau_{ij}}{P_{j}}\right)^{-\varepsilon}X_{j}.
+$$
+Define: $\Pi_{i}^{-\varepsilon}=\sum_{j}\tau_{ij}^{-\varepsilon}P_{j}^{\varepsilon}X_{j}$. Let $\tilde{P}_{j}\equiv P_{j}^{-\varepsilon}$ and $\tilde{\Pi}_{i}\equiv\Pi_{i}^{-\varepsilon}, and \tilde{\tau}_{ij}\equiv\tau_{ij}^{-\varepsilon}$. Then we have the system
+$$
+\tilde{P}_{j}=\sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i} \nonumber
+$$
+
+$$
+\tilde{\Pi}_{i}=\sum_{j}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}
+$$
+
+So far this is the same we had before. Given $\{X_{j}\}$ and $\{Y_{i}\}$ and $\{\tilde{\tau}_{ij}\}$ then from here one can get $\{\tilde{P}_{j}\}$ and $\{\tilde{\Pi}_{i}\}$. Then we get $\{X_{ij}\}$ from 
+$$
+X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j} \label{eq:Xij}
+$$
+We don't know $\{X_{j}\}_{j\in US}$. But we know: 1) $\{X_{ij}\}\quad\forall i,j\notin US$ (from WIOD), 2) $\{X_{ij}\}\quad\forall i\notin US\;or\:j\notin US$ (from CENSUS). Rearranging the system in order to separate the cases of $\{X_{j}\}_{j\not\notin US}$ vs. $\{X_{j}\}_{j\in US}$ (and replacing $\tilde{\tau}_{ij}=\tilde{\Pi}_{i}\tilde{P}_{j}Y_{i}^{-1}X_{j}^{-1}X_{ij}$) we get the new system
+$$
+\tilde{P}_{j}=\sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i},\quad\forall j\in US \nonumber
+$$
+$$
+\tilde{P}_{j}=\sum_{i\in US}\tilde{P}_{j}X_{j}^{-1}X_{ij}+\sum_{i\notin US}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i},\quad\forall j\notin US \nonumber
+$$
+$$
+\tilde{\Pi}_{i}=\sum_{j\notin US}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}+\tilde{\Pi}_{i}Y_{i}^{-1}\underbrace{\sum_{j\in US}X_{ij}}_{Y_{i}-\sum_{j\notin US}X_{ij}},\quad i\in US \nonumber
+$$
+$$
+\tilde{\Pi}_{i}=\sum_{j\notin US}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}+\sum_{j\in US}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij},\quad i\notin US \nonumber
+$$
+
+==Until here everything is the same as before. New notation starts below==
+
+One can split the first equation of the previous system into the cases $i\in US$ vs. $i \notin US$. Define: $\lambda_{NotUS,j}\equiv\sum_{i\notin US}X_{ij}/X_{j}\quad\forall j\notin US$, $\chi_{i,NotUS}\equiv\sum_{j\notin US}X_{ij}/Y_{j}\quad\forall i$
+
+Then, the system becomes:
+$$
+\tilde{P}_{j}=\sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i},\quad\forall j\in US \nonumber 
+$$
+
+$$
+\lambda_{NotUS,j}\tilde{P}_{j}=\sum_{i\notin US}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i},\quad \forall j \notin US \nonumber
+$$
+$$
+\chi_{i,NotUS}\tilde{\Pi}_{i}=\sum_{j\notin US}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j},\quad\forall i \label{eq:sys}
+$$
+which can now be solved. In order to do so, first define:                   $\lambda_{state,j}=(1,.,1)'$, $\lambda_{country,j}=(\lambda_{NotUS,51},.,\lambda_{NotUS,87} )'$,$\chi_{state,i}=(\chi_{1,NotUS},.,\chi_{50,NotUS})'$, $\chi_{country,i}=(\chi_{51,NotUS},.,\chi_{87,NotUS} )'$, $\lambda=(\lambda_{state,j},\lambda_{country,j},\chi_{state,i},\chi_{country,i})'$, $P_{state,j}=(\tilde{P}_{1},...,\tilde{P}_{50})'$, $P_{country,j}=(\tilde{P}_{51},.,\tilde{P}_{87})'$,  $\Pi_{state,i}=(\tilde{\Pi}_{1},...,\tilde{\Pi}_{50})'$, $\Pi_{country,i}=(\tilde{\Pi}_{51},.,\tilde{\Pi}_{87})'$,                          $S=\left(P_{state,j},P_{country,j},\Pi_{state,i},\Pi_{country,i}\right)'$ and with some abuse of notation, $S^{-1}=\left(P_{state,j}^{-1},P_{country,j}^{-1},\Pi_{state,i}^{-1},\Pi_{country,i}^{-1}\right)'$
+
+Also, define:
+$$
+\boldsymbol{\left(\mathcal{T} Y\right)_{}}=\left(\begin{array}{ccc}
+\tilde{\tau}_{s_{1}s_{1}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{50}s_{1}}Y_{s_{50}} & \tilde{\tau}_{s_{51}s_{1}}Y_{s_{51}} & \cdots & \tilde{\tau}_{s_{87}s_{1}}Y_{s_{87}}\\
+\vdots & \ddots & \vdots & \vdots & \ddots & \vdots\\
+\tilde{\tau}_{s_{1}s_{50}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{50}s_{50}}Y_{s_{50}} & \tilde{\tau}_{s_{51}s_{50}}Y_{s_{51}} & \cdots & \tilde{\tau}_{s_{87}s_{50}}Y_{s_{87}} \\\
+0 & \cdots & 0 & \tilde{\tau}_{s_{51}s_{51}}Y_{s_{51}} & \cdots & \tilde{\tau}_{s_{87}s_{51}}Y_{s_{87}}\\
+\vdots & \ddots & \vdots & \vdots & \ddots & \vdots\\
+0 & \cdots & 0 & \tilde{\tau}_{s_{51}s_{87}}Y_{s_{51}} & \cdots & \tilde{\tau}_{s_{87}s_{87}}Y_{s_{87}}
+\end{array}\right)= \left(\begin{array}{cc}
+\left(\mathcal{T} Y\right)_{ss} & \left(\mathcal{T} Y\right)_{sc}\\
+0 & \left(\mathcal{T} Y\right)_{cc}
+\end{array}\right), 
+$$
+$$
+\boldsymbol{\left(\mathcal{T} X\right)_{}}=\left(\begin{array}{ccc}
+0 & \cdots & 0 & \tilde{\tau}_{s_{1}s_{51}}X_{s_{51}} & \cdots & \tilde{\tau}_{s_{1}s_{87}}X_{s_{87}}\\
+\vdots & \ddots & \vdots & \vdots & \ddots & \vdots\\
+0 & \cdots & 0 & \tilde{\tau}_{s_{50}s_{51}}X_{s_{51}} & \cdots & \tilde{\tau}_{s_{50}s_{87}}X_{s_{87}} \\\
+0 & \cdots & 0 & \tilde{\tau}_{s_{51}s_{51}}X_{s_{51}} & \cdots & \tilde{\tau}_{s_{51}s_{87}}X_{s_{87}}\\
+\vdots & \ddots & \vdots & \vdots & \ddots & \vdots\\
+0 & \cdots & 0 & \tilde{\tau}_{s_{87}s_{51}}X_{s_{51}} & \cdots & \tilde{\tau}_{s_{87}s_{87}}X_{s_{87}}
+\end{array}\right)= \left(\begin{array}{cc}
+0 & \left(\mathcal{T} X\right)_{sc}\\
+0 & \left(\mathcal{T} X\right)_{cc}
+\end{array}\right)
+$$
+
+
+Then, the system can be written as:
+$$
+\lambda\circ S=\left(\begin{array}{cccc}
+0 & 0 & \left(\mathcal{T} Y\right)_{ss} & \left(\mathcal{T} Y\right)_{sc}\\
+0 & 0 & 0 & \left(\mathcal{T} Y\right)_{cc}\\
+0 & \left(\mathcal{T} X\right)_{sc} & 0 & 0\\
+0 & \left(\mathcal{T} X\right)_{cc} & 0 & 0
+\end{array}\right)\cdot S^{-1}
+$$
+
+or as: 
+$$
+\lambda\circ S=B\cdot S^{-1}
+$$
+where $\circ$ is the element-by-element product and $B$ is the big matrix. Given $\left\{ X_{j} \; \forall j \notin US\right\}$, $\left\{ X_{ij} \;  for \; i \notin US \; and \; for \; j \in US\right\}$, $\left\{ Y_{i}\right\}$  and $\left\{ \tilde{\tau}_{ij}\right\}$,  we can get $\left\{ \tilde{P}_{j}\right\}$  and $\left\{ \tilde{\Pi}_{i}\right\}$. The solution for $\left\{ \tilde{P}_{j}, \tilde{\Pi}_{i} \right\}$ is unique up to a constant. This indeterminacy requires a normalization. We thus impose $\tilde{P}_{1}=100$. Then we compute $\left\{ X_{ij}\right\}$  from $X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}.$
+
+
+How to compute $\{X_{ij}\}$? We cannot simply apply equation $\eqref{eq:Xij}$ when $j\in US$ because we do not know $\{X_{j}\}_{j\in US}$. But from equation $\eqref{eq:Xij}$ we know that
+$$
+X_{j}=\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}\tilde{P}_{j}Y_{i}^{-1}X_{ij}
+$$
+Summing across $i\notin US$ we have:
+$$
+\sum_{i\notin US}X_{j}=N_{c}X_{j}=\tilde{P}_{j}\sum_{i\notin US}\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij},
+$$
+where $N_{c}$ is the number of countries (excluding the US). Thus, $for j\in US$ we impute expenditure from:
+$$
+\hat{X}_{j}=\dfrac{1}{N_{c}}\tilde{P}_{j}\sum_{i\notin US}\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij},
+$$
+and then proceed to impute $X_{ij}$ for $i,j\in US$ from $\eqref{eq:Xij}$. 
+
+
 ##Data and Libraries
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
