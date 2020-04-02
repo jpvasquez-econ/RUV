@@ -41,7 +41,10 @@ num.states <- 50
 #WIOD
 WIOD <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 WIOD=data.frame(WIOD)
-WIOD <- WIOD %>% filter(year>=2000) #since distances are available from that year on
+WIOD <- WIOD %>% 
+  filter(year>=2000) %>% #since distances are available from that year on
+  mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
+  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country))
 
 #Agriculture production states
 data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
@@ -121,7 +124,6 @@ for (i in 1:dim(WIOD.c)[1]) {
   data_agriculture <- data_agriculture %>%
     mutate(X_j= ifelse(year==yr & iso_d==country, num, X_j))
 }
-
 
 write.table(data_agriculture, file = paste("2-Final_Data//data_agriculture.csv", sep=""), sep = ",", row.names = FALSE)
 ```
