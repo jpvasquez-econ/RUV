@@ -219,7 +219,6 @@ write.csv(Final, "1-Intermediate_Processed_Data\\Country_Gravity_Services_WIOD.c
 ```{stata, collectcode=TRUE}
 import delimited "1-Intermediate_Processed_Data\\Country_Gravity_Services_WIOD.csv"
 
-drop if x<0.0001
 
 gen log_X=ln(x)
 
@@ -416,8 +415,6 @@ write.csv(Final, "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIO
 
 ```{stata, collectcode=TRUE}
 import delimited "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv", clear
-
-drop if x<0.0001
 
 gen log_X=ln(x)
 
