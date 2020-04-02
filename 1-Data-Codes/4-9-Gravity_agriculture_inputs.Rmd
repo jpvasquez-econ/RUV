@@ -1,0 +1,271 @@
+---
+title: "Gravity for Agriculture: Inputs for the System"
+author: "JP"
+date: "April 2, 2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##General description
+
+This file generates the inputs of the gravity system that we take to solve in matlab.
+
+##Data and Libraries
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+remove(list = ls())
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'readstata13', 'nleqslv', 'haven', 'tidyverse', 'optimx', 'optimization',
+           'optimx', 'tidyr', 'readxl', 'Rcpp', 'DEoptim', 'parallel');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# OPTIONS AND LIBRARIES
+options( scipen=100 );
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#example vs real
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+## real
+# number of countries (n.c) and number of states (n.s)
+n.c <- 37; 
+n.s <- 50; 
+WIOD.base <- read.dta13( file="2-Final_Data//WIOD_countries.dta" )
+data_gravity_agriculture.base <- read.csv( file="2-Final_Data//data_agriculture.csv", header=TRUE, sep="," )
+CENSUS <- read.dta13("2-Final_Data//state_imports_exports.dta")
+ 
+###example
+#WIOD <- read_excel( path='ejemplo.xlsx', sheet='WIOD' )
+#data_gravity_services <- read_excel( path='ejemplo.xlsx', sheet='data_services' )
+## number of countries (n.c) and number of states (n.s)
+#n.c <- 2; 
+#n.s <- 2; 
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for (yr in 2000:2007) {
+# 1. LOAD DATA
+WIOD<-WIOD.base
+## path
+## WIOD US
+us.us.wiod <- WIOD %>% 
+  filter( year==yr, sector==14 ) %>% 
+  filter( importer_country=='USA' ) %>% 
+  select( value_USA );
+us.us.wiod <- as.numeric(us.us.wiod[1]);
+# US exports
+us.exports.wiod <- WIOD %>% 
+  filter( year==yr, sector==14 ) %>% 
+  filter( importer_country!='USA' ) %>% 
+  select( value_USA ); 
+#us.exports.wiod <-sum(us.exports.wiod)
+# US imports
+us.imports.wiod <- WIOD %>% 
+  filter( year==yr, sector==14 ) %>% 
+  filter( importer_country=='USA' ) %>% 
+  select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
+#us.imports.wiod <-sum(us.imports.wiod)
+## WIOD
+WIOD <- WIOD.base %>% 
+  filter( year==yr, sector==14 ) %>% 
+  filter( importer_country!='USA' ) %>% 
+  select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
+## Gravity data csv format with comma as the separator
+data_gravity_agriculture <- data_gravity_agriculture.base %>% 
+  filter( year==yr ) %>% 
+  select( -year ) %>% 
+  mutate( iso_o=as.character(iso_o), iso_d=as.character(iso_d) ) %>% 
+  mutate( len_o=ifelse(nchar(iso_o)<4, 'COUNTRY', 'STATE'), 
+          len_d=ifelse(nchar(iso_d)<4, 'COUNTRY', 'STATE') );
+
+## WIOD for calculating lambda
+WIOD.1 <- WIOD.base %>% 
+  filter( year==yr, sector==14 ) %>%
+  filter( importer_country!='USA' ) %>% 
+  select( -year, -value_USA, -sector, -importer )
+WIOD.2 <- melt(WIOD.1, variable.name = "origin")
+WIOD.2 <- WIOD.2 %>%
+  mutate(origin= substr(origin, start =7 , stop =9)) %>%
+  rename(destination= importer_country)
+##CENSUS for calculating lambda
+yr. <- yr
+if(yr<2002){yr.=2002}
+CENSUS.1 <- CENSUS %>% filter(year==yr., sector==14, origin!="All States")
+names.countries <- unique(CENSUS.1$destination)
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 2. NUMBER STATES AND COUNTRIES
+# States
+id.states <- data_gravity_agriculture %>% 
+  filter( len_o=='STATE' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id=row_number() ) %>% 
+  rename( region=iso_o ) %>% 
+  select( id, region );
+# Countries
+id.countries <- data_gravity_agriculture %>% 
+  filter( len_o=='COUNTRY' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id=n.s+row_number() ) %>% 
+  rename( region=iso_o ) %>% 
+  select( id, region );
+# Total
+id.total <- rbind( id.states, id.countries );
+t(id.total)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 3. ELEMENTARY MATRICES FOR KRONECKER PRODUCTS
+
+# 3.1. DISTANCE MATRIX
+dist.matrix <- data_gravity_agriculture %>% 
+  select( iso_o, iso_d, dist ) %>% 
+  left_join( y=id.total, by=c('iso_o'='region') ) %>% 
+  rename( id_o=id ) %>% 
+  left_join( y=id.total, by=c('iso_d'='region') ) %>% 
+  rename( id_d=id ) %>% 
+  select( id_o, id_d, dist ) %>% 
+  arrange( id_o, id_d ) %>% 
+  spread( key=id_d, value=dist );
+dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
+
+#Phis 
+#we use the coefficients from 4-4-Country_Gravity_Services_WIOD.
+#own dummy=6.5, Distance elasticity=0.7
+phi<-diag(x = 6.5, n.c+n.s, n.c+n.s);
+phi<-exp(phi);
+phi<-phi/dist.matrix^0.7; 
+dist.matrix<-phi
+
+# 3.2. GDP VECTOR 
+gdp.vector <- data_gravity_agriculture %>% 
+  select( iso_o, Y_i ) %>% 
+  distinct( iso_o, .keep_all=TRUE ) %>% 
+  left_join( y=id.total, by=c('iso_o'='region') ) %>% 
+  select( id, Y_i ) %>% 
+  arrange( id );
+gdp.vector <- as.vector( gdp.vector$Y_i );
+
+# 3.3. EXPENDITURE VECTOR 
+exp.vector <- data_gravity_agriculture %>% 
+  select( iso_d, X_j ) %>% 
+  distinct( iso_d, .keep_all=TRUE ) %>% 
+  left_join( y=id.total, by=c('iso_d'='region') ) %>% 
+  select( id, X_j ) %>% 
+  arrange( id );
+exp.vector <- as.vector( exp.vector$X_j );
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 4. BIG MATRICES
+
+# 4.1 Matrices X and Y (repeat gdp and expenditure vectors in ns+nc rows)
+mat.Y <- matrix( data=rep(gdp.vector, (n.s+n.c)), nrow=(n.s+n.c), byrow=TRUE );
+mat.X <- matrix( data=rep(exp.vector, (n.s+n.c)), nrow=(n.s+n.c), byrow=TRUE );
+
+# 4.2 Submatrices
+##phi*Y submatrices
+phi.Y.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.Y[(1:n.s), (1:n.s)];
+phi.Y.sc <- dist.matrix[(1:n.s), ((n.s+1):(n.s+n.c))] * mat.Y[(1:n.s), ((n.s+1):(n.s+n.c))];
+phi.Y.cs <- dist.matrix[((n.s+1):(n.s+n.c)), (1:n.s)] * mat.Y[((n.s+1):(n.s+n.c)), (1:n.s)];
+phi.Y.cc <- dist.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))] * 
+  mat.Y[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))];
+## phi*X submatrices
+phi.X.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.X[(1:n.s), (1:n.s)];
+phi.X.sc <- dist.matrix[(1:n.s), ((n.s+1):(n.s+n.c))] * mat.X[(1:n.s), ((n.s+1):(n.s+n.c))];
+phi.X.cs <- dist.matrix[((n.s+1):(n.s+n.c)), (1:n.s)] * mat.X[((n.s+1):(n.s+n.c)), (1:n.s)];
+phi.X.cc <- dist.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))] * 
+  mat.X[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))];
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 5. WIOD MATRIX AND RELATED QUANTITIES
+
+## 5.1 WIOD matrix (d,o)
+wiod.matrix <- as.matrix( WIOD );
+
+## 5.2 lambda vector
+
+
+### shares of imports and exports of countries
+X_c <- as.matrix( exp.vector[(n.s+1):(n.s+n.c)] );
+Y_c <- as.matrix( gdp.vector[(n.s+1):(n.s+n.c)] );
+Y_c <- data.frame(Y_c)
+Y_c$country <- names.countries
+
+### imports and exports
+imports.from.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=1, FUN=sum) );
+exports.to.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=2, FUN=sum) )
+
+state.exports.to.countries <- CENSUS.1 %>%
+  mutate(produ.c= NA)
+for (c in names.countries) {
+  Y_c.1 <- Y_c %>% filter(country==c)
+  state.exports.to.countries <- state.exports.to.countries %>%
+    mutate(produ.c= ifelse(state.exports.to.countries$destination==c, Y_c.1$Y_c[1], produ.c)) 
+}
+state.exports.to.countries <- state.exports.to.countries %>%
+  mutate(share= value/produ.c) %>%
+  group_by(origin) %>%
+  mutate(sum.share= sum(share)) %>%
+  ungroup() %>%
+  distinct(origin, .keep_all = TRUE)
+chi1 <- matrix(state.exports.to.countries$sum.share)
+
+countries.exports.to.countries <- WIOD.2 %>%
+  mutate(produ.c= NA)
+for (c in names.countries) {
+  Y_c.1 <- Y_c %>% filter(country==c)
+  countries.exports.to.countries <- countries.exports.to.countries %>%
+    mutate(produ.c= ifelse(countries.exports.to.countries$destination==c, Y_c.1$Y_c[1], produ.c)) 
+}
+countries.exports.to.countries <- countries.exports.to.countries %>%
+  mutate(share= value/produ.c) %>%
+  group_by(origin) %>%
+  mutate(sum.share= sum(share)) %>%
+  ungroup() %>%
+  distinct(origin, .keep_all = TRUE)
+chi2 <- matrix(countries.exports.to.countries$sum.share)
+
+### lambdas and chis
+lambda.cj <- imports.from.countries/ X_c;
+chi.si <- chi1;
+chi.ci <- chi2;
+### lambda vector
+ones.ns <- matrix( data=rep(1, n.s), nrow=n.s, ncol=1 );
+lambda_vector <- rbind( ones.ns, lambda.cj, chi.si, chi.ci );
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+## 6.1 Big zeros matrices
+zeros.nc.ns <- matrix( data=rep(0, n.c*n.s), nrow=n.c, ncol=n.s );
+zeros.ns.ns <- matrix( data=rep(0, n.s*n.s), nrow=n.s, ncol=n.s );
+zeros.big <- matrix( data=rep(0, (n.s+n.c)*(n.s+n.c)), nrow=(n.s+n.c), ncol=(n.s+n.c) );
+
+## 6.2 GIANT MATRIX 
+### Block for system 10
+block.10 <- rbind( cbind(phi.Y.ss, phi.Y.sc),
+                   cbind(zeros.nc.ns, phi.Y.cc) );
+### Block for system 11
+block.11 <- rbind( cbind(zeros.ns.ns, phi.X.sc),
+                   cbind(zeros.nc.ns, phi.X.cc) );
+### Relevant matrix
+BIG.MAT <- rbind( cbind(zeros.big, block.10),
+                  cbind(block.11, zeros.big) );
+
+### Saving input matrices for the matlab code
+write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data\\matrix_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data\\vector_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+}
+```
