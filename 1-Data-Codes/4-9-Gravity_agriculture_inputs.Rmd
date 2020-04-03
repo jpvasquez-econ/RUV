@@ -48,7 +48,7 @@ $$
 
 ==Until here everything is the same as before. New notation starts below==
 
-One can split the first equation of the previous system into the cases $i\in US$ vs. $i \notin US$. Define: $\lambda_{NotUS,j}\equiv\sum_{i\notin US}X_{ij}/X_{j}\quad\forall j\notin US$, $\chi_{i,NotUS}\equiv\sum_{j\notin US}X_{ij}/Y_{j}\quad\forall i$
+One can split the first equation of the previous system into the cases $i\in US$ vs. $i \notin US$. Define: $\lambda_{NotUS,j}\equiv\sum_{i\notin US}X_{ij}/X_{j}\quad\forall j\notin US$, $\chi_{i,NotUS}\equiv\sum_{j\notin US}X_{ij}/Y_{i}\quad\forall i$
 
 Then, the system becomes:
 $$
@@ -211,7 +211,6 @@ WIOD.2 <- WIOD.2 %>%
 yr. <- yr
 if(yr<2002){yr.=2002}
 CENSUS.1 <- CENSUS %>% filter(year==yr., sector==14, origin!="All States")
-names.countries <- unique(CENSUS.1$destination)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 2. NUMBER STATES AND COUNTRIES
 # States
@@ -306,52 +305,27 @@ phi.X.cc <- dist.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))] *
 wiod.matrix <- as.matrix( WIOD );
 
 ## 5.2 lambda vector
-
-
-### shares of imports and exports of countries
-X_c <- as.matrix( exp.vector[(n.s+1):(n.s+n.c)] );
-Y_c <- as.matrix( gdp.vector[(n.s+1):(n.s+n.c)] );
-Y_c <- data.frame(Y_c)
-Y_c$country <- names.countries
-
 ### imports and exports
 imports.from.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=1, FUN=sum) );
 exports.to.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=2, FUN=sum) )
 
-state.exports.to.countries <- CENSUS.1 %>%
-  mutate(produ.c= NA)
-for (c in names.countries) {
-  Y_c.1 <- Y_c %>% filter(country==c)
-  state.exports.to.countries <- state.exports.to.countries %>%
-    mutate(produ.c= ifelse(state.exports.to.countries$destination==c, Y_c.1$Y_c[1], produ.c)) 
-}
-state.exports.to.countries <- state.exports.to.countries %>%
-  mutate(share= value/produ.c) %>%
-  group_by(origin) %>%
-  mutate(sum.share= sum(share)) %>%
-  ungroup() %>%
-  distinct(origin, .keep_all = TRUE)
-chi1 <- matrix(state.exports.to.countries$sum.share)
+### shares of imports and exports of countries
+X_c <- as.matrix( exp.vector[(n.s+1):(n.s+n.c)] );
+Y_s <- as.matrix( gdp.vector[(1):(n.s)] );
+Y_c <- as.matrix( gdp.vector[(n.s+1):(n.s+n.c)] );
 
-countries.exports.to.countries <- WIOD.2 %>%
-  mutate(produ.c= NA)
-for (c in names.countries) {
-  Y_c.1 <- Y_c %>% filter(country==c)
-  countries.exports.to.countries <- countries.exports.to.countries %>%
-    mutate(produ.c= ifelse(countries.exports.to.countries$destination==c, Y_c.1$Y_c[1], produ.c)) 
-}
-countries.exports.to.countries <- countries.exports.to.countries %>%
-  mutate(share= value/produ.c) %>%
+state.exports.to.countries <- CENSUS.1 %>%
   group_by(origin) %>%
-  mutate(sum.share= sum(share)) %>%
+  mutate(produ= sum(value)) %>%
   ungroup() %>%
   distinct(origin, .keep_all = TRUE)
-chi2 <- matrix(countries.exports.to.countries$sum.share)
+state.exports.to.countries <- matrix(state.exports.to.countries$produ)
+
 
 ### lambdas and chis
 lambda.cj <- imports.from.countries/ X_c;
-chi.si <- chi1;
-chi.ci <- chi2;
+chi.si <- state.exports.to.countries/Y_s;
+chi.ci <- exports.to.countries/Y_c;
 ### lambda vector
 ones.ns <- matrix( data=rep(1, n.s), nrow=n.s, ncol=1 );
 lambda_vector <- rbind( ones.ns, lambda.cj, chi.si, chi.ci );
