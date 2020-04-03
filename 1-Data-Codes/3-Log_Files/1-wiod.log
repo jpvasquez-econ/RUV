@@ -1,8 +1,8 @@
 ------------------------------------------------------------------------------------------------------------------------------------------------------
       name:  <unnamed>
-       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\1-Codes\3-Log_Files\1-wiod.log
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV\1-Data-Codes\3-Log_Files\1-wiod.log
   log type:  text
- opened on:  13 Mar 2020, 17:30:45
+ opened on:   2 Apr 2020, 17:27:55
 
 . 
 . /*
@@ -37,48 +37,49 @@
 > ***********************************************************************************************************************************************
 > ***     MANUFACTURING SECTORS USED AND THEIR MAPPING TO WIOD (indexed by ci)
 > ***********************************************************************************************************************************************
-> 1.      (NAICS 311–312) Food Products, Beverage, and Tobacco Products (c3);
-> 2.      (NAICS 313–316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4–c5); 
-> 3.      (NAICS 321–323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6–c7); 
-> 4.      (NAICS 324) Petroleum and Coal Products (c8);
+> 1.      (NAICS 311-312) Food Products, Beverage, and Tobacco Products (c3);
+> 2.      (NAICS 313-316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4-c5); 
+> 3.      (NAICS 321-323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6-c7); 
+> 4.      (NAICS 211-213, 324) Mining; and Petroleum and Coal Products (c2 and c8);
 > 5.      (NAICS 325) Chemical (c9); 
 > 6.      (NAICS 326) Plastics and Rubber Products (c10); 
 > 7.      (NAICS 327) Nonmetallic Mineral Products (c11); 
-> 8.      (NAICS 331–332) Primary Metal and Fabricated Metal Products (c12); 
+> 8.      (NAICS 331-332) Primary Metal and Fabricated Metal Products (c12); 
 > 9.      (NAICS 333); Machinery (c13); 
-> 10.     (NAICS 334–335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
+> 10.     (NAICS 334-335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
 > 11.     (NAICS 336) Transportation Equipment (c15); 
-> 12.     (NAICS 337– 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
+> 12.     (NAICS 337- 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
 > 13.     ((NAICS 23) Construction (c18); 
-> 14.     (NAICS 42-45) Wholesale and Retail Trade (c19–c21); 
-> 15.     (NAICS 481-488) Transport Services (c23–c26);
-> 16.     (NAICS 511–518) Information Services (c27); 
-> 17.     (NAICS 521–525) Finance and Insurance (c28); 
-> 18.     (NAICS 531-533)  Real Estate (c29–c30); 
+> 14.     (NAICS 42-45) Wholesale and Retail Trade (c19-c21); 
+> 15.     (NAICS 481-488) Transport Services (c23-c26);
+> 16.     (NAICS 511-518) Information Services (c27); 
+> 17.     (NAICS 521-525) Finance and Insurance (c28); 
+> 18.     (NAICS 531-533)  Real Estate (c29-c30); 
 > 19.     (NAICS 61) Education (c32); 
-> 20.     (NAICS 621–624) Health Care (c33); 
-> 21.     (NAICS 721–722) Accommodation and Food Services (c22); 
-> 22.     (NAICS 493, 541, 55, 561, 562, 711–713, 811-814) Other Services (c34).
-> 23.     (NAICS 111-115, 211-213) Agriculture and Mining (c1-c2).
+> 20.     (NAICS 621-624) Health Care (c33); 
+> 21.     (NAICS 721-722) Accommodation and Food Services (c22); 
+> 22.     (NAICS 493, 541, 55, 561, 562, 711-713, 811-814) Other Services (c34).
+> 23.     (NAICS 111-115) Agriculture (c1).
 > */
 . gen row_sector=.
 (28240800 missing values generated)
 
-. *1.     (NAICS 311–312) Food Products, Beverage, and Tobacco Products (c3);
+. *1.     (NAICS 311-312) Food Products, Beverage, and Tobacco Products (c3);
 . replace row_sector=1 if row_item==3
 (806880 real changes made)
 
-. *2.     (NAICS 313–316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4–c5);
+. *2.     (NAICS 313-316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4-c5);
 . replace row_sector=2 if row_item==4 | row_item==5
 (1613760 real changes made)
 
-. *3.     (NAICS 321–323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6–c7); 
+. *3.     (NAICS 321-323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6-c7); 
 . replace row_sector=3 if row_item==6 | row_item==7
 (1613760 real changes made)
 
-. *4.     (NAICS 324) Petroleum and Coal Products (c8);
-. replace row_sector=4 if row_item==8
-(806880 real changes made)
+. *4.     (NAICS 211-213, 324) Petroleum and Coal Products (c8);
+. *Mining, Quarrying, and Oil and Gas Extraction (c2). 
+. replace row_sector=4 if row_item==8 | row_item==2
+(1613760 real changes made)
 
 . *5.     (NAICS 325) Chemical (c9);
 . replace row_sector=5 if row_item==9
@@ -92,7 +93,7 @@
 . replace row_sector=7 if row_item==11
 (806880 real changes made)
 
-. *8.     (NAICS 331–332) Primary Metal and Fabricated Metal Products (c12); 
+. *8.     (NAICS 331-332) Primary Metal and Fabricated Metal Products (c12); 
 . replace row_sector=8 if row_item==12
 (806880 real changes made)
 
@@ -100,7 +101,7 @@
 . replace row_sector=9 if row_item==13
 (806880 real changes made)
 
-. *10.    (NAICS 334–335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
+. *10.    (NAICS 334-335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
 . replace row_sector=10 if row_item==14
 (806880 real changes made)
 
@@ -108,7 +109,7 @@
 . replace row_sector=11 if row_item==15
 (806880 real changes made)
 
-. *12.    (NAICS 337– 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
+. *12.    (NAICS 337-339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
 . replace row_sector=12 if row_item==16
 (806880 real changes made)
 
@@ -116,23 +117,23 @@
 . replace row_sector=13 if row_item==18
 (806880 real changes made)
 
-. *14.    (NAICS 42-45) Wholesale and Retail Trade (c19–c21); 
+. *14.    (NAICS 42-45) Wholesale and Retail Trade (c19-c21); 
 . replace row_sector=14 if row_item==19 | row_item==20 | row_item==21 
 (2420640 real changes made)
 
-. *15.    (NAICS 481-488) Transport Services (c23–c26);
+. *15.    (NAICS 481-488) Transport Services (c23-c26);
 . replace row_sector=15 if row_item==23 | row_item==24 | row_item==25 | row_item==26 
 (3227520 real changes made)
 
-. *16.    (NAICS 511–518) Information Services (c27);
+. *16.    (NAICS 511-518) Information Services (c27);
 . replace row_sector=16 if row_item==27 
 (806880 real changes made)
 
-. *17.    (NAICS 521–525) Finance and Insurance (c28); 
+. *17.    (NAICS 521-525) Finance and Insurance (c28); 
 . replace row_sector=17 if row_item==28 
 (806880 real changes made)
 
-. *18.    (NAICS 531-533)  Real Estate (c29–c30); 
+. *18.    (NAICS 531-533)  Real Estate (c29-c30); 
 . replace row_sector=18 if row_item==29 | row_item==30  
 (1613760 real changes made)
 
@@ -140,22 +141,21 @@
 . replace row_sector=19 if row_item==32 
 (806880 real changes made)
 
-. *20.    (NAICS 621–624) Health Care (c33);
+. *20.    (NAICS 621-624) Health Care (c33);
 . replace row_sector=20 if row_item==33 
 (806880 real changes made)
 
-. *21.    (NAICS 721–722) Accommodation and Food Services (c22); 
+. *21.    (NAICS 721-722) Accommodation and Food Services (c22); 
 . replace row_sector=21 if row_item==22 
 (806880 real changes made)
 
-. *22.    (NAICS 493, 541, 55, 561, 562, 711–713, 811-814) Other Services (c34).
+. *22.    (NAICS 493, 541, 55, 561, 562, 711-713, 811-814) Other Services (c34).
 . replace row_sector=22 if row_item==34 
 (806880 real changes made)
 
 . *23.    (NAICS 111-115) Agriculture, Forestry, Fishing, and Hunting (c1)
-. *Mining, Quarrying, and Oil and Gas Extraction (c2). 
-. replace row_sector=23 if row_item==1  | row_item==2 
-(1613760 real changes made)
+. replace row_sector=23 if row_item==1  
+(806880 real changes made)
 
 . keep if row_sector!=. 
 (2420640 observations deleted)
@@ -399,7 +399,7 @@ value_AUT  value_BRA  value_CYP  value_DNK  value_FIN  value_GRC  value_IND  val
 
 . drop serv
 
-. *agriculture and mining as sector 14
+. *agriculture as sector 14
 . replace sector=14 if sector==23
 (456 real changes made)
 
