@@ -23,11 +23,11 @@ remove(list = ls())
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
-# vector of libraries to be used
+## vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'readxl');
 # Install libraries in case they are not installed
-for( i in length(libs)){ 
-  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+for( i in length(libs)){
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs )
 };
 # Carga de bibliotecas
 lapply( libs, require, character.only=TRUE );
@@ -35,7 +35,7 @@ lapply( libs, require, character.only=TRUE );
 
 # General Instructions
 
-This code calculates the share of value added in gross output for each US state and each country, for each sector. 
+This code calculates the share of value added in gross output for each US state and each country, for each sector.
 
 
 ## Importing datasets to R
@@ -57,14 +57,14 @@ for (yr in 2000:2007) {
 gdp <- read.csv(paste("0-Raw_Data//Labor_shares//gdp_state_", yr, ".csv", sep=""), header = FALSE, sep = ",", dec = ".")
 gdp = gdp[6:(dim(gdp)[1]-7),1:dim(gdp)[2]]
 gdp=data.frame(gdp)
-gdp$year= yr 
+gdp$year= yr
 gdp <- gdp %>% select(year, everything())
 GDP=rbind(GDP, gdp)  
 }
 GDP <- GDP %>%
   mutate(V2= recode(V2, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-#These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP2. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file. 
-#Each of this annual base needs an additional column that was added manually in excel. The column's name is "code" and contains the sectors' code in expanded form (1-24). If the base needs to be downloaded again in the future all that has to be done to the new one is copy and paste this "code" column (as it is) to the new base. 
+#These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP2. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
+#Each of this annual base needs an additional column that was added manually in excel. The column's name is "code" and contains the sectors' code in expanded form (1-24). If the base needs to be downloaded again in the future all that has to be done to the new one is copy and paste this "code" column (as it is) to the new base.
 
 
 #State taxes
@@ -73,13 +73,13 @@ for (yr in 2000:2007) {
 taxes <- read.csv(paste("0-Raw_Data//Labor_shares//taxes_state_", yr, ".csv", sep=""), header = FALSE, sep = ",", dec = ".")
 taxes = taxes[6:(dim(taxes)[1]-6),1:dim(taxes)[2]]
 taxes=data.frame(taxes)
-taxes$year= yr 
+taxes$year= yr
 taxes <- taxes %>% select(year, everything())
 TAXES=rbind(TAXES, taxes)  
 }
 TAXES <- TAXES %>%
   mutate(V2= recode(V2, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-#These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP6. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file. 
+#These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP6. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 
 
 #State subsidies
@@ -88,22 +88,22 @@ for (yr in 2000:2007) {
 subsidies <- read.csv(paste("0-Raw_Data//Labor_shares//subsidies_state_", yr, ".csv", sep=""), header = FALSE, sep = ",", dec = ".")
 subsidies = subsidies[6:(dim(subsidies)[1]-6),1:dim(subsidies)[2]]
 subsidies=data.frame(subsidies)
-subsidies$year= yr 
+subsidies$year= yr
 subsidies <- subsidies %>% select(year, everything())
 SUBSIDIES=rbind(SUBSIDIES, subsidies)  
 }
 SUBSIDIES <- SUBSIDIES %>%
   mutate(V2= recode(V2, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-#These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP5. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file. 
+#These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP5. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 
 
-#Value-added for countries 
+#Value-added for countries
 COUNTRY_VALUE=c()
 for (yr in 0:7) {
 country_value <- read_excel(paste("0-Raw_Data//WIOD//wiot0", yr, "_row_apr12.xlsx", sep=""))
 country_value=data.frame(country_value)
 colnames(country_value)=country_value[4,]
-rows <- c(4,5,1446) #referring to rows of wiot imported to R, not to wiot in excel 
+rows <- c(4,5,1446) #referring to rows of wiot imported to R, not to wiot in excel
 country_value = country_value[rows, 5:1439]
 rownames(country_value) = c("country", "column", "value")
 country_value=data.frame(t(country_value))
@@ -124,7 +124,7 @@ country_value <- country_value %>%
   select(year, everything())
 COUNTRY_VALUE <- rbind(COUNTRY_VALUE, country_value)
 }
-  
+
 
 ```
 
@@ -177,25 +177,25 @@ value1 <- value %>%
   filter(sector!=0) %>%
   mutate(sector= sector+100) %>%
   filter(id <=56000) %>%
-  filter(state!="District of Columbia" & state!="United States *") %>% 
+  filter(state!="District of Columbia" & state!="United States *") %>%
   select(-id, -line, -description) %>%
   mutate(amount= (gdp)-(tax/1000)-(sub/1000)) %>%
   group_by(year, state, sector) %>%
-  mutate(value_added=sum(as.numeric(as.character(amount)))) %>% 
-  ungroup() %>% 
-  distinct(year, state, sector, .keep_all=TRUE ) %>% 
-  select(-amount) %>% 
-  arrange(year, state, sector) %>% 
+  mutate(value_added=sum(as.numeric(as.character(amount)))) %>%
+  ungroup() %>%
+  distinct(year, state, sector, .keep_all=TRUE ) %>%
+  select(-amount) %>%
+  arrange(year, state, sector) %>%
   select(-gdp, -tax, -sub)
 
 COUNTRY_VALUE1 <- COUNTRY_VALUE %>%
   group_by(year, country, sector) %>%
-  mutate(value_added=sum(as.numeric(as.character(value)))) %>% 
-  ungroup() %>% 
-  distinct(year, country, sector, .keep_all=TRUE ) %>% 
-  select(-column, -value) %>% 
+  mutate(value_added=sum(as.numeric(as.character(value)))) %>%
+  ungroup() %>%
+  distinct(year, country, sector, .keep_all=TRUE ) %>%
+  select(-column, -value) %>%
   arrange(year, country, sector)
-  
+
 
 colnames(COUNTRY_VALUE1)= c("year", "region", "sector", "value_added")
 colnames(value1)= c("year", "region", "sector", "value_added")
@@ -251,8 +251,3 @@ write.table(labor_shares, file = paste("2-Final_Data//labor_shares", yr, ".csv",
 
 
 ```
-
-
-
-
-
