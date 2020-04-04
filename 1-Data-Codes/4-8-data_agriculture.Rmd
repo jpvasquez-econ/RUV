@@ -72,6 +72,16 @@ WIOD.agri <- WIOD %>%
 ```
 
 ```{r}
+#calculating relative productions
+data_agri <- data_agri %>%
+  group_by(year) %>%
+  mutate(tot.produ= sum(Y_i)) %>%
+  ungroup() %>%
+  mutate(rel= Y_i/tot.produ) 
+
+#checking 
+#h=sum(data_agri$rel)
+
 # agricultural production for states (values add to WIOD US production)
 # 2000-2004 use Agriculture Census 2002
 agri.2002 <- data_agri %>% filter(year==2002)
