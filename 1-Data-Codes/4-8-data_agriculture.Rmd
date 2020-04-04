@@ -42,7 +42,7 @@ num.states <- 50
 WIOD <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 WIOD=data.frame(WIOD)
 WIOD <- WIOD %>% 
-  filter(year>=2000) %>% #since distances are available from that year on
+  filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
   mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
   mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country))
 
@@ -74,6 +74,7 @@ WIOD.agri <- WIOD %>%
 ```{r}
 #calculating relative productions
 data_agri <- data_agri %>%
+  mutate(Y_i= Y_i/1000) %>%
   group_by(year) %>%
   mutate(tot.produ= sum(Y_i)) %>%
   ungroup() %>%
