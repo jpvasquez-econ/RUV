@@ -117,7 +117,7 @@ for (i in 1:41) {
 country_value$sector=v[,1]
 country_value$year=yr+2000
 country_value <- country_value %>%
-  filter(country != "LVA" & country != "LUX" & country != "MLT" &country != "USA") %>%   # taking out countries not of interest
+  filter(country != "LVA" & country != "LUX" & country != "MLT" & country != "USA") %>%   # taking out countries not of interest
   mutate(country= recode(country, "ROM"="ROU")) %>%
   filter(sector != 0) %>%
   mutate(sector= sector+100) %>%
