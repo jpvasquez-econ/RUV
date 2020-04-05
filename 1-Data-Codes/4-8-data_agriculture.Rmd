@@ -37,14 +37,22 @@ To create the file data_agriculture.csv that will contain information about dist
 #importing bases
 ```{r}
 num.states <- 50
+num.countries <- 37 
 
 #WIOD
-WIOD <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-WIOD=data.frame(WIOD)
-WIOD <- WIOD %>% 
+WIOD.base <- read.dta13( file="2-Final_Data//WIOD_countries.dta" )
+WIOD.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
+WIOD.full=data.frame(WIOD.full)
+WIOD.full <- WIOD.full %>% 
   filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
   mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
   mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country))
+#CENSUS
+CENSUS <- read.dta13("2-Final_Data//state_imports_exports.dta")
+state_imp_exp.0 <- CENSUS
+state_imp_exp.0 <- state_imp_exp.0 %>%
+  mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
+  mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
 
 #Agriculture production states
 data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
@@ -55,48 +63,210 @@ states.names <- unique(data_agri$iso_o)
 #Trade distances
 data_agriculture <- read.csv("2-Final_Data//data_services.csv")
 data_agriculture <- data_agriculture %>%
-  mutate(Y_i=NA, X_j=NA)
+  mutate(Y_i=NA, X_j=NA, Y_i.1=NA, Y_i.2=NA)
 data_agriculture$iso_o <- as.character(data_agriculture$iso_o)
 data_agriculture$iso_d <- as.character(data_agriculture$iso_d)
 ```
 
-#Preparing proportionality for state agriculture using WIOD
+#State production 
 ```{r}
-WIOD.agri <- WIOD %>%
-  filter(row_country=="USA", row_item==1) %>%
+#Each state agricultural production is defined as the sum of: i) total exports to other countries (we apply proportionality to Census so that the total US export to country c according to WIOD equals the sum of exports of each state to that country) and ii) the total exports to US states (the sum of these exports across states equals US to US exports in WIOD; this last value is divided between states to obtain ii, according to the Agriculture Census relative state production). 
+#Initially, state production (total export) was defined as a fraction of US total export from WIOD, depending on state Agri Census relative production. But, this definition generated some problems, for example, when comparing Alaska's and Illionois's total export to countries with their total export; specifically, the first term was 26 times bigger than the second, when theoretically, the first is a part of the second. This problem may be due to subestimations in their calculation of those states' productions. 
+#One way to solve this is to apply the definition used at the beginning, which assumes that the distribution of US total export by state applies as well to US total export to states. One way is to apply this solution only to the states that generate issues, but this would require to apply proportionality again and verify that new problems of the same nature don't arise. Therefore, and for now, the solution will be applied to all states, guaranteeing, by definition, that the issue doesn't occur again. 
+
+
+##########Component i of state production: export to countries
+step3y.1 <- c()
+for (yr in 2000:2007) {
+yr. <- yr
+if(yr<2002){yr.=2002}
+CENSUS.1 <- CENSUS %>% filter(year==yr., sector==14, origin!="All States", file=="i in US, j not in US")
+names.countries <- matrix(unique(CENSUS.1$destination))
+names.states <- matrix(unique(CENSUS.1$origin))
+  
+#WIOD
+WIOD <- subset(WIOD.base, year==yr)
+WIOD <- subset(WIOD, select = -year) 
+#Base year for exports (2002)
+yr.=yr
+if(yr<2002){yr.=2002}
+state_imp_exp <- data.frame(state_imp_exp.0)
+state_imp_exp <- subset(state_imp_exp.0, year==yr.)
+Base.y=c()
+sec=c(1:12, 14)
+for (sectors in sec) {
+  Base.y0= matrix(0, dim(names.countries)[1], dim(names.states)[1])
+  Base.y0=data.frame(Base.y0)
+  for (j in 1:(dim(names.countries)[1])) {
+    for (i in 1:(dim(names.states)[1])) {
+      temp <- state_imp_exp %>%
+        filter(sector==sectors, origin==names.states[i], destination==names.countries[j])
+      val=temp[1,5]
+      Base.y0[j,i]=val
+      
+    }
+  }
+  Base.y0 <- Base.y0 %>%
+    mutate(importer=names.countries, sector=sectors) %>%
+    select(importer, sector, everything())
+  Base.y <- rbind(Base.y, Base.y0)
+}
+col=c("importer", "sector", names.states)
+colnames(Base.y)= col
+Base.y[is.na(Base.y)] <- 0
+
+#############
+#y
+df.base=Base.y
+m2=c()
+sum_country=c()
+sec_relevant=c(1:12, 14)
+for(k in sec_relevant) {
+  df.base1 <- df.base %>%
+    filter(sector==k)
+  df.base1=df.base1[1:dim(df.base1)[1], 3:52]
+  rowsum=matrix(rowSums(df.base1))
+  sum_country=rbind(sum_country, (rowsum))
+  m2=rbind(m2,df.base1)
+}
+sum_country=matrix(replicate(50,sum_country), nrow = length(sum_country), ncol = num.states)
+yijkBase=m2/sum_country
+
+############### Main variable
+#y
+df.WIOD = data.frame(WIOD)
+df.WIOD <- df.WIOD %>%
+  filter(sector<=12 | sector==14) %>%
+  filter(importer_country!='USA') 
+
+df.WIOD1 <- df.WIOD %>% select(value_USA)
+check.WIOD <- df.WIOD1
+
+sum_country02=matrix(replicate(50,df.WIOD1), nrow = length(df.WIOD1), ncol =  num.states)
+
+y1=yijkBase*sum_country02
+
+y1$sector = df.WIOD$sector[1:(num.countries*13)]
+y1$importer = df.WIOD$importer_country[1:(num.countries*13)]
+y1 = y1 %>% select(importer, sector, everything())
+  
+step3y= y1
+
+#Check
+df.WIOD = data.frame(WIOD)
+df.WIOD <- df.WIOD %>%
+  filter(sector<=12 | sector==14) %>%
+  filter(importer_country!='USA') 
+
+check.WIOD <- df.WIOD[, 1:4]
+check.WIOD <- subset(check.WIOD, select= -importer)
+
+check.y1=rowSums(step3y[,3:52])
+check= cbind(check.WIOD, check.y1)
+check <- check %>%
+  mutate(dif= value_USA - check.y1)
+
+a=matrix(colSums((check[,4:5])))
+print(a[2])
+
+##############################
+#Correcting if needed
+if( is.na(a[2])== TRUE) {
+  for (row in 1:(dim(check)[1])) {
+    if(is.na(check[row,5])== TRUE){
+      r=check[row,2]
+      if(r==14){r=13} #since there is gap between sec 12 and sec 14
+      country=check[row,1]
+      for (i in 1:37) {
+        if(names.countries[i]==country){t=i}
+      }
+      correc.m=m2[(((r-1)*37)+1):((((r-1)*37)+1) + 36),] 
+      correc.denom=sum(correc.m)
+      correct.num=colSums(correc.m)
+      correc=correct.num/correc.denom
+      yijkBase[(((r-1)*37)+t),]=correc
+    }
+  }
+  
+  y1=yijkBase*sum_country02
+  df.WIOD = data.frame(WIOD)
+  df.WIOD <- df.WIOD %>%
+    filter(sector<=12 | sector==14) %>%
+    filter(importer_country!='USA') 
+  y1$sector = df.WIOD$sector[1:(num.countries*13)]
+  y1$importer = df.WIOD$importer_country[1:(num.countries*13)]
+  y1 = y1 %>% select(importer, sector, everything())
+  step3y= y1
+
+  
+  check.y1=rowSums(step3y[,3:52])
+  check= cbind(check.WIOD, check.y1)
+  check <- check %>%
+    mutate(dif= value_USA - check.y1)
+
+  a=matrix(colSums((check[,4:5])))
+  print(a[2])
+  }
+  
+step3y <- step3y %>%
+  mutate(year=yr) %>%
+  select(year, importer, sector, everything()) %>%
+  filter(sector==14) %>%
+  select(-sector)
+step3y.1 <- rbind(step3y.1, step3y)
+}
+
+CENSUS.2 <- melt(step3y.1, id.var=c("year", "importer"), variable.name = "origin")
+CENSUS.2$origin <- as.character(CENSUS.2$origin)
+write.table(CENSUS.2, file = paste("1-Intermediate_Processed_Data//census.agri.proportionality.csv", sep=""), sep = ",", row.names = FALSE)
+state.exports.to.countries <- CENSUS.2 %>%
+  group_by(year, origin) %>%
+  mutate(exp= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, origin, .keep_all = TRUE) %>%
+  arrange(year, origin)
+for (yr in 2000:2007) {
+  for (i in 1:num.states) {
+    value <- state.exports.to.countries %>%
+      filter(year==yr, origin==names.states[i])
+    value <- value$exp[1]
+    data_agriculture <- data_agriculture %>%
+      mutate(Y_i.1 = ifelse(year==yr & iso_o==names.states[i], value, Y_i.1))
+  }
+}
+
+##########Component ii of state production: export to US states
+WIOD.agri <- WIOD.full %>%
+  filter(row_country=="USA", col_country=="USA", row_item==1) %>%
   group_by(year) %>%
   mutate(production= sum(value)) %>%
   ungroup() %>%
   distinct(year, .keep_all = TRUE)
 
-```
-
-```{r}
-#calculating relative productions
+#calculating relative state productions
 data_agri <- data_agri %>%
   mutate(Y_i= Y_i/1000) %>%
   group_by(year) %>%
   mutate(tot.produ= sum(Y_i)) %>%
   ungroup() %>%
   mutate(rel= Y_i/tot.produ) 
-
 #checking 
 #h=sum(data_agri$rel)
 
-# agricultural production for states (values add to WIOD US production)
+# agricultural production for states (values add to WIOD US-US production)
 # 2000-2004 use Agriculture Census 2002
 agri.2002 <- data_agri %>% filter(year==2002)
 for (i in 1:num.states) {
   num <- agri.2002$rel[i]
   data_agriculture <- data_agriculture %>%
-    mutate(Y_i= ifelse(year<=2004 & iso_o==agri.2002$iso_o[i], num, Y_i))
+    mutate(Y_i.2= ifelse(year<=2004 & iso_o==agri.2002$iso_o[i], num, Y_i.2))
 }
 # 2005-2007 use Agriculture Census 2007
 agri.2007 <- data_agri %>% filter(year==2007)
 for (i in 1:num.states) {
   num <- agri.2007$rel[i]
   data_agriculture <- data_agriculture %>%
-    mutate(Y_i= ifelse(year>=2005 & iso_o==agri.2007$iso_o[i], num, Y_i))
+    mutate(Y_i.2= ifelse(year>=2005 & iso_o==agri.2007$iso_o[i], num, Y_i.2))
 }  
 #Applying proportionality
 for (yr in 2000:2007) {
@@ -104,11 +274,19 @@ for (yr in 2000:2007) {
     filter(year==yr)
   wiod.value <- wiod.value$production[1]
   data_agriculture <- data_agriculture %>%
-    mutate(Y_i= ifelse(year==yr & (iso_o %in% states.names), Y_i*wiod.value, Y_i))
+    mutate(Y_i.2= ifelse(year==yr & (iso_o %in% states.names), Y_i.2*wiod.value, Y_i.2))
 }
 
+data_agriculture <- data_agriculture %>%
+  mutate(Y_i = ifelse( (iso_o %in% states.names), Y_i.1 + Y_i.2, Y_i)) %>%
+  select(-Y_i.1, -Y_i.2)
+
+```
+
+#Production and consumption for countries
+```{r}
 #agricultural production for countries 
-WIOD.p <- WIOD %>%
+WIOD.p <- WIOD.full %>%
   filter(row_item==1) %>%
   group_by(year, row_country) %>%
   mutate(production= sum(value)) %>%
@@ -122,7 +300,7 @@ for (i in 1:dim(WIOD.p)[1]) {
     mutate(Y_i= ifelse(year==yr & iso_o==country, num, Y_i))
 }
 #agricultural consumption for countries 
-WIOD.c <- WIOD %>%
+WIOD.c <- WIOD.full %>%
   filter(col_item==1) %>%
   group_by(year, col_country) %>%
   mutate(consumption= sum(value)) %>%
@@ -135,6 +313,9 @@ for (i in 1:dim(WIOD.c)[1]) {
   data_agriculture <- data_agriculture %>%
     mutate(X_j= ifelse(year==yr & iso_d==country, num, X_j))
 }
+
+data_agriculture <- data_agriculture %>%
+  arrange(year, iso_o, iso_d)
 
 write.table(data_agriculture, file = paste("2-Final_Data//data_agriculture.csv", sep=""), sep = ",", row.names = FALSE)
 ```
