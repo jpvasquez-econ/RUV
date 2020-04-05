@@ -152,12 +152,8 @@ n.c <- 37;
 n.s <- 50; 
 WIOD.base <- read.dta13( file="2-Final_Data//WIOD_countries.dta" )
 data_gravity_agriculture.base <- read.csv( file="2-Final_Data//data_agriculture.csv", header=TRUE, sep="," )
-CENSUS <- read.dta13("2-Final_Data//state_imports_exports.dta")
 #state level imports and exports
-state_imp_exp.0 <- read_dta("2-Final_Data//state_imports_exports.dta")
-state_imp_exp.0 <- state_imp_exp.0 %>%
-  mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
-  mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
+CENSUS.2 <- read.csv("1-Intermediate_Processed_Data//census.agri.proportionality.csv")
 wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 wiot.full=data.frame(wiot.full)
 wiot.full <- wiot.full %>% 
@@ -209,144 +205,6 @@ data_gravity_agriculture <- data_gravity_agriculture.base %>%
   mutate( iso_o=as.character(iso_o), iso_d=as.character(iso_d) ) %>% 
   mutate( len_o=ifelse(nchar(iso_o)<4, 'COUNTRY', 'STATE'), 
           len_d=ifelse(nchar(iso_d)<4, 'COUNTRY', 'STATE') );
-
-##CENSUS for calculating lambda
-yr. <- yr
-if(yr<2002){yr.=2002}
-CENSUS.1 <- CENSUS %>% filter(year==yr., sector==14, origin!="All States", file=="i in US, j not in US")
-names.countries <- matrix(unique(CENSUS.1$destination))
-names.states <- matrix(unique(CENSUS.1$origin))
-num.states <- 50
-num.countries <- 37
-#applying proportionality to Census sector 14
-#WIOD
-WIOD. <- subset(WIOD.base, year==yr)
-WIOD. <- subset(WIOD., select = -year) 
-yr.=yr
-if(yr<2002){yr.=2002}
-state_imp_exp <- data.frame(state_imp_exp.0)
-state_imp_exp <- subset(state_imp_exp.0, year==yr.)
-Base.y=c()
-sec=c(1:12, 14)
-for (sectors in sec) {
-  Base.y0= matrix(0, dim(names.countries)[1], dim(names.states)[1])
-  Base.y0=data.frame(Base.y0)
-  for (j in 1:(dim(names.countries)[1])) {
-    for (i in 1:(dim(names.states)[1])) {
-      temp <- state_imp_exp %>%
-        filter(sector==sectors, origin==names.states[i], destination==names.countries[j])
-      val=temp[1,5]
-      Base.y0[j,i]=val
-      
-    }
-  }
-  Base.y0 <- Base.y0 %>%
-    mutate(importer=names.countries, sector=sectors) %>%
-    select(importer, sector, everything())
-  Base.y <- rbind(Base.y, Base.y0)
-}
-col=c("importer", "sector", names.states)
-colnames(Base.y)= col
-Base.y[is.na(Base.y)] <- 0
-##################################################
-#y
-df.base=Base.y
-m2=c()
-sum_country=c()
-sec_relevant=c(1:12, 14)
-for(k in sec_relevant) {
-  df.base1 <- df.base %>%
-    filter(sector==k)
-  df.base1=df.base1[1:dim(df.base1)[1], 3:52]
-  rowsum=matrix(rowSums(df.base1))
-  sum_country=rbind(sum_country, (rowsum))
-  m2=rbind(m2,df.base1)
-}
-
-sum_country=matrix(replicate(50,sum_country), nrow = length(sum_country), ncol = num.states)
-
-yijkBase=m2/sum_country
-
-############################### Main variable
-#y
-df.WIOD = data.frame(WIOD.)
-df.WIOD <- df.WIOD %>%
-  filter(sector<=12 | sector==14) %>%
-  filter(importer_country!='USA') 
-
-df.WIOD1 <- df.WIOD %>% select(value_USA)
-check.WIOD <- df.WIOD1
-
-sum_country02=matrix(replicate(50,df.WIOD1), nrow = length(df.WIOD1), ncol =  num.states)
-
-y1=yijkBase*sum_country02
-
-y1$sector = df.WIOD$sector[1:(num.countries*13)]
-y1$importer = df.WIOD$importer_country[1:(num.countries*13)]
-y1 = y1 %>% select(importer, sector, everything())
-  
-step3y= y1
-
-#Check
-df.WIOD = data.frame(WIOD.)
-df.WIOD <- df.WIOD %>%
-  filter(sector<=12 | sector==14) %>%
-  filter(importer_country!='USA') 
-
-check.WIOD <- df.WIOD[, 1:4]
-check.WIOD <- subset(check.WIOD, select= -importer)
-
-check.y1=rowSums(step3y[,3:52])
-check= cbind(check.WIOD, check.y1)
-check <- check %>%
-  mutate(dif= value_USA - check.y1)
-
-a=matrix(colSums((check[,4:5])))
-print(a[2])
-
-
-##############################
-#Correcting if needed
-if( is.na(a[2])== TRUE) {
-  for (row in 1:(dim(check)[1])) {
-    if(is.na(check[row,5])== TRUE){
-      r=check[row,2]
-      if(r==14){r=13} #since there is gap between sec 12 and sec 14
-      country=check[row,1]
-      for (i in 1:37) {
-        if(names.countries[i]==country){t=i}
-      }
-      correc.m=m2[(((r-1)*37)+1):((((r-1)*37)+1) + 36),] 
-      correc.denom=sum(correc.m)
-      correct.num=colSums(correc.m)
-      correc=correct.num/correc.denom
-      yijkBase[(((r-1)*37)+t),]=correc
-    }
-  }
-  
-  y1=yijkBase*sum_country02
-  df.WIOD = data.frame(WIOD.)
-  df.WIOD <- df.WIOD %>%
-    filter(sector<=12 | sector==14) %>%
-    filter(importer_country!='USA') 
-  y1$sector = df.WIOD$sector[1:(num.countries*13)]
-  y1$importer = df.WIOD$importer_country[1:(num.countries*13)]
-  y1 = y1 %>% select(importer, sector, everything())
-  step3y= y1
-
-  
-  check.y1=rowSums(step3y[,3:52])
-  check= cbind(check.WIOD, check.y1)
-  check <- check %>%
-    mutate(dif= value_USA - check.y1)
-
-  a=matrix(colSums((check[,4:5])))
-  print(a[2])
-  }
-  
-step3y <- step3y %>%
-  filter(sector==14) %>%
-  select(-sector)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 2. NUMBER STATES AND COUNTRIES
@@ -462,9 +320,8 @@ X_c <- as.matrix( exp.vector[(n.s+1):(n.s+n.c)] );
 Y_s <- as.matrix( gdp.vector[(1):(n.s)] );
 Y_c <- as.matrix( gdp.vector[(n.s+1):(n.s+n.c)] );
 
-CENSUS.2 <- melt(step3y, variable.name = "origin")
-CENSUS.2$origin <- as.character(CENSUS.2$origin)
 state.exports.to.countries <- CENSUS.2 %>%
+  filter(year==yr) %>%
   group_by(origin) %>%
   mutate(exp= sum(value)) %>%
   ungroup() %>%
@@ -499,7 +356,7 @@ BIG.MAT <- rbind( cbind(zeros.big, block.10),
                   cbind(block.11, zeros.big) );
 
 ### Saving input matrices for the matlab code
-write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data\\agric_mat_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
-write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data\\agric_vec_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//agric_mat_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//agric_vec_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 }
 ```
