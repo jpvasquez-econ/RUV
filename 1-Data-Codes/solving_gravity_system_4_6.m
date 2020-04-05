@@ -89,7 +89,10 @@ matrixB        = table2array(readtable(matB));
 vectorlambda   = table2array(readtable(veclambda));
 init           = ones(174,1);
 init(100:140)  = 150;
-solution       = fsolve(@gravity_system,init,optfs);
+lb= 0.00001*ones(174,1);
+ub= 100000*ones(174,1);
+%solution       = fsolve(@gravity_system,init,optfs);
+solution       = lsqnonlin(@gravity_system,init,lb,ub,optfs);
 
 % Save solution to an excel spreadsheet
 
