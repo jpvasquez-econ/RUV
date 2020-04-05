@@ -162,7 +162,8 @@ wiot.full <- wiot.full %>%
   mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) 
 
 
-# ##################example  (do not run creation of dist.matrix in section 3)
+# # ##################example  (do not run creation of dist.matrix in section 3.1)
+# ####################Select the block of code that you want to comment. Press Ctrl + Shift + C.
 # example <- read_excel( "2-Final_Data//ejemplo.xlsx")
 # WIOD.base <- WIOD.base [1:3, 1:7]
 # WIOD.base$value_AUS[2] <- example$`X_{ij}`[1]
@@ -190,8 +191,8 @@ wiot.full <- wiot.full %>%
 # dist.matrix <- data.frame(dist.matrix)
 # colnames(dist.matrix) <- c("1", "2", "3", "4")
 # dist.matrix <- matrix(unlist(dist.matrix), ncol = 4, byrow = TRUE)
-# n.c <- 2; 
-# n.s <- 2; 
+# n.c <- 2;
+# n.s <- 2;
 # yr=2000
 # CENSUS.2 <- CENSUS.2 %>%
 #   filter(year==2000, (origin=="Alabama" | origin=="Alaska"), (importer=="AUS" | importer=="AUT")) %>%
@@ -210,8 +211,8 @@ wiot.full <- wiot.full %>%
 #   mutate(value= ifelse(row_country=="USA" & col_country=="AUS", WIOD.base$value_USA[2], value)) %>%
 #   mutate(value= ifelse(row_country=="USA" & col_country=="AUT", WIOD.base$value_USA[3], value)) %>%
 #   mutate(value= ifelse(row_country=="USA" & col_country=="USA", WIOD.base$value_USA[1], value))
-# CENSUS.2$value <- as.numeric(CENSUS.2$value) 
-# ##############################
+# CENSUS.2$value <- as.numeric(CENSUS.2$value)
+# # ##############################
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -231,12 +232,6 @@ us.exports.wiod <- WIOD %>%
   filter( importer_country!='USA' ) %>% 
   select( value_USA ); 
 #us.exports.wiod <-sum(us.exports.wiod)
-# US imports
-us.imports.wiod <- WIOD %>% 
-  filter( year==yr, sector==14 ) %>% 
-  filter( importer_country=='USA' ) %>% 
-  select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
-#us.imports.wiod <-sum(us.imports.wiod)
 ## WIOD
 WIOD <- WIOD.base %>% 
   filter( year==yr, sector==14 ) %>% 
