@@ -85,7 +85,7 @@ CENSUS.mod.1 <- CENSUS %>%
   distinct(year, origin, .keep_all = TRUE) %>%
   select(-exp)
 list=c()
-for (yr in 2000:2008) {
+for (yr in 2000:2007) {
 for (i in state.name) {
   temp <- CENSUS.mod.1 %>%
     filter(year==yr, origin==i)
@@ -118,7 +118,7 @@ colnames(list) <- colnames(CENSUS.mod.1)
 
 ##########Component i of state production: export to countries
 step3y.1 <- c()
-for (yr in 2000:2008) {
+for (yr in 2000:2007) {
 yr. <- yr
 if(yr<2002){yr.=2002}
 CENSUS.1 <- CENSUS %>% filter(year==yr., sector==14, origin!="All States", file=="i in US, j not in US")
@@ -266,7 +266,7 @@ state.exports.to.countries <- CENSUS.2 %>%
   ungroup() %>%
   distinct(year, origin, .keep_all = TRUE) %>%
   arrange(year, origin)
-for (yr in 2000:2008) {
+for (yr in 2000:2007) {
   for (i in 1:num.states) {
     value <- state.exports.to.countries %>%
       filter(year==yr, origin==names.states[i])
@@ -310,7 +310,7 @@ for (i in 1:num.states) {
     mutate(Y_i.2= ifelse(year>=2005 & iso_o==agri.2007$iso_o[i], num, Y_i.2))
 }  
 #Applying proportionality
-for (yr in 2000:2008) {
+for (yr in 2000:2007) {
   wiod.value <- WIOD.agri %>%
     filter(year==yr)
   wiod.value <- wiod.value$production[1]
