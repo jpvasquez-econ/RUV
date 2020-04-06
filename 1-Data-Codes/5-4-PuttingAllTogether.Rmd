@@ -50,18 +50,26 @@ colnames(countries) <- c("region")
 regions<- data.frame(rbind(states, countries))
 
 services.all=c()
+agriculture.all=c()
 state.state.all=c()
 country.country.all=c()
 state.country.e.all=c()
 state.country.y.all=c()
 
 for (yr in 2000:2007) {
-##Gravity step  
+##Gravity step: services  
 services <- read.csv(paste('1-Intermediate_Processed_Data//Xij_matrix_services_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
 services <- data.frame(services)
 colnames(services)= regions$region
 services <- services %>%
   mutate(year=yr, sector=13, importer=regions$region) %>%
+  select(year, importer, sector, everything())
+##Gravity step: agriculture  
+agriculture <- read.csv(paste('1-Intermediate_Processed_Data//Xij_matrix_services_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
+agriculture <- data.frame(agriculture)
+colnames(agriculture)= regions$region
+agriculture <- agriculture %>%
+  mutate(year=yr, sector=14, importer=regions$region) %>%
   select(year, importer, sector, everything())
 #country-country
 country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
@@ -76,11 +84,11 @@ country.country.all <- rbind(country.country.all, country.country)
 state.country.e.all <- rbind(state.country.e.all, state.country.e)
 state.country.y.all <- rbind(state.country.y.all, state.country.y)
 services.all <- rbind(services.all, services)
+agriculture.all <- rbind(agriculture.all, agriculture)
 }
 ```
 
-##Incorporating services (sector 13)
-
+##Incorporating services (sector 13) and agriculture (sector 14)
 ```{r}
 states=(Base.state$importer[1:n_states])
 countries=(Base.country$importer[1:n_countries])
@@ -91,7 +99,15 @@ serv_state <- serv_state[ ,1:(n_states+3)]
 state.state.all <- rbind(state.state.all, serv_state)
 state.state.all <- state.state.all %>%
   arrange(year, sector)
-#imports of states from countries
+#agricultre state-state
+agri_state <- agriculture.all%>%
+  filter(importer %in% states)
+agri_state <- agri_state[ ,1:(n_states+3)]
+state.state.all <- rbind(state.state.all, agri_state)
+state.state.all <- state.state.all %>%
+  arrange(year, sector)
+
+#imports of states from countries: services
 serv_state_country_e <- services.all%>%
   filter(importer %in% states)
 temp <- serv_state_country_e[ ,1:3]
@@ -100,11 +116,28 @@ serv_state_country_e <- cbind(temp, serv_state_country_e)
 state.country.e.all <- rbind(state.country.e.all, serv_state_country_e)
 state.country.e.all <- state.country.e.all %>%
   arrange(year, sector)
-#exports of states to countries
+#imports of states from countries: agriculture
+agri_state_country_e <- agriculture.all%>%
+  filter(importer %in% states)
+temp <- agri_state_country_e[ ,1:3]
+agri_state_country_e <- agri_state_country_e[ ,(n_states+3+1):dim(agri_state_country_e)[2]]
+agri_state_country_e <- cbind(temp, agri_state_country_e)
+state.country.e.all <- rbind(state.country.e.all, agri_state_country_e)
+state.country.e.all <- state.country.e.all %>%
+  arrange(year, sector)
+
+#exports of states to countries: services
 serv_state_country_y <- services.all%>%
   filter(importer %in% countries)
 serv_state_country_y <- serv_state_country_y[ ,1:(n_states+3)]
 state.country.y.all <- rbind(state.country.y.all, serv_state_country_y)
+state.country.y.all <- state.country.y.all %>%
+  arrange(year, sector)
+#exports of states to countries: agriculture
+agri_state_country_y <- agriculture.all%>%
+  filter(importer %in% countries)
+agri_state_country_y <- agri_state_country_y[ ,1:(n_states+3)]
+state.country.y.all <- rbind(state.country.y.all, agri_state_country_y)
 state.country.y.all <- state.country.y.all %>%
   arrange(year, sector)
 ```
