@@ -35,7 +35,7 @@ lapply( libs, require, character.only=TRUE );
 
 ## General Instructions
 
-To use CFS plus proportionality to calculate $X_{ij,k}^{year}$ for $i\in US\;  \&\;   j \in US$,  $\forall k=1,...,12,14$.  I call the output of this part $X_{ij,k}^{Step2}$.
+To use CFS plus proportionality to calculate $X_{ij,k}^{year}$ for $i\in US\;  \&\;   j \in US$,  $\forall k=1,...,12$.  I call the output of this part $X_{ij,k}^{Step2}$.
 
 ## Importing datasets to R
 ```{r}
@@ -60,7 +60,7 @@ First construct: $$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_
 Define: $$X_{ij,k}^{Step2}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD}.$$
 
 ##Check that the following condition holds:
-We should have that: $$\sum_{i} \sum_{j} X_{ij,k}^{Step3}=X_{US,US,k}^{WIOD} \quad \forall k=1,...,12,14.$$
+We should have that: $$\sum_{i} \sum_{j} X_{ij,k}^{Step3}=X_{US,US,k}^{WIOD} \quad \forall k=1,...,12.$$
 
 
 ```{r}
@@ -137,7 +137,7 @@ df_WIOD = df_WIOD[,1:4]
 #Filter out non-USA importers
 USA_exporter_indices = df_WIOD$importer_country == "USA"
 
-# Take into account only the first 14 sectors (13 will be excluded later)
+# Take into account only the first 14 sectors (13 and 14 will be excluded later)
 X_USA_USA_k = df_WIOD$value_USA[USA_exporter_indices]
 X_USA_USA_k = X_USA_USA_k[1:14]
 
@@ -166,7 +166,7 @@ for(k in 1:14) {
 #}
 
 Step2 <- Xijk %>%
-  filter(sector!=13)
+  filter(sector<=12)
 
 
 Step2 <- Step2 %>%
