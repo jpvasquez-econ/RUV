@@ -215,23 +215,12 @@ wiot.full <- wiot.full %>%
 # # ##############################
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+```
+Looping over years
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 for (yr in 2000:2007) {
 # 1. LOAD DATA
 WIOD<-WIOD.base
-## path
-## WIOD US
-us.us.wiod <- WIOD %>% 
-  filter( year==yr, sector==14 ) %>% 
-  filter( importer_country=='USA' ) %>% 
-  select( value_USA );
-us.us.wiod <- as.numeric(us.us.wiod[1]);
-# US exports
-us.exports.wiod <- WIOD %>% 
-  filter( year==yr, sector==14 ) %>% 
-  filter( importer_country!='USA' ) %>% 
-  select( value_USA ); 
-#us.exports.wiod <-sum(us.exports.wiod)
 ## WIOD
 WIOD <- WIOD.base %>% 
   filter( year==yr, sector==14 ) %>% 
@@ -267,7 +256,7 @@ id.countries <- data_gravity_agriculture %>%
   select( id, region );
 # Total
 id.total <- rbind( id.states, id.countries );
-t(id.total)
+#t(id.total)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 3. ELEMENTARY MATRICES FOR KRONECKER PRODUCTS
@@ -284,12 +273,11 @@ dist.matrix <- data_gravity_agriculture %>%
   spread( key=id_d, value=dist );
 dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
 
-#Phis 
-#we use the coefficients from 4-4-Country_Gravity_Services_WIOD.
-#own dummy=6.5, Distance elasticity=0.7
-phi<-diag(x = 6.5, n.c+n.s, n.c+n.s);
+#we use the coefficients from 4-4-Country_Gravity_WIOD.
+#own dummy=4.1, Distance elasticity=-1.8
+phi<-diag(x = 4.1, n.c+n.s, n.c+n.s);
 phi<-exp(phi);
-phi<-phi/dist.matrix^0.7; 
+phi<-phi/dist.matrix^1.8; 
 dist.matrix<-phi
 
 # 3.2. GDP VECTOR 
