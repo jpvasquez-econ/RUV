@@ -49,26 +49,29 @@ WIOD.full <- WIOD.full %>%
   mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country))
 #CENSUS
 CENSUS <- read.dta13("2-Final_Data//state_imports_exports.dta")
-state_imp_exp.0 <- CENSUS
-state_imp_exp.0 <- state_imp_exp.0 %>%
+CENSUS <- CENSUS %>%
   mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
   mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-
+state_imp_exp.0 <- CENSUS
+  
 #Agriculture production states
 data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
-data_agri$iso_o <- as.character(data_agri$iso_o)
+data_agri <- data_agri %>%  
+  mutate(iso_o= recode(iso_o, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
+data_agri$iso_o <- as.character(data_agri$iso_o) 
 
 states.names <- unique(data_agri$iso_o)
 
 #Trade distances
 data_agriculture <- read.csv("2-Final_Data//data_services.csv")
 data_agriculture <- data_agriculture %>%
-  mutate(Y_i=NA, X_j=NA, Y_i.1=NA, Y_i.2=NA)
+  mutate(Y_i=NA, X_j=NA, Y_i.1=NA, Y_i.2=NA) %>%
+    mutate(iso_o= recode(iso_o, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
+    mutate(iso_d= recode(iso_d, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
 data_agriculture$iso_o <- as.character(data_agriculture$iso_o)
 data_agriculture$iso_d <- as.character(data_agriculture$iso_d)
 ```
 
-<<<<<<< HEAD
 
 #Modifying state-country flows
 This code aggregates trade flows of c million dollars from (to) state s to (from) Row if that state has no imports or exports from or towards any country. The reason for this modifications of bilateral trade flows is that each flow $$X_{ij}$$ in agriculture gravity is defined as $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}$$, and this definition is never zero on the right side, therefore, the constants that the gravity system multiplies on the left side can't be zero, which they were, since some states don't export or import agricultural products from countries. 
@@ -106,8 +109,6 @@ colnames(list) <- colnames(CENSUS.mod.1)
 ```
 
 
-=======
->>>>>>> parent of c1a736f... Update 4-8-data_agriculture.Rmd
 #State production 
 ```{r}
 #Each state agricultural production is defined as the sum of: i) total exports to other countries (we apply proportionality to Census so that the total US export to country c according to WIOD equals the sum of exports of each state to that country) and ii) the total exports to US states (the sum of these exports across states equals US to US exports in WIOD; this last value is divided between states to obtain ii, according to the Agriculture Census relative state production). 
