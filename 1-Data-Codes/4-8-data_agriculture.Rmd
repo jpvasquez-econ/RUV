@@ -342,7 +342,7 @@ for (i in 1:dim(WIOD.p)[1]) {
 }
 #agricultural consumption for countries 
 WIOD.c <- WIOD.full %>%
-  filter(col_item==1) %>%
+  filter(row_item==1) %>%
   group_by(year, col_country) %>%
   mutate(consumption= sum(value)) %>%
   ungroup() %>%

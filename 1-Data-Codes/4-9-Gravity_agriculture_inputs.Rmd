@@ -331,7 +331,7 @@ wiod.matrix <- as.matrix( WIOD );
 exports.to.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=2, FUN=sum) )
 
 wiot.full.c <- wiot.full %>%
-  filter(col_country!="USA", row_country!="USA", col_item==1) %>%
+  filter(col_country!="USA", row_country!="USA", row_item==1) %>%
   group_by(year, col_country) %>%
   mutate(consumption= sum(value)) %>%
   ungroup() %>%
