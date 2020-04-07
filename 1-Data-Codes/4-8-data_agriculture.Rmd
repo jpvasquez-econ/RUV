@@ -73,42 +73,6 @@ data_agriculture$iso_d <- as.character(data_agriculture$iso_d)
 ```
 
 
-#Modifying state-country flows
-This code aggregates trade flows of c million dollars from (to) state s to (from) Row if that state has no imports or exports from or towards any country. The reason for this modifications of bilateral trade flows is that each flow $$X_{ij}$$ in agriculture gravity is defined as $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}$$, and this definition is never zero on the right side, therefore, the constants that the gravity system multiplies on the left side can't be zero, which they were, since some states don't export or import agricultural products from countries. 
-```{r}
-#state-country
-CENSUS.mod.1 <- CENSUS %>%
-  filter(file=="i in US, j not in US") %>%
-  group_by(year, origin) %>%
-  mutate(exp= sum(value)) %>%
-  ungroup() %>%
-  distinct(year, origin, .keep_all = TRUE) %>%
-  select(-exp)
-list=c()
-for (yr in 2000:2007) {
-for (i in state.name) {
-  temp <- CENSUS.mod.1 %>%
-    filter(year==yr, origin==i)
-  if(dim(temp)[1]==0){
-    new <- cbind(i, yr, "Row", 14, 1, "i in US, j not in US")
-    list <- rbind(list, new)
-  }
-}
-}  
-list <- data.frame(list)
-colnames(list) <- colnames(CENSUS.mod.1)
-
-
-# new.bilat <- c()
-# for (i in 1:dim(CENSUS.mod.1)[1]) {
-#   new <- cbind(CENSUS.mod.1$origin[i], CENSUS.mod.1$year[i], "Row", CENSUS.mod.1$sector[i], 1, CENSUS.mod.1$file[i])
-#   new.bilat <- rbind(new.bilat, new)
-# }
-  
-
-```
-
-
 #State production 
 ```{r}
 #Each state agricultural production is defined as the sum of: i) total exports to other countries (we apply proportionality to Census so that the total US export to country c according to WIOD equals the sum of exports of each state to that country) and ii) the total exports to US states (the sum of these exports across states equals US to US exports in WIOD; this last value is divided between states to obtain ii, according to the Agriculture Census relative state production). 
