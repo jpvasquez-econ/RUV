@@ -56,7 +56,7 @@ UN <- UN %>%
   dplyr::rename(country=Country.or.area, city=Urban.Agglomeration)
 
 #WIOD
-WIOD <- read_dta("2-Final_Data\\WIOD_countries.dta")
+WIOD <- read_dta("1-Intermediate_Processed_Data\\WIOD_countries.dta")
 WIOD=data.frame(WIOD)
 
 #Full population

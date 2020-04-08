@@ -18,7 +18,7 @@ to each commodity that flows between state origin and state destination.
 *********************** 
 ***  OUTPUT FILES   ***  
 ***********************
-global CFS_Xijk "2-Final_Data\CFS_Xijk.dta"
+global CFS_Xijk "1-Intermediate_Processed_Data\CFS_Xijk.dta"
 ********************** 
 ***  INPUT FILES   ***  
 **********************

@@ -23,13 +23,13 @@ d_{ij} = (\sum_{r \in i} \sum_{s \in j} (\dfrac{pop_r}{pop_i}) (\dfrac{pop_s}{po
 **********************
 global state_code ""0-Raw_Data\Fips\state_codes.txt""
 global coordinates_counties "0-Raw_Data\Fips\us_states_coordinates_counties.xlsx"
-global state_exp_gdp_services "2-Final_Data\state_exp_gdp_services.dta"
+global state_exp_gdp_services "1-Intermediate_Processed_Data\state_exp_gdp_services.dta"
 global country_coordinates "1-Intermediate_Processed_Data\country_coordinates.dta"
-global WIOD "2-Final_Data\WIOD_countries.dta"
+global WIOD "1-Intermediate_Processed_Data\WIOD_countries.dta"
 ********************** 
 ***  OUTPUT FILES  ***  
 **********************
-global outputfile ""2-Final_Data\data_services.csv""
+global outputfile ""1-Intermediate_Processed_Data\data_services.csv""
 
 *************************************************** 
 ***  EXPENDITURE AND GDP AT THE COUNTRY LEVEL   ***  

@@ -19,12 +19,12 @@ log using 3-Log_Files\4-1-state_exp_gdp.log, replace
 **********************
 global state_code ""0-Raw_Data\Fips\state_codes.txt""
 global BEA_RAW ""0-Raw_Data\Expenditure\SAEXP1_1997_2017_ALL_AREAS_.csv""
-global WIOD_countries "2-Final_Data\WIOD_countries.dta"
+global WIOD_countries "1-Intermediate_Processed_Data\WIOD_countries.dta"
 global SAGDP "0-Raw_Data\SAGDP\"
 ********************** 
 ***  OUTPUT FILES  ***  
 **********************
-global state_exp_gdp_services "2-Final_Data\state_exp_gdp_services.dta"
+global state_exp_gdp_services "1-Intermediate_Processed_Data\state_exp_gdp_services.dta"
 ********************** 
 ***  State codes   ***  
 **********************

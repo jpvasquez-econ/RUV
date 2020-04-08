@@ -20,7 +20,7 @@ global wiot ""1-Intermediate_Processed_Data\wiot_full.dta""
 ********************** 
 ***  OUTPUT FILES  ***  
 **********************
-global WIOD_countries "2-Final_Data\WIOD_countries.dta"
+global WIOD_countries "1-Intermediate_Processed_Data\WIOD_countries.dta"
 
 use $wiot, clear
 

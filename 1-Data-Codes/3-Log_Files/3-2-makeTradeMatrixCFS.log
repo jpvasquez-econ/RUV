@@ -1,16 +1,18 @@
 ------------------------------------------------------------------------------------------------------------------------------------------------------
       name:  <unnamed>
-       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\1-Codes\3-Log_Files\3-2-makeTradeMatrixCFS.log
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV\1-Data-Codes\3-Log_Files\3-2-makeTradeMatrixCFS.log
   log type:  text
- opened on:  12 Mar 2020, 14:42:54
+ opened on:   8 Apr 2020, 14:36:56
 
 . 
 . /*
 > ***********************************************************************************************************************************************
 > ***     THIS DO FILE DOES THE FOLLOWING:
 > ***********************************************************************************************************************************************
-> 
-> Calculate X_{ij,k}^{CFS} for the 12 manufacturing sectors plus sector 14 (agriculture and mining)
+> Assign state-to-state trade flows at the NAICS level. 
+> Calculate X_{ij,k}^{CFS} for the 12 manufacturing sectors
+> The previous matrix is calculated by applying the proportions of redistribution for each commodity into 13 sectors for the US,
+> to each commodity that flows between state origin and state destination.
 > 
 > */
 . *********************** 
@@ -51,8 +53,8 @@
 . tempfile orig
 
 . save `orig', replace
-(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000002.tmp not found)
-file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000002.tmp saved
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000002.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000002.tmp saved
 
 . restore
 
@@ -63,8 +65,8 @@ file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000002.tmp saved
 . tempfile dest
 
 . save `dest', replace
-(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000003.tmp not found)
-file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000003.tmp saved
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000003.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000003.tmp saved
 
 . *
 . foreach year_ in 2002 2007 2012{
@@ -137,7 +139,7 @@ file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000003.tmp saved
  52. keep if _m==3
  53. drop _merge
  54. 
-. foreach v of varlist portion1-portion14 {
+. foreach v of varlist portion1-portion13 {
  55.         gen a`v'=value*`v'
  56. }
  57. 
@@ -234,20 +236,19 @@ code contains nonnumeric characters; replaced as byte
 (87937 missing values generated)
 (87937 missing values generated)
 (87937 missing values generated)
-(87937 missing values generated)
   (all newnames==oldnames)
-(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13)
 
 Data                               wide   ->   long
 -----------------------------------------------------------------------------
-Number of obs.                     2500   ->   35000
-Number of variables                  17   ->       5
-j variable (14 values)                    ->   sector
+Number of obs.                     2500   ->   32500
+Number of variables                  16   ->       5
+j variable (13 values)                    ->   sector
 xij variables:
-              trade1 trade2 ... trade14   ->   trade
+              trade1 trade2 ... trade13   ->   trade
 -----------------------------------------------------------------------------
-(7000 real changes made)
-(7000 real changes made)
+(6500 real changes made)
+(6500 real changes made)
 (note: j = Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky
 >  Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada NewHampshire NewJersey NewMexico NewYork Nor
 > thCarolina NorthDakota Ohio Oklahoma Oregon Pennsylvania RhodeIsland SouthCarolina SouthDakota Tennessee Texas Utah Vermont Virginia Washington West
@@ -255,7 +256,7 @@ xij variables:
 
 Data                               long   ->   wide
 -----------------------------------------------------------------------------
-Number of obs.                    35000   ->     700
+Number of obs.                    32500   ->     650
 Number of variables                   5   ->      53
 j variable (50 values)           origin   ->   (dropped)
 xij variables:
@@ -267,8 +268,8 @@ year          tradeColor~o  tradeIdaho    tradeLouis~a  tradeMissi~i  tradeNewJe
 tradeAlabama  tradeConne~t  tradeIllin~s  tradeMaine    tradeMisso~i  tradeNewMe~o  tradeOregon   tradeTexas    tradeWisco~n
 tradeAlaska   tradeDelaw~e  tradeIndiana  tradeMaryl~d  tradeMontana  tradeNewYork  tradePenns~a  tradeUtah     tradeWyoming
 tradeArizona  tradeFlorida  tradeIowa     tradeMassa~s  tradeNebra~a  tradeNort~na  tradeRhode~d  tradeVermont
-(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000004.tmp not found)
-file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000004.tmp saved
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000004.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000004.tmp saved
 YEAR 2007 YEAR 2007 YEAR 2007 YEAR 2007 YEAR 2007
 value already numeric; no replace
 (0 real changes made)
@@ -321,18 +322,18 @@ code contains nonnumeric characters; replaced as byte
     -----------------------------------------
 (82 observations deleted)
   (all newnames==oldnames)
-(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13)
 
 Data                               wide   ->   long
 -----------------------------------------------------------------------------
-Number of obs.                     2491   ->   34874
-Number of variables                  17   ->       5
-j variable (14 values)                    ->   sector
+Number of obs.                     2491   ->   32383
+Number of variables                  16   ->       5
+j variable (13 values)                    ->   sector
 xij variables:
-              trade1 trade2 ... trade14   ->   trade
+              trade1 trade2 ... trade13   ->   trade
 -----------------------------------------------------------------------------
-(6958 real changes made)
-(7000 real changes made)
+(6461 real changes made)
+(6500 real changes made)
 (note: j = Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky
 >  Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada NewHampshire NewJersey NewMexico NewYork Nor
 > thCarolina NorthDakota Ohio Oklahoma Oregon Pennsylvania RhodeIsland SouthCarolina SouthDakota Tennessee Texas Utah Vermont Virginia Washington West
@@ -340,7 +341,7 @@ xij variables:
 
 Data                               long   ->   wide
 -----------------------------------------------------------------------------
-Number of obs.                    34874   ->     700
+Number of obs.                    32383   ->     650
 Number of variables                   5   ->      53
 j variable (50 values)           origin   ->   (dropped)
 xij variables:
@@ -352,8 +353,8 @@ year          tradeColor~o  tradeIdaho    tradeLouis~a  tradeMissi~i  tradeNewJe
 tradeAlabama  tradeConne~t  tradeIllin~s  tradeMaine    tradeMisso~i  tradeNewMe~o  tradeOregon   tradeTexas    tradeWisco~n
 tradeAlaska   tradeDelaw~e  tradeIndiana  tradeMaryl~d  tradeMontana  tradeNewYork  tradePenns~a  tradeUtah     tradeWyoming
 tradeArizona  tradeFlorida  tradeIowa     tradeMassa~s  tradeNebra~a  tradeNort~na  tradeRhode~d  tradeVermont
-(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000005.tmp not found)
-file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000005.tmp saved
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000005.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000005.tmp saved
 YEAR 2012 YEAR 2012 YEAR 2012 YEAR 2012 YEAR 2012
 (29 vars, 809021 obs)
 (4927 real changes made)
@@ -511,18 +512,18 @@ code contains nonnumeric characters; replaced as byte
     -----------------------------------------
 (82 observations deleted)
   (all newnames==oldnames)
-(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13)
 
 Data                               wide   ->   long
 -----------------------------------------------------------------------------
-Number of obs.                     2498   ->   34972
-Number of variables                  17   ->       5
-j variable (14 values)                    ->   sector
+Number of obs.                     2498   ->   32474
+Number of variables                  16   ->       5
+j variable (13 values)                    ->   sector
 xij variables:
-              trade1 trade2 ... trade14   ->   trade
+              trade1 trade2 ... trade13   ->   trade
 -----------------------------------------------------------------------------
-(6986 real changes made)
-(7000 real changes made)
+(6487 real changes made)
+(6500 real changes made)
 (note: j = Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky
 >  Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada NewHampshire NewJersey NewMexico NewYork Nor
 > thCarolina NorthDakota Ohio Oklahoma Oregon Pennsylvania RhodeIsland SouthCarolina SouthDakota Tennessee Texas Utah Vermont Virginia Washington West
@@ -530,7 +531,7 @@ xij variables:
 
 Data                               long   ->   wide
 -----------------------------------------------------------------------------
-Number of obs.                    34972   ->     700
+Number of obs.                    32474   ->     650
 Number of variables                   5   ->      53
 j variable (50 values)           origin   ->   (dropped)
 xij variables:
@@ -542,8 +543,8 @@ year          tradeColor~o  tradeIdaho    tradeLouis~a  tradeMissi~i  tradeNewJe
 tradeAlabama  tradeConne~t  tradeIllin~s  tradeMaine    tradeMisso~i  tradeNewMe~o  tradeOregon   tradeTexas    tradeWisco~n
 tradeAlaska   tradeDelaw~e  tradeIndiana  tradeMaryl~d  tradeMontana  tradeNewYork  tradePenns~a  tradeUtah     tradeWyoming
 tradeArizona  tradeFlorida  tradeIowa     tradeMassa~s  tradeNebra~a  tradeNort~na  tradeRhode~d  tradeVermont
-(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000006.tmp not found)
-file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000006.tmp saved
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000006.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000006.tmp saved
 
 . use `data2002', clear
 
@@ -559,16 +560,4 @@ file 2-Final_Data\CFS_Xijk.dta saved
 . 
 end of do-file
 
-. tab year
-
-       year |      Freq.     Percent        Cum.
-------------+-----------------------------------
-       2002 |        700       33.33       33.33
-       2007 |        700       33.33       66.67
-       2012 |        700       33.33      100.00
-------------+-----------------------------------
-      Total |      2,100      100.00
-
-. do "C:\Users\Jose Pablo\Dropbox\0-mycomputer\mydocuments\Berkeley\6 Fifth Year\RUV\Data_Construction\1-Codes\4-1-state_exp_gdp.do"
-
-. capture log close
+. exit, clear
