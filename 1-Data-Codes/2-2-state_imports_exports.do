@@ -23,7 +23,7 @@ global exports ""1-Intermediate_Processed_Data\census_exports.dta""
 ********************** 
 ***  OUTPUT FILES  ***  
 **********************
-global state_imports_exports "2-Final_Data\state_imports_exports.dta"
+global state_imports_exports "1-Intermediate_Processed_Data\state_imports_exports.dta"
 
 foreach v in exports imports {
 use ${`v'}, clear
@@ -124,7 +124,7 @@ destring sec_naics, replace
 1.	(NAICS 311–312) Food Products, Beverage, and Tobacco Products (c3);
 2.	(NAICS 313–316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4–c5); 
 3.	(NAICS 321–323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6–c7); 
-4.	(NAICS 324) Petroleum and Coal Products (c8);
+4.	(NAICS 324 , 211-213) Petroleum and Coal Products and mining (c2, c8);
 5.	(NAICS 325) Chemical (c9); 
 6.	(NAICS 326) Plastics and Rubber Products (c10); 
 7.	(NAICS 327) Nonmetallic Mineral Products (c11); 
@@ -143,7 +143,7 @@ destring sec_naics, replace
 20.	(NAICS 621–624) Health Care (c33); 
 21.	(NAICS 721–722) Accommodation and Food Services (c22); 
 22.	(NAICS 493, 541, 55, 561, 562, 711–713, 811-814) Other Services (c34).
-23.	(NAICS 111-115, 211-213) Agriculture and Mining (c1-c2).
+23.	(NAICS 111-115) Agriculture (c1).
 */
 gen sector=.
 *1.	(NAICS 311–312) Food Products, Beverage, and Tobacco Products (c3);
@@ -152,8 +152,8 @@ replace sector=1 if sec_naics==311 | sec_naics==312
 replace sector=2 if sec_naics==313 | sec_naics==314 | sec_naics==315 | sec_naics==316
 *3.	(NAICS 321–323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6–c7); 
 replace sector=3 if sec_naics==321 | sec_naics==322 | sec_naics==323
-*4.	(NAICS 324) Petroleum and Coal Products (c8);
-replace sector=4 if sec_naics==324
+*4.	(NAICS 324, 211-213) Petroleum and Coal Products (c8) and mining (c2);
+replace sector=4 if sec_naics==324 | sec_naics==211 | sec_naics==212 |sec_naics==213
 *5.	(NAICS 325) Chemical (c9);
 replace sector=5 if sec_naics==325
 *6.	(NAICS 326) Plastics and Rubber Products (c10); 
@@ -172,8 +172,8 @@ replace sector=11 if sec_naics==336
 replace sector=12 if sec_naics==337 | sec_naics==338 | sec_naics==339
 *16.	(NAICS 511–518) Information Services (c27);
 replace sector=16 if sec_naics==511 
-*14.	(NAICS 111-115, 211-213) Agriculture and Mining (c1-c2).
-replace sector=14 if sec_naics<=115 | sec_naics==211 | sec_naics==212 |sec_naics==213
+*14.	(NAICS 111-115, 211-213) Agriculture and Mining (c1).
+replace sector=14 if sec_naics<=115 
 keep if sector!=. 
 *checks that we have all manuf sectors
 distinct sector 
