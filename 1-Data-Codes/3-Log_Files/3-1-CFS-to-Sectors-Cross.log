@@ -1,8 +1,8 @@
 ------------------------------------------------------------------------------------------------------------------------------------------------------
       name:  <unnamed>
-       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\1-Codes\3-Log_Files\3-1-CFS-to-Sectors-Cross.log
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV\1-Data-Codes\3-Log_Files\3-1-CFS-to-Sectors-Cross.log
   log type:  text
- opened on:  12 Mar 2020, 14:17:25
+ opened on:   8 Apr 2020, 14:31:04
 
 . 
 . /*
@@ -133,39 +133,32 @@
 > (511 = 16) /// 
 > (551 = 22) ///
 > (nonmissing = .), gen(cdp)
- 32. *** AGRIC AND MINING
-. replace cdp=14 if (NAICS`year'==212)==1
- 33. ***
+ 32. 
 . drop if cdp==.
- 34. collapse (sum) VAL, by(cdp COMM)
- 35. *Services
+ 33. collapse (sum) VAL, by(cdp COMM)
+ 34. *Services
 . replace cdp=13 if (cdp>=13 & cdp<=22)==1
- 36. ***
-. *agriculture
-. replace cdp=14 if COMM>=1 & COMM<=4
- 37. *mining
-. replace cdp=14 if COMM>=10 & COMM<=14
- 38. collapse (sum) VAL, by(cdp COMM)
- 39. 
+ 35. collapse (sum) VAL, by(cdp COMM)
+ 36. 
 . order COMM cdp VAL
- 40. sort COMM cdp
- 41. 
+ 37. sort COMM cdp
+ 38. 
 . by COMM: egen totalsent=total(VAL)
- 42. gen portion=VAL/totalsent
- 43. 
+ 39. gen portion=VAL/totalsent
+ 40. 
 . xtset COMM cdp
- 44. 
+ 41. 
 . tsfill, full
- 45. 
+ 42. 
 . replace portion=0 if portion==.
- 46. 
+ 43. 
 . drop VAL totalsent
- 47. 
+ 44. 
 . reshape wide portion, i(COMM) j(cdp)
- 48. gen year=`year'
- 49. tempfile data`year'
- 50. save `data`year'', replace
- 51. }
+ 45. gen year=`year'
+ 46. tempfile data`year'
+ 47. save `data`year'', replace
+ 48. }
 (43 real changes made)
 NAICS2007 contains nonnumeric characters; replaced as long
 (96 observations deleted)
@@ -179,27 +172,24 @@ NAICS2007 contains nonnumeric characters; replaced as long
 (21 real changes made)
 (41 real changes made)
 (762 differences between NAICS2007 and cdp)
-(29 real changes made)
-(0 observations deleted)
+(29 observations deleted)
 (103 real changes made)
-(30 real changes made)
-(51 real changes made)
        panel variable:  COMM (unbalanced)
-        time variable:  cdp, 1 to 14, but with gaps
+        time variable:  cdp, 1 to 13, but with gaps
                 delta:  1 unit
-(225 real changes made)
-(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+(123 real changes made)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13)
 
 Data                               long   ->   wide
 -----------------------------------------------------------------------------
-Number of obs.                      574   ->      41
-Number of variables                   3   ->      15
-j variable (14 values)              cdp   ->   (dropped)
+Number of obs.                      533   ->      41
+Number of variables                   3   ->      14
+j variable (13 values)              cdp   ->   (dropped)
 xij variables:
-                                portion   ->   portion1 portion2 ... portion14
+                                portion   ->   portion1 portion2 ... portion13
 -----------------------------------------------------------------------------
-(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000001.tmp not found)
-file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000001.tmp saved
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000001.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000001.tmp saved
 (16 vars, 1415 obs)
 (43 real changes made)
 NAICS2012 contains nonnumeric characters; replaced as long
@@ -214,27 +204,24 @@ NAICS2012 contains nonnumeric characters; replaced as long
 (11 real changes made)
 (37 real changes made)
 (737 differences between NAICS2012 and cdp)
-(19 real changes made)
-(41 observations deleted)
+(60 observations deleted)
 (91 real changes made)
-(25 real changes made)
-(46 real changes made)
        panel variable:  COMM (unbalanced)
-        time variable:  cdp, 1 to 14, but with gaps
+        time variable:  cdp, 1 to 13, but with gaps
                 delta:  1 unit
-(250 real changes made)
-(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+(155 real changes made)
+(note: j = 1 2 3 4 5 6 7 8 9 10 11 12 13)
 
 Data                               long   ->   wide
 -----------------------------------------------------------------------------
-Number of obs.                      574   ->      41
-Number of variables                   3   ->      15
-j variable (14 values)              cdp   ->   (dropped)
+Number of obs.                      533   ->      41
+Number of variables                   3   ->      14
+j variable (13 values)              cdp   ->   (dropped)
 xij variables:
-                                portion   ->   portion1 portion2 ... portion14
+                                portion   ->   portion1 portion2 ... portion13
 -----------------------------------------------------------------------------
-(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000002.tmp not found)
-file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_00000002.tmp saved
+(note: file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000002.tmp not found)
+file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_01000002.tmp saved
 
 . ***
 . *** APPENDING YEARS
@@ -255,20 +242,6 @@ file 1-Intermediate_Processed_Data\CFSapportionment.dta saved
 . 
 end of do-file
 
-. tab year'
-' invalid name
-r(198);
-
-. tab year
-
-       year |      Freq.     Percent        Cum.
-------------+-----------------------------------
-       2002 |         41       33.33       33.33
-       2007 |         41       33.33       66.67
-       2012 |         41       33.33      100.00
-------------+-----------------------------------
-      Total |        123      100.00
-
-. do "C:\Users\Jose Pablo\Dropbox\0-mycomputer\mydocuments\Berkeley\6 Fifth Year\RUV\Data_Construction\1-Codes\3-2-makeTradeMatrixCFS.do"
+. do "C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV\1-Data-Codes\3-2-makeTradeMatrixCFS.do"
 
 . capture log close
