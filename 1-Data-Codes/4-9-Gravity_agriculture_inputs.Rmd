@@ -115,11 +115,27 @@ X_{j}=\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}\tilde{P}_{j}Y_{i}^{-1}X_{ij}
 $$
 Summing across $i\notin US$ we have:
 $$
-\sum_{i\notin US}X_{j}=N_{c}X_{j}=\tilde{P}_{j}\sum_{i\notin US}\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij},
+\sum_{i\notin US}X_{j}=N_{c}X_{j}=\tilde{P}_{j}\sum_{i\notin US}\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij}, \label{eq:xj_sum}
 $$
-where $N_{c}$ is the number of countries (excluding the US). Thus, $for j\in US$ we impute expenditure from:
+where $N_{c}$ is the number of countries (excluding the US). 
+
+We also know that:
 $$
-\hat{X}_{j}=\dfrac{1}{N_{c}}\tilde{P}_{j}\sum_{i\notin US}\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij},
+\sum_{h\in US} X_h = X^{WIOD}_{US}=\sum_{h\in US} \tilde{\tau}_{ih}^{-1}\tilde{\Pi}_{i}\tilde{P}_{h}Y_{i}^{-1}X_{ih} = \tilde{\Pi}_{i}Y_{i}^{-1}\sum_{h\in US} \tilde{\tau}_{ih}^{-1}\tilde{P}_{h}X_{ih}
+$$
+Thus:
+$$
+\tilde{\Pi}_{i}Y_{i}^{-1}=\dfrac{X^{WIOD}_{US}}{\sum_{h\in US} \tilde{\tau}_{ih}^{-1}\tilde{P}_{h}X_{ih}}
+$$
+Replacing the previous equation in $\eqref{eq:xj_sum}$ we get:
+$$
+N_{c}X_{j}=\tilde{P}_{j}\sum_{i\notin US}\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij}=X^{WIOD}_{US} \sum_{i\notin US}\dfrac{\tilde{\tau}_{ij}^{-1}\tilde{P}_{j}X_{ij}}{\sum_{h\in US} \tilde{\tau}_{ih}^{-1}\tilde{P}_{h}X_{ih}}
+$$
+
+
+Thus, $\forall j\in US$ we impute expenditure from:
+$$
+\hat{X}_{j}=\dfrac{X^{WIOD}_{US}}{N_{c}} \sum_{i\notin US}\dfrac{\tilde{\tau}_{ij}^{-1}\tilde{P}_{j}X_{ij}}{\sum_{h\in US} \tilde{\tau}_{ih}^{-1}\tilde{P}_{h}X_{ih}},
 $$
 and then proceed to impute $X_{ij}$ for $i,j\in US$ from $\eqref{eq:Xij}$. 
 
