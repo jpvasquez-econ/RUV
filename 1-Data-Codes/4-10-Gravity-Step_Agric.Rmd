@@ -536,7 +536,7 @@ P.sq.mat <- matrix( data=rep(c(P.s.inv, P.c.inv)*X_j.mod, (n.s+n.c)),
                     nrow=(n.s+n.c), ncol=(n.s+n.c), byrow=FALSE );
 #consistent with WIOD notation
 Xij.matrix <- Pi.sq.mat * dist.matrix * P.sq.mat;
-#write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data\\Xij_matrix_services_', yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data\\Xij_matrix_agric_', yr, '.csv', sep= ""), row.names=FALSE, na="" );
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 9. FINAL CHECKS
