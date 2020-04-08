@@ -40,7 +40,7 @@ num.states <- 50
 num.countries <- 37 
 
 #WIOD
-WIOD.base <- read.dta13( file="2-Final_Data//WIOD_countries.dta" )
+WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
 WIOD.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 WIOD.full=data.frame(WIOD.full)
 WIOD.full <- WIOD.full %>% 
@@ -48,7 +48,7 @@ WIOD.full <- WIOD.full %>%
   mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
   mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country))
 #CENSUS
-CENSUS <- read.dta13("2-Final_Data//state_imports_exports.dta")
+CENSUS <- read.dta13("1-Intermediate_Processed_Data//state_imports_exports.dta")
 CENSUS <- CENSUS %>%
   mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
   mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
@@ -63,7 +63,7 @@ data_agri$iso_o <- as.character(data_agri$iso_o)
 states.names <- unique(data_agri$iso_o)
 
 #Trade distances
-data_agriculture <- read.csv("2-Final_Data//data_services.csv")
+data_agriculture <- read.csv("1-Intermediate_Processed_Data//data_services.csv")
 data_agriculture <- data_agriculture %>%
   mutate(Y_i=NA, X_j=NA, Y_i.1=NA, Y_i.2=NA) %>%
     mutate(iso_o= recode(iso_o, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
@@ -322,7 +322,7 @@ for (i in 1:dim(WIOD.c)[1]) {
 data_agriculture <- data_agriculture %>%
   arrange(year, iso_o, iso_d)
 
-write.table(data_agriculture, file = paste("2-Final_Data//data_agriculture.csv", sep=""), sep = ",", row.names = FALSE)
+write.table(data_agriculture, file = paste("1-Intermediate_Processed_Data//data_agriculture.csv", sep=""), sep = ",", row.names = FALSE)
 ```
 
   
