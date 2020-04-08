@@ -379,33 +379,29 @@ for (i in relevant) {
   sum_country02=rbind(sum_country02, sum_country2)
 }
 
-e1=eijkBase*sum_country02
+imports.state.country.prop=eijkBase*sum_country02
 
-#getting the names
+#getting the names (that's the only purpose of the CFS file)
 df.CFS = data.frame(CFS)
 df.CFS <- df.CFS %>%
   filter(sector==14)
-e1$sector = df.CFS$sector[1:50]
-e1$importer = df.CFS$importer[1:50]
-e1 = e1 %>% select(importer, sector, everything())
-#imports from CENSUS with proportionality
-step3e = e1
+imports.state.country.prop$sector = df.CFS$sector[1:50]
+imports.state.country.prop$importer = df.CFS$importer[1:50]
+imports.state.country.prop = imports.state.country.prop %>% select(importer, sector, everything())
 
 #Check that proportionality calculation adds up to WIOD
+# X_i,US from wiod
 df.WIOD = data.frame(WIOD.)
 df.WIOD <- df.WIOD %>%
   filter(sector==14) %>%
   filter(importer_country=='USA')
 df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country, -sector)
 check.WIOD.e <- df.WIOD1
-c=c()
-sec=c(14)
-for (k in sec) {
-  check.step3e = step3e[step3e$sector==k, 3:dim(step3e)[2]]
-  check.step3e = colSums(check.step3e)
-  c=rbind(c, check.step3e)
-}
-check=c-check.WIOD.e
+# X_i,US from census + proportionality
+  check.imports.state.country.prop = imports.state.country.prop[imports.state.country.prop$sector==14, 3:dim(imports.state.country.prop)[2]]
+  check.imports.state.country.prop = colSums(check.imports.state.country.prop)
+#checking X_i,US from wiod= X_i,US from census + proportionality
+check=check.imports.state.country.prop-check.WIOD.e
 print(sum(check))
 
 ##############################
@@ -423,21 +419,21 @@ if( is.na(sum(check))== TRUE) {
     }
   }
   
-  e1=eijkBase*sum_country02
+  imports.state.country.prop=eijkBase*sum_country02
   df.CFS = data.frame(CFS)
   df.CFS <- df.CFS %>%
     filter(sector==14)
-  e1$sector = df.CFS$sector[1:50]
-  e1$importer = df.CFS$importer[1:50]
-  e1 = e1 %>% select(importer, sector, everything())
-  step3e= e1
+  imports.state.country.prop$sector = df.CFS$sector[1:50]
+  imports.state.country.prop$importer = df.CFS$importer[1:50]
+  imports.state.country.prop = imports.state.country.prop %>% select(importer, sector, everything())
+  imports.state.country.prop= imports.state.country.prop
   c=c()
   sec=c(14)
   for (k in sec) {
-    check.step3e = step3e[step3e$sector==k, 3:dim(step3e)[2]]
-    vec1=check.step3e
-    check.step3e = colSums(check.step3e)
-    c=rbind(c, check.step3e)
+    check.imports.state.country.prop = imports.state.country.prop[imports.state.country.prop$sector==k, 3:dim(imports.state.country.prop)[2]]
+    vec1=check.imports.state.country.prop
+    check.imports.state.country.prop = colSums(check.imports.state.country.prop)
+    c=rbind(c, check.imports.state.country.prop)
   }
 
   check=c-check.WIOD.e
@@ -448,41 +444,88 @@ print(sum(check))
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 8. CREATING X_J FOR STATES
-# RECALL  \hat{X}_{j}=\dfrac{1}{N_{c}}\tilde{P}_{j}\sum_{i\notin US}\tilde{\tau}_{ij}^{-1}\tilde{\Pi}_{i}Y_{i}^{-1}X_{ij},
-#
-step3e <- step3e %>%
+# 
+xj.us <- WIOD.base %>%
+  filter(sector==14, year==yr, importer_country=="USA") %>%
+  select(-importer, -importer_country, -sector, -year)
+xj.us<-sum(xj.us)
+
+imports.state.country.prop <- imports.state.country.prop %>%
   filter(sector==14) %>%
   select(-sector, -importer)
 
 tau.mod <- (dist.matrix[(1:n.s), ((n.s+1):(n.s+n.c))])^(-1)
-pi.mod <- matrix( data=rep(c(Pi.c), (n.s)),
+tau.mod2 <- (t(dist.matrix[((n.s+1):(n.s+n.c)),(1:n.s)]))^(-1)
+#checking that dist between i and j = dist between j and i
+stopifnot(norm(tau.mod-tau.mod2)<0.001)
+
+p.mod <-matrix( data=rep(c(Pi.s), (n.c)),
+                     nrow=(n.s), ncol=(n.c), byrow=FALSE );
+denom <- matrix(colSums(tau.mod*p.mod*imports.state.country.prop));
+denom <-matrix( data=rep(c(denom), (n.s)),
                      nrow=(n.s), ncol=(n.c), byrow=TRUE );
-gdp.mod <- (matrix( data=rep(c(gdp.vector[(n.s+1):(n.s+n.c)]), (n.s)),
-                     nrow=(n.s), ncol=(n.c), byrow=TRUE ))^(-1);
-s= rowSums(tau.mod*pi.mod*gdp.mod*step3e)
+num<-tau.mod*p.mod*imports.state.country.prop;
+s= as.data.frame(rowSums(num/denom));
 # X_j for US
-X_j.mod.s <- (n.c^(-1))*P.s*s
+X_j.mod.s <- (n.c^(-1))*xj.us*s
 
-# CHECKING X_j VS hat{X}_j FOR j \notin US
-WIOD.mod <- WIOD.base %>%
-  filter(sector==14, year==yr, importer_country!="USA") %>%
-  select(-importer, -importer_country, -sector, -year, -value_USA)
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# NEW ATTEMPT: 8. CREATING X_J FOR STATES
+### LHS %*% vector of X_j for USA 
+#sum over states
+Pi.vec.states <- matrix( data=rep(Pi.s.inv*gdp.vector[1:n.s], (n.s)),
+                     nrow=(n.s), ncol=(n.s), byrow=FALSE );
+taus <- ((dist.matrix[(1:(n.s)),((1):(n.s))]))
+LHS.1 <- t(matrix(colSums(taus*Pi.vec.states)));
+# imports from countries
+Pi.vec.countries <- matrix( data=rep(Pi.c.inv*gdp.vector[(n.s+1):(n.s+n.c)], (n.s)),
+                     nrow=(n.c), ncol=(n.s), byrow=FALSE );
+taus <- ((dist.matrix[((n.s+1):(n.s+n.c)),(1:n.s)]))
+LHS.2<-data.matrix(taus*Pi.vec.countries);
+# total sum
+LHS.3<-t(P.s)
+LHS<-as.matrix(rbind(LHS.1,LHS.2,LHS.3));
+### RHS (WIOD_US,US , imports by country to US, X^WIOD_US)
+#WIOD_US,US
+RHS.1 <- WIOD.base %>%
+  filter(year==yr, sector==14, importer_country=="USA")
+RHS.1 <- RHS.1$value_USA[1];
+#imports from countries
+RHS.2 <- WIOD.base %>%
+  filter(year==yr, sector==14, importer_country=="USA") %>%
+  select(-year, -importer, -importer_country, -sector, - value_USA)
+RHS.2 <-data.matrix(t(RHS.2));
+#total expenditure US
+RHS.3 <- WIOD.base %>%
+  filter(sector==14, year==yr, importer_country=="USA") %>%
+  select(-importer, -importer_country, -sector, -year)
+RHS.3<-sum(RHS.3);
+RHS<-matrix(rbind(RHS.1,t(RHS.2),RHS.3));
+##### system to minimize
+fr <- function( x ) {   
+  #consumption of US from US matches WIOD
+    entry.1<-(LHS.1%*%x/RHS.1-1);
+  #matches imports from each country  
+    entry.2<-0*(LHS.2%*%x/RHS.2-1);
+  #total imports
+    entry.3<-(sum(LHS.2%*%x)/sum(RHS.2)-1);
+  #total consumption of US  
+  #  entry.4<-0*(LHS.3%*%x/RHS.3-1);
+  norm(rbind(entry.1, entry.2, entry.3))
+}
 
-tau.mod <- (dist.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))])^(-1)
-pi.mod <- matrix( data=rep(c(Pi.c), (n.c)),
-                     nrow=(n.c), ncol=(n.c), byrow=TRUE );
-gdp.mod <- (matrix( data=rep(c(gdp.vector[(n.s+1):(n.s+n.c)]), (n.c)),
-                     nrow=(n.c), ncol=(n.c), byrow=TRUE ))^(-1);
-s= rowSums(tau.mod*pi.mod*gdp.mod*WIOD.mod)
-X_j.mod.c <- (n.c^(-1))*P.c*s
+optimal.model <- optimx( par=as.vector(as.matrix(P.s.inv*X_j.mod.s)), fn=fr,
+                         lower=rep(0.00001, n.s), upper=rep(1000000000000, n.s),
+                         control=list(maxit=100000) );
+as.numeric( optimal.model$value );
 
-#Comparing X_j^hat with X_j for countries
-diff.xj.c=cbind(as.data.frame(exp.vector[(n.s+1):(n.s+n.c)]),X_j.mod.c)
-diff.xj.c$diff=exp.vector[(n.s+1):(n.s+n.c)]/X_j.mod.c-1
+solu<-t(as.matrix(optimal.model[1:50]));
+X_j.mod.s<-P.s*solu;
 
 #we compute the X_j of the states only. 
-X_j.mod <- rbind(X_j.mod.s, matrix(exp.vector[(n.s+1):(n.s+n.c)]) )
-
+x_j.c.wiod<- matrix(exp.vector[(n.s+1):(n.s+n.c)]);
+names(X_j.mod.s)<-"V1"
+X_j.mod <- as.matrix(rbind(X_j.mod.s,x_j.c.wiod));
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 8. COMPUTING BILATERAL FLOWS
 
@@ -504,19 +547,19 @@ xj.us <- WIOD.base %>%
   select(-importer, -importer_country, -sector, -year)
 print(sum(X_j.mod.s)-sum(xj.us))
 
- 
-#Check: states' exports to states add to WIOD US exports to US (sector 14)
-value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
-value2 <- WIOD.base %>%
-  filter(year==yr, sector==14, importer_country=="USA")
-value2 <- value2$value_USA[1]
-print(value1-value2)
-
 #Check: states' exports to countries add to WIOD US exports to countries (sector 14)
 value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), (1:n.s)])
 value2 <- WIOD.base %>%
   filter(year==yr, sector==14, importer_country!="USA")
 value2 <- sum(value2$value_USA)
+print(value1-value2)
+
+#Check: countries' exports to countries add to WIOD countries' exports to countries (sector 14)
+value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))])
+value2 <- WIOD.base %>%
+  filter(year==yr, sector==14, importer_country!="USA") %>%
+  select(-year, -importer, -importer_country, -sector, - value_USA)
+value2 <- sum(value2)
 print(value1-value2)
 
 #Check: states' imports from countries add to WIOD US imports from countries (sector 14)
@@ -527,12 +570,11 @@ value2 <- WIOD.base %>%
 value2 <- sum(value2)
 print(value1-value2)
 
-#Check: countries' exports to countries add to WIOD countries' exports to countries (sector 14)
-value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))])
+#Check: states' exports to states add to WIOD US exports to US (sector 14)
+value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
 value2 <- WIOD.base %>%
-  filter(year==yr, sector==14, importer_country!="USA") %>%
-  select(-year, -importer, -importer_country, -sector, - value_USA)
-value2 <- sum(value2)
+  filter(year==yr, sector==14, importer_country=="USA")
+value2 <- value2$value_USA[1]
 print(value1-value2)
 
 }
