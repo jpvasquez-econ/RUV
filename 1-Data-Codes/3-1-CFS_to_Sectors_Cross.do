@@ -130,18 +130,11 @@ recode NAICS`year' ///
 (511 = 16) /// 
 (551 = 22) ///
 (nonmissing = .), gen(cdp)
-*** AGRIC AND MINING
-replace cdp=14 if (NAICS`year'==212)==1
-***
+
 drop if cdp==.
 collapse (sum) VAL, by(cdp COMM)
 *Services
 replace cdp=13 if (cdp>=13 & cdp<=22)==1
-***
-*agriculture
-replace cdp=14 if COMM>=1 & COMM<=4
-*mining
-replace cdp=14 if COMM>=10 & COMM<=14
 collapse (sum) VAL, by(cdp COMM)
 
 order COMM cdp VAL

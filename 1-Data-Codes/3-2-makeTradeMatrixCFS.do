@@ -10,8 +10,8 @@ log using 3-Log_Files\3-2-makeTradeMatrixCFS.log, replace
 ***  	THIS DO FILE DOES THE FOLLOWING:
 ***********************************************************************************************************************************************
 Assign state-to-state trade flows at the NAICS level. 
-Calculate X_{ij,k}^{CFS} for the 12 manufacturing sectors plus sector 14 (agriculture and mining).
-The previous matrix is calculated by applying the proportions of redistribution for each commodity into 14 sectors for the US,
+Calculate X_{ij,k}^{CFS} for the 12 manufacturing sectors
+The previous matrix is calculated by applying the proportions of redistribution for each commodity into 13 sectors for the US,
 to each commodity that flows between state origin and state destination.
 
 */
@@ -111,7 +111,7 @@ merge m:1 COMM year using $CFSapportionment
 keep if _m==3
 drop _merge
 
-foreach v of varlist portion1-portion14 {
+foreach v of varlist portion1-portion13 {
 	gen a`v'=value*`v'
 }
 
