@@ -4,6 +4,7 @@ clear all
 set more off
 set linesize 150
 log using 3-Log_Files\1-exposures.log, replace
+cd ..
 /*
 ***********************************************************************************************************************************************
 ***  	THIS DO FILE DOES THE FOLLOWING:
@@ -21,16 +22,11 @@ global exposures ""2-Analysis-Codes\2-Final_Data\exposures.dta""
 ********************** 
 ***  INPUT FILES   ***  
 **********************
-cd ../..
 global year_=2000
 global va_shares ""1-Data-Codes\2-Final_Data\va_shares_allyears.xlsx""
-
-
-global bilat_trade ""1-Data-Codes\2-Final_Data\final_matrix_${year_}.csv""
-
+global bilat_trade ""1-Data-Codes\2-Final_Data\bilat_matrix_allyears.xlsx""
 global instrument ""2-Analysis-Codes\1-Intermediate_Processed_Data\0-instrument.dta""
 local reference "USA"
-
 
 ***********************************************************************************************************************************************
 ***********************************************************************************************************************************************
@@ -64,7 +60,7 @@ save `va_sh', replace
 ***********************************************************************************************************************************************
 ***  	SALES
 ***********************************************************************************************************************************************
-import delimited $bilat_trade, clear 
+import excel $bilat_trade , sheet("year${year_}") firstrow clear
 replace sector=sector-100
 ds importer sector, not
 *keep states

@@ -1,12 +1,10 @@
 ------------------------------------------------------------------------------------------------------------------------------------------------------
       name:  <unnamed>
-       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\2-Analysis-Codes\1-Log-Files\0-instrument.log
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV\2-Analysis-Codes\3-Log_Files\0-instrument.log
   log type:  text
- opened on:  20 Mar 2020, 18:52:11
+ opened on:   8 Apr 2020, 22:01:10
 
-. cd ..
-C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction
-
+. 
 . /*
 > ***********************************************************************************************************************************************
 > ***     THIS DO FILE DOES THE FOLLOWING:
@@ -22,18 +20,21 @@ C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction
 > 
 > 3. COMPUTES THE SECTOR LEVEL CHANGES IN IMPORTS FROM CHINA TO OTHER COUNTRIES. 
 > */
+. cd ..
+C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV
+
+. ********************** 
+. ***  OUTPUT FILES  ***  
+. **********************
+. global instrument ""2-Analysis-Codes\1-Intermediate_Processed_Data\0-instrument.dta""
+
 . 
 . ********************** 
 . ***  INPUT FILES   ***  
 . **********************
-. global wiod ""1-Data-Codes\2-Final_Data\WIOD_countries.dta""
+. global wiod ""1-Data-Codes\1-Intermediate_Processed_Data\WIOD_countries.dta""
 
 . 
-. ********************** 
-. ***  OUTPUT FILES  ***  
-. **********************
-. global instrument ""2-Analysis-Codes\0-Processed-Data\0-instrument.dta""
-
 . 
 . ***********************************************************************************************************************************************
 . ***********************************************************************************************************************************************
@@ -212,33 +213,34 @@ xij variables:
              | delta_~i delta_~s
 -------------+------------------
    delta_M_i |   1.0000
-delta_M_ot~s |   0.9955   1.0000
+delta_M_ot~s |   0.9954   1.0000
 
 
 . reg delta_M_i delta_M_others , r
 
 Linear regression                                      Number of obs =      12
-                                                       F(  1,    10) = 4089.51
+                                                       F(  1,    10) = 3588.21
                                                        Prob > F      =  0.0000
-                                                       R-squared     =  0.9911
-                                                       Root MSE      =  2899.5
+                                                       R-squared     =  0.9908
+                                                       Root MSE      =  2946.1
 
 --------------------------------------------------------------------------------
                |               Robust
      delta_M_i |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
 ---------------+----------------------------------------------------------------
-delta_M_others |   1.431345   .0223825    63.95   0.000     1.381473    1.481216
-         _cons |  -1624.513   962.4651    -1.69   0.122    -3769.019    519.9933
+delta_M_others |   1.428596    .023849    59.90   0.000     1.375457    1.481735
+         _cons |  -1516.331   980.8588    -1.55   0.153    -3701.821    669.1585
 --------------------------------------------------------------------------------
 
 . predict hat_delta_M_i , xb
 
 . save $instrument, replace
-file 2-Analysis-Codes\0-Processed-Data\0-instrument.dta saved
+(note: file 2-Analysis-Codes\1-Intermediate_Processed_Data\0-instrument.dta not found)
+file 2-Analysis-Codes\1-Intermediate_Processed_Data\0-instrument.dta saved
 
 . log close
       name:  <unnamed>
-       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\2-Analysis-Codes\1-Log-Files\0-instrument.log
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV\2-Analysis-Codes\3-Log_Files\0-instrument.log
   log type:  text
- closed on:  20 Mar 2020, 18:52:16
+ closed on:   8 Apr 2020, 22:01:10
 ------------------------------------------------------------------------------------------------------------------------------------------------------

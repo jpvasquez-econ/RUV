@@ -20,16 +20,15 @@ IN WIOD.
 
 3. COMPUTES THE SECTOR LEVEL CHANGES IN IMPORTS FROM CHINA TO OTHER COUNTRIES. 
 */
-
+cd ..
 ********************** 
 ***  OUTPUT FILES  ***  
 **********************
-global instrument ""1-Intermediate_Processed_Data\0-instrument.dta""
+global instrument ""2-Analysis-Codes\1-Intermediate_Processed_Data\0-instrument.dta""
 
 ********************** 
 ***  INPUT FILES   ***  
 **********************
-cd ../..
 global wiod ""1-Data-Codes\1-Intermediate_Processed_Data\WIOD_countries.dta""
 
 
