@@ -40,9 +40,9 @@ To use CFS plus proportionality to calculate $X_{ij,k}^{year}$ for $i\in US\;  \
 ## Importing datasets to R
 ```{r}
 #CFS
-CFS.base <- read_dta("2-Final_Data//CFS_Xijk.dta")
+CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
 #WIOD
-WIOD.base <- read_dta("2-Final_Data//WIOD_countries.dta")
+WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
 
 #General parameters
 nstates=50

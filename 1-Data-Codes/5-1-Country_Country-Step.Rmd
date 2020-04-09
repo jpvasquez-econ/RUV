@@ -43,7 +43,7 @@ To use WIOD data to calculate $X_{ij,k}^{2000}$ for $i\notin US\;  \&\;  j \noti
 ## Importing datasets to R
 ```{r}
 #WIOD
-WIOD.base <- read_dta("2-Final_Data//WIOD_countries.dta")
+WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
 ```
 
 ## Country-Country Step

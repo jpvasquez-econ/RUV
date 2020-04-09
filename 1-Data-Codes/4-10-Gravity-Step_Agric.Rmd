@@ -544,6 +544,16 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data\\Xij_matrix_agr
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 10. FINAL CHECKS
 
+#CHECK: US consumption from US =US consumption from US from WIOD
+value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
+value2 <- WIOD.base %>%
+  filter(sector==14, year==yr, importer_country=="USA") %>%
+  select(-importer, -importer_country, -sector, -year)
+value2=value2$value_USA;
+#checking
+if(abs(value1/value2-1)>epsilon) 
+  stop(paste(" US consumption from US != value from WIOD for", yr, " value=", sum(X_j.mod.s)/sum(xj.us)-1))
+
 #CHECK: SUM OF X_j.mod.s FOR US STATES =US X_j from WIOD
 xj.us <- WIOD.base %>%
   filter(sector==14, year==yr, importer_country=="USA") %>%
