@@ -65,7 +65,7 @@ services <- services %>%
   mutate(year=yr, sector=13, importer=regions$region) %>%
   select(year, importer, sector, everything())
 ##Gravity step: agriculture  
-agriculture <- read.csv(paste('1-Intermediate_Processed_Data//Xij_matrix_services_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
+agriculture <- read.csv(paste('1-Intermediate_Processed_Data//Xij_matrix_agric_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
 agriculture <- data.frame(agriculture)
 colnames(agriculture)= regions$region
 agriculture <- agriculture %>%
