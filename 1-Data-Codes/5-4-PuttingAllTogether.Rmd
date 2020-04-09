@@ -188,7 +188,7 @@ for (k in 1:14) {
 }
 final_matrix$sector=100+final_matrix$sector;
 
-write.table(final_matrix, file = paste("2-Final_Data//final_matrix_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+write.table(final_matrix, file = paste("1-Intermediate_Processed_Data//final_matrix_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
 ```

@@ -40,12 +40,12 @@ To use $X_{ij,k}^{Base}$ and $X_{ij,k}^{WIOD}$ plus proportionality to calculate
 ## Importing datasets to R
 ```{r}
 #state level imports and exports
-state_imp_exp.0 <- read_dta("2-Final_Data//state_imports_exports.dta")
+state_imp_exp.0 <- read_dta("1-Intermediate_Processed_Data//state_imports_exports.dta")
 state_imp_exp.0 <- state_imp_exp.0 %>%
   mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
   mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
 #WIOD
-WIOD.base <- read_dta("2-Final_Data//WIOD_countries.dta")
+WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
 #General parameters
 num.states=50
 num.countries=37
@@ -57,7 +57,7 @@ countries <- read.csv("1-Intermediate_Processed_Data//country_country_step_2000.
 names.countries=matrix(countries$importer[1:num.countries])
 #regions and sectors
 #CFS
-CFS.base <- read_dta("2-Final_Data//CFS_Xijk.dta")
+CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
 CFS <- subset(CFS.base, year==2002)
 CFS <- subset(CFS, select = -year )
 
