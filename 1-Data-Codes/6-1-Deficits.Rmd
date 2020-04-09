@@ -38,7 +38,7 @@ lapply( libs, require, character.only=TRUE );
 Base=c()
 for (yr in 2000:2007) {
 ##Final Matrix  
-m <- read.csv(paste("2-Final_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
+m <- read.csv(paste("1-Intermediate_Processed_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 m$year=yr
 m <- m %>% select(year, everything())
@@ -71,7 +71,7 @@ for (yr in 2000:2007) {
     final <- final %>% select(year, region, sector, deficit)
     final_matrix=rbind(final_matrix, final)
   }
-write.table(final_matrix, file = paste("2-Final_Data//deficits_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+write.table(final_matrix, file = paste("1-Intermediate_Processed_Data//deficits_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
 ```

@@ -108,7 +108,7 @@ for(yr in 2000:2007){
   h1= matrix(38, nrow = 14)
   h2= colSums(m.coun[, 3:dim(m.coun)[2]])
   print(sum(h1-h2))
-  write.table(m.coun, file = paste("2-Final_Data//io_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE) 
+  write.table(m.coun, file = paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE) 
 }
 
 

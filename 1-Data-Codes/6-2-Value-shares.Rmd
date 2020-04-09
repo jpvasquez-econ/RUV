@@ -44,7 +44,7 @@ This code calculates the share of value added in gross output for each US state 
 #Final matrices
 Base=c()
 for (yr in 2000:2007) {
-m <- read.csv(paste("2-Final_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
+m <- read.csv(paste("1-Intermediate_Processed_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 m$year=yr
 m <- m %>% select(year, everything())
 Base=rbind(Base, m)
@@ -245,7 +245,7 @@ labor_shares$year= yr
 labor_shares$region= regions
 labor_shares <- labor_shares %>%
   select(year, region, everything())
-write.table(labor_shares, file = paste("2-Final_Data//labor_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+write.table(labor_shares, file = paste("1-Intermediate_Processed_Data//labor_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 
 }
 
