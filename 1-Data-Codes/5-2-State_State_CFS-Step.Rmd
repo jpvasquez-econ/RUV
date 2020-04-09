@@ -112,11 +112,11 @@ for(k in 1:n_sectors) {
   sum_hl_XhlkCFS[k] = sum(XijkCFS[df$sector==k,])
 }
 
-relevant_sectors = 1:14
+relevant_sectors = 1:12
 
 XijkCFS_1 = c()
 denominator = c()
-n_relevant_sectors = 14
+n_relevant_sectors = 12
 for (i in 1:length(relevant_sectors)) {
   denominator = rbind(denominator,matrix(replicate(nstates*nstates,sum_hl_XhlkCFS[i]), 
                                          nrow = nstates, ncol = nstates))
@@ -137,37 +137,35 @@ df_WIOD = df_WIOD[,1:4]
 #Filter out non-USA importers
 USA_exporter_indices = df_WIOD$importer_country == "USA"
 
-# Take into account only the first 14 sectors (13 and 14 will be excluded later)
+# Take into account only the first 12 sectors 
 X_USA_USA_k = df_WIOD$value_USA[USA_exporter_indices]
-X_USA_USA_k = X_USA_USA_k[1:14]
+X_USA_USA_k = X_USA_USA_k[1:12]
 
 Xijk = c()
-for(i in 1:14) {
+for(i in 1:12) {
   Xijk = rbind(Xijk, xijkCFS[((i-1)*nstates + 1):(nstates*i),]*X_USA_USA_k[i])
 }
 
 ###########################################Check that the following condition holds:
   
-Xijk$sector = df$sector[1:700]
-Xijk$importer = df$importer[1:700]
+Xijk$sector = df$sector[1:(12*nstates)]
+Xijk$importer = df$importer[1:(12*nstates)]
 Xijk = Xijk %>% select(importer, sector, everything())
 
-xijkCFS$sector = df$sector[1:700]
-xijkCFS$importer = df$importer[1:700]
+xijkCFS$sector = df$sector[1:(12*nstates)]
+xijkCFS$importer = df$importer[1:(12*nstates)]
 xijkCFS = xijkCFS %>% select(importer, sector, everything())
 
 # Check sum_ij xijk = 1, which is the same as sum_ij Xijk = X_USUSk
-for(k in 1:14) {
+for(k in 1:12) {
   sum(xijkCFS[xijkCFS$sector==1,3:52])
 }
 # Check for all  k
-#for(k in 1:14) {
-#  print(c(sum(Xijk[Xijk$sector==k,3:52]),X_USA_USA_k[k]))
-#}
+for(k in 1:12) {
+  print(c(sum(Xijk[Xijk$sector==k,3:52]),X_USA_USA_k[k]))
+}
 
-Step2 <- Xijk %>%
-  filter(sector<=12)
-
+Step2 <- Xijk 
 
 Step2 <- Step2 %>%
   mutate(year=yr) %>%
@@ -178,7 +176,7 @@ Step2 <- Step2 %>%
 colnames(Step2)[4:dim(Step2)[2]]= CFS.base$importer[1:50]
 
   #Exporting
-write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)
+#write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)
 }
 ```
 
