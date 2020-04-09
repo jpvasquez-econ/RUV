@@ -31,7 +31,7 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r warning=FALSE}
 # OPTIONS AND LIBRARIES
 options( scipen=100 );
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,11 +41,11 @@ options( scipen=100 );
 # number of countries (n.c) and number of states (n.s)
 n.c <- 37; 
 n.s <- 50; 
-WIOD.base <- read.dta13( file="2-Final_Data//WIOD_countries.dta" )
-data_gravity_agriculture.base <- read.csv( file="2-Final_Data//data_agriculture.csv", header=TRUE, sep="," )
+WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
 #state level imports and exports
 CENSUS.2 <- read.csv("1-Intermediate_Processed_Data//census.agri.proportionality.csv")
-state_imp_exp.0 <- read.dta13("2-Final_Data//state_imports_exports.dta")
+state_imp_exp.0 <- read.dta13("1-Intermediate_Processed_Data//state_imports_exports.dta")
 state_imp_exp.0 <- state_imp_exp.0 %>%
   mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
   mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
@@ -56,13 +56,13 @@ wiot.full <- wiot.full %>%
   mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
   mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) 
 #CFS
-CFS.base <- read_dta("2-Final_Data//CFS_Xijk.dta")
+CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
 CFS <- subset(CFS.base, year==2002)
 CFS <- subset(CFS, select = -year )
 
 # # ##################example  (do not run creation of dist.matrix in section 3.1)
 # ####################Select the block of code that you want to comment. Press Ctrl + Shift + C.
-# example <- read_excel( "2-Final_Data//ejemplo.xlsx")
+# example <- read_excel( "1-Intermediate_Processed_Data//ejemplo.xlsx")
 # WIOD.base <- WIOD.base [1:3, 1:7]
 # WIOD.base$value_AUS[2] <- example$`X_{ij}`[1]
 # WIOD.base$value_AUS[3] <- example$`X_{ij}`[2]
@@ -149,7 +149,7 @@ epsilon<-0.001;
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 Looping over years
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r warning=FALSE}
 for (yr in 2000:2007) {
 # 1. LOAD DATA
 WIOD<-WIOD.base
@@ -388,7 +388,7 @@ imports.state.country.prop=eijkBase*sum_country02
 #getting the names (that's the only purpose of the CFS file)
 df.CFS = data.frame(CFS)
 df.CFS <- df.CFS %>%
-  filter(sector==14)
+  filter(sector==1)
 imports.state.country.prop$sector = df.CFS$sector[1:50]
 imports.state.country.prop$importer = df.CFS$importer[1:50]
 imports.state.country.prop = imports.state.country.prop %>% select(importer, sector, everything())
@@ -402,11 +402,11 @@ df.WIOD <- df.WIOD %>%
 df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country, -sector)
 check.WIOD.e <- df.WIOD1
 # X_i,US from census + proportionality
-  check.imports.state.country.prop = imports.state.country.prop[imports.state.country.prop$sector==14, 3:dim(imports.state.country.prop)[2]]
+  check.imports.state.country.prop = imports.state.country.prop[3:dim(imports.state.country.prop)[2]]
   check.imports.state.country.prop = colSums(check.imports.state.country.prop)
 #checking X_i,US from wiod= X_i,US from census + proportionality
 check=check.imports.state.country.prop-check.WIOD.e
-if(sum(check)>epsilon) 
+if(abs(sum(check))>epsilon) 
   print(paste("Proportionality for imports does not square for all states. Applying correction for year", yr))
 
 
@@ -428,24 +428,21 @@ if( is.na(sum(check))== TRUE) {
   imports.state.country.prop=eijkBase*sum_country02
   df.CFS = data.frame(CFS)
   df.CFS <- df.CFS %>%
-    filter(sector==14)
+    filter(sector==1)
   imports.state.country.prop$sector = df.CFS$sector[1:50]
   imports.state.country.prop$importer = df.CFS$importer[1:50]
   imports.state.country.prop = imports.state.country.prop %>% select(importer, sector, everything())
   imports.state.country.prop= imports.state.country.prop
-  c=c()
-  sec=c(14)
-  for (k in sec) {
-    check.imports.state.country.prop = imports.state.country.prop[imports.state.country.prop$sector==k, 3:dim(imports.state.country.prop)[2]]
+
+    check.imports.state.country.prop = imports.state.country.prop[imports.state.country.prop$sector==1, 3:dim(imports.state.country.prop)[2]]
     vec1=check.imports.state.country.prop
     check.imports.state.country.prop = colSums(check.imports.state.country.prop)
     c=rbind(c, check.imports.state.country.prop)
-  }
 
   check=c-check.WIOD.e
   
   }
-if(sum(check)>epsilon) 
+if(abs(sum(check))>epsilon) 
   stop(paste("Proportionality does not seem to work for year", yr))
 
 
@@ -458,7 +455,6 @@ xj.us <- WIOD.base %>%
 xj.us<-sum(xj.us)
 
 imports.state.country.prop <- imports.state.country.prop %>%
-  filter(sector==14) %>%
   select(-sector, -importer)
 
 tau.mod <- (dist.matrix[(1:n.s), ((n.s+1):(n.s+n.c))])^(-1)
@@ -477,7 +473,7 @@ s= as.data.frame(rowSums(num/denom));
 X_j.mod.s <- (n.c^(-1))*xj.us*s
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# NEW ATTEMPT: 8. CREATING X_J FOR STATES
+# 8. CREATING X_J FOR STATES
 ### LHS %*% vector of X_j for USA 
 #sum over states
 Pi.vec.states <- matrix( data=rep(Pi.s.inv*gdp.vector[1:n.s], (n.s)),
@@ -534,7 +530,7 @@ x_j.c.wiod<- matrix(exp.vector[(n.s+1):(n.s+n.c)]);
 names(X_j.mod.s)<-"V1"
 X_j.mod <- as.matrix(rbind(X_j.mod.s,x_j.c.wiod));
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# 8. COMPUTING BILATERAL FLOWS
+# 9. COMPUTING BILATERAL FLOWS
 
 #Calculating flows 
 Pi.sq.mat <- matrix( data=rep(c(Pi.s.inv, Pi.c.inv)*gdp.vector, (n.s+n.c)),
@@ -546,7 +542,7 @@ Xij.matrix <- Pi.sq.mat * dist.matrix * P.sq.mat;
 write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data\\Xij_matrix_agric_', yr, '.csv', sep= ""), row.names=FALSE, na="" );
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# 9. FINAL CHECKS
+# 10. FINAL CHECKS
 
 #CHECK: SUM OF X_j.mod.s FOR US STATES =US X_j from WIOD
 xj.us <- WIOD.base %>%

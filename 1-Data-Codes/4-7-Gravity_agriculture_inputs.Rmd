@@ -166,8 +166,8 @@ options( scipen=100 );
 # number of countries (n.c) and number of states (n.s)
 n.c <- 37; 
 n.s <- 50; 
-WIOD.base <- read.dta13( file="2-Final_Data//WIOD_countries.dta" )
-data_gravity_agriculture.base <- read.csv( file="2-Final_Data//data_agriculture.csv", header=TRUE, sep="," )
+WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
 #state level imports and exports
 CENSUS.2 <- read.csv("1-Intermediate_Processed_Data//census.agri.proportionality.csv")
 wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
@@ -233,7 +233,7 @@ wiot.full <- wiot.full %>%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 Looping over years
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r warning=FALSE}
 for (yr in 2000:2007) {
 # 1. LOAD DATA
 WIOD<-WIOD.base

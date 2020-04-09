@@ -31,21 +31,45 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
-# OPTIONS AND LIBRARIES
-options( scipen=100 );
+##Data 
+
+```{r}
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-## real
 # number of countries (n.c) and number of states (n.s)
 n.c <- 37; 
 n.s <- 50; 
-WIOD.base <- read.dta13( file="2-Final_Data\\WIOD_countries.dta" )
-data_gravity_services.base <- read.csv( file="2-Final_Data\\data_services.csv", header=TRUE, sep="," )
- 
+WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+data_gravity_services.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
+WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
+#state level imports and exports
+CENSUS.2 <- read.csv("1-Intermediate_Processed_Data//census.agri.proportionality.csv")
+state_imp_exp.0 <- read.dta13("1-Intermediate_Processed_Data//state_imports_exports.dta")
+state_imp_exp.0 <- state_imp_exp.0 %>%
+  mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
+  mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
+wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
+wiot.full=data.frame(wiot.full)
+wiot.full <- wiot.full %>% 
+  filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
+  mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
+  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) 
+#CFS
+CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
+CFS <- subset(CFS.base, year==2002)
+CFS <- subset(CFS, select = -year )
+#### epsilon to check between calculations
+epsilon<-0.001;
+```
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+##Loop for years
+
+```{r warning=FALSE}
+# OPTIONS AND LIBRARIES
+options( scipen=100 );
+
 for (yr in 2000:2007) {
 # 1. LOAD DATA
 WIOD<-WIOD.base
@@ -211,8 +235,11 @@ BIG.MAT <- rbind( cbind(zeros.big, block.10),
 SOL <- read_xls(paste('1-Intermediate_Processed_Data\\vector_solution_',yr, '.xls', sep=""),col_names=FALSE)
 SOL <- as.matrix(SOL)
 #checking
+#checking
 value <-  lambda_vector*SOL - BIG.MAT %*% SOL^{-1};
-norm(value, "2")
+if(norm(value, "2")>epsilon) 
+  stop(paste("Solution from Matlab does not seem to work for year", yr))
+
 x<- SOL;
 ##calculating Xij
   #x<-as.matrix( c(normalization,x) )
@@ -235,5 +262,51 @@ P.sq.mat <- matrix( data=rep(c(P.s.inv, P.c.inv)*exp.vector, (n.s+n.c)),
 #consistent with WIOD notation
 Xij.matrix <- Pi.sq.mat * dist.matrix * P.sq.mat;
 write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data\\Xij_matrix_services_', yr, '.csv', sep= ""), row.names=FALSE, na="" );
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+###CHECKS
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#CHECK: SUM OF X_j.mod.s FOR US STATES =US X_j from WIOD
+xj.us <- WIOD.base %>%
+  filter(sector==14, year==yr, importer_country=="USA") %>%
+  select(-importer, -importer_country, -sector, -year)
+#checking
+if(sum(X_j.mod.s)/sum(xj.us)-1>epsilon) 
+  stop(paste("SUM OF X_j.mod.s FOR US STATES !=US X_j from WIOD for", yr, " value=", sum(X_j.mod.s)/sum(xj.us)-1))
+
+#Check: states' exports to countries add to WIOD US exports to countries (sector 14)
+value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), (1:n.s)])
+value2 <- WIOD.base %>%
+  filter(year==yr, sector==14, importer_country!="USA")
+value2 <- sum(value2$value_USA)
+if(abs(value1/value2-1)>epsilon) 
+  stop(paste("states' exports to countries != WIOD US exports to countries for", yr, " value=", abs(value1/value2-1)))
+
+#Check: countries' exports to countries add to WIOD countries' exports to countries (sector 14)
+value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))])
+value2 <- WIOD.base %>%
+  filter(year==yr, sector==14, importer_country!="USA") %>%
+  select(-year, -importer, -importer_country, -sector, - value_USA)
+value2 <- sum(value2)
+if(abs(value1/value2-1)>epsilon) 
+  stop(paste("countries' exports to countries != WIOD countries' exports to countries for", yr, " value=", abs(value1/value2-1)))
+
+
+#Check: states' imports from countries add to WIOD US imports from countries (sector 14)
+value1 <- sum(Xij.matrix[(1:n.s), ((n.s+1):(n.s+n.c))])
+value2 <- WIOD.base %>%
+  filter(year==yr, sector==14, importer_country=="USA") %>%
+  select(-year, -importer, -importer_country, -sector, - value_USA)
+value2 <- sum(value2)
+if(abs(value1/value2-1)>epsilon) 
+  stop(paste("states' imports from countries != WIOD US imports from countries for", yr, " value=", abs(value1/value2-1)))
+
+
+#Check: states' exports to states add to WIOD US exports to US (sector 14)
+value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
+value2 <- WIOD.base %>%
+  filter(year==yr, sector==14, importer_country=="USA")
+value2 <- value2$value_USA[1]
+if(abs(value1/value2-1)>epsilon) 
+  stop(paste("states' exports to states != WIOD US exports to US for", yr, " value=", abs(value1/value2-1)))
 }
 ```

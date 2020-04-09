@@ -31,7 +31,7 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r warning=FALSE}
 # OPTIONS AND LIBRARIES
 options( scipen=100 );
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,8 +41,8 @@ options( scipen=100 );
 # number of countries (n.c) and number of states (n.s)
 n.c <- 37; 
 n.s <- 50; 
-WIOD.base <- read.dta13( file="2-Final_Data\\WIOD_countries.dta" )
-data_gravity_services.base <- read.csv( file="2-Final_Data\\data_services.csv", header=TRUE, sep="," )
+WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+data_gravity_services.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
 
 ###example
 #WIOD <- read_excel( path='ejemplo.xlsx', sheet='WIOD' )
@@ -127,11 +127,11 @@ dist.matrix <- data_gravity_services %>%
 dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
 
 #Phis
-#we use the coefficients from 4-4-Country_Gravity_Services_WIOD.
-#own dummy=6.5, Distance elasticity=0.7
-phi<-diag(x = 6.5, n.c+n.s, n.c+n.s);
+#we use the coefficients from Country_Gravity_WIOD.
+#own dummy=7.3, Distance elasticity=-0.4
+phi<-diag(x = 7.3, n.c+n.s, n.c+n.s);
 phi<-exp(phi);
-phi<-phi/dist.matrix^0.7;
+phi<-phi/dist.matrix^0.4;
 dist.matrix<-phi
 
 # 3.2. GDP VECTOR

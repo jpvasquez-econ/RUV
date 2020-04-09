@@ -59,7 +59,7 @@ us_pop <- read_excel("0-Raw_Data\\Fips\\us_states_coordinates_counties.xlsx")
 us_pop=data.frame(us_pop)
 
 #Trade distances
-data_agriculture <- read.csv("2-Final_Data//data_agriculture.csv")
+data_agriculture <- read.csv("1-Intermediate_Processed_Data//data_agriculture.csv")
 data_agriculture=data.frame(data_agriculture)
 data_agricultureUS <- data_agriculture %>% filter(year==2000)
 
@@ -222,7 +222,7 @@ Final <- WIOD3 %>%
 write.csv(Final, "1-Intermediate_Processed_Data\\Country_Gravity_Services_WIOD.csv")
 ```
 
-##Stata code
+###Stata code
 
 ```{stata, collectcode=TRUE}
 import delimited "1-Intermediate_Processed_Data\\Country_Gravity_Services_WIOD.csv"
@@ -253,16 +253,6 @@ gen b1 = _b[log_dist]
 
 gen phi = exp((b0*iota) + (b1*log_dist))
 ```
-
-
-##Agriculture
-
-## Final Objective
-To estimate
-$$
-\ln X_{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}
-$$
-where $\lambda_t$ is a time FE, $\delta_{i}^{o}$ is an origin FE, $\delta_{j}^{d}$ is a destination FE, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$. Then, construct: $\phi_{ij}=\exp(\hat{\beta}_{0}\iota_{ij}+\hat{\beta}_{1}\ln dist_{ij})$.
 
 ##Agriculture
 We will focus on countries only (we forget about the states but care about USA as a country), and our focus is on sector 14 only.
@@ -404,7 +394,7 @@ Final <- WIOD3 %>%
 write.csv(Final, "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv")
 ```
 
-##Stata code
+###Stata code
 
 ```{stata, collectcode=TRUE}
 import delimited "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv", clear

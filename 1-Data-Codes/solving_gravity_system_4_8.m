@@ -62,7 +62,9 @@ veclambda= sprintf('1-Intermediate_Processed_Data/vector_lambda_%s.csv',num2str(
 matrixB        = table2array(readtable(matB));
 vectorlambda   = table2array(readtable(veclambda));
 init           = ones(174,1);
-init(100:140)  = 150;
+if k>2000
+init=solution;
+end
 solution       = fsolve(@gravity_system,init,optfs);
 
 % Save solution to an excel spreadsheet
