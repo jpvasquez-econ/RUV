@@ -176,7 +176,7 @@ Step2 <- Step2 %>%
 colnames(Step2)[4:dim(Step2)[2]]= CFS.base$importer[1:50]
 
   #Exporting
-#write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)
+write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)
 }
 ```
 
