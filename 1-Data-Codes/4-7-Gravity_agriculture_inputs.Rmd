@@ -298,5 +298,6 @@ write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//agric_vec_l
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ## 7. NEW MATH FOR X_j, P_j, and Pi_j only
+X<-ones.ns;
 }
 ```
