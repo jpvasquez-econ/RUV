@@ -63,7 +63,8 @@ n.s <- 50;
 WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
 data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
 #state level imports and exports
-CENSUS.2 <- read.csv("1-Intermediate_Processed_Data//census.agri.proportionality.csv")
+CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
+CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
 wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 wiot.full=data.frame(wiot.full)
 wiot.full <- wiot.full %>% 
@@ -104,7 +105,7 @@ wiot.full <- wiot.full %>%
 # n.c <- 2;
 # n.s <- 2;
 # yr=2000
-# CENSUS.2 <- CENSUS.2 %>%
+# CENSUS.exp <- CENSUS.exp %>%
 #   filter(year==2000, (origin=="Alabama" | origin=="Alaska"), (importer=="AUS" | importer=="AUT")) %>%
 #   mutate(value= ifelse(origin=="Alabama" & importer=="AUS", example$`X_{ij}`[9], value)) %>%
 #   mutate(value= ifelse(origin=="Alabama" & importer=="AUT", example$`X_{ij}`[10], value)) %>%
@@ -121,11 +122,13 @@ wiot.full <- wiot.full %>%
 #   mutate(value= ifelse(row_country=="USA" & col_country=="AUS", WIOD.base$value_USA[2], value)) %>%
 #   mutate(value= ifelse(row_country=="USA" & col_country=="AUT", WIOD.base$value_USA[3], value)) %>%
 #   mutate(value= ifelse(row_country=="USA" & col_country=="USA", WIOD.base$value_USA[1], value))
-# CENSUS.2$value <- as.numeric(CENSUS.2$value)
+# CENSUS.exp$value <- as.numeric(CENSUS.exp$value)
 # # ##############################
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
+
+
 Looping over years
 ```{r warning=FALSE}
 for (yr in 2000:2007) {
@@ -257,7 +260,7 @@ X_c <- as.matrix( exp.vector[(n.s+1):(n.s+n.c)] );
 Y_s <- as.matrix( gdp.vector[(1):(n.s)] );
 Y_c <- as.matrix( gdp.vector[(n.s+1):(n.s+n.c)] );
 
-state.exports.to.countries <- CENSUS.2 %>%
+state.exports.to.countries <- CENSUS.exp %>%
   filter(year==yr) %>%
   group_by(origin) %>%
   mutate(exp= sum(value)) %>%
@@ -295,17 +298,116 @@ BIG.MAT <- rbind( cbind(zeros.big, block.10),
 ### Saving input matrices for the matlab code
 write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//agric_mat_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//agric_vec_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+}
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for (yr in 2000:2007) {
+## 7. NEW MATH FOR X_j, P_j, and Pi_j only
+  
+# 1. LOAD DATA
+# WIOD<-WIOD.base
+# ## WIOD
+# WIOD <- WIOD.base %>% 
+#   filter( year==yr, sector==14 ) %>% 
+#   filter( importer_country!='USA' ) %>% 
+#   select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
+## Gravity data csv format with comma as the separator
+data_gravity_agriculture <- data_gravity_agriculture.base %>% 
+  filter( year==yr ) %>% 
+  select( -year ) %>% 
+  mutate( iso_o=as.character(iso_o), iso_d=as.character(iso_d) ) %>% 
+  mutate( len_o=ifelse(nchar(iso_o)<4, 'COUNTRY', 'STATE'), 
+          len_d=ifelse(nchar(iso_d)<4, 'COUNTRY', 'STATE') );
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-## 7. NEW MATH FOR X_j, P_j, and Pi_j only
-X <- matrix( data=rep(1, n.s*3), nrow=n.s*3, ncol=1);
-P_j <- X[(1):(n.s)] 
-Pi_i <- X[(n.s+1):(n.s*2)]  
-X_j <- X[( (n.s*2)+1 ):(n.s*3)]
+# 2. NUMBER STATES AND COUNTRIES
+# States
+id.states <- data_gravity_agriculture %>% 
+  filter( len_o=='STATE' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id=row_number() ) %>% 
+  dplyr::rename( region=iso_o ) %>% 
+  select( id, region );
+# Countries
+id.countries <- data_gravity_agriculture %>% 
+  filter( len_o=='COUNTRY' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id=n.s+row_number() ) %>% 
+  dplyr::rename( region=iso_o ) %>% 
+  select( id, region );
+# Total
+id.total <- rbind( id.states, id.countries );
+#t(id.total)
 
+# 3. ELEMENTARY MATRICES FOR KRONECKER PRODUCTS
+
+# 3.1. DISTANCE MATRIX
+dist.matrix <- data_gravity_agriculture %>% 
+  select( iso_o, iso_d, dist ) %>% 
+  left_join( y=id.total, by=c('iso_o'='region') ) %>% 
+  dplyr::rename( id_o=id ) %>% 
+  left_join( y=id.total, by=c('iso_d'='region') ) %>% 
+  dplyr::rename( id_d=id ) %>% 
+  select( id_o, id_d, dist ) %>% 
+  arrange( id_o, id_d ) %>% 
+  spread( key=id_d, value=dist );
+dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
+
+#we use the coefficients from 4-4-Country_Gravity_WIOD.
+#own dummy=4.1, Distance elasticity=-1.8
+phi<-diag(x = 4.1, n.c+n.s, n.c+n.s);
+phi<-exp(phi);
+phi<-phi/dist.matrix^1.8; 
+dist.matrix<-phi
+
+# 3.2. GDP VECTOR 
+gdp.vector <- data_gravity_agriculture %>% 
+  select( iso_o, Y_i ) %>% 
+  distinct( iso_o, .keep_all=TRUE ) %>% 
+  left_join( y=id.total, by=c('iso_o'='region') ) %>% 
+  select( id, Y_i ) %>% 
+  arrange( id );
+gdp.vector <- matrix( gdp.vector$Y_i );
+
+# 3.3. EXPENDITURE VECTOR 
+# exp.vector <- data_gravity_agriculture %>% 
+#   select( iso_d, X_j ) %>% 
+#   distinct( iso_d, .keep_all=TRUE ) %>% 
+#   left_join( y=id.total, by=c('iso_d'='region') ) %>% 
+#   select( id, X_j ) %>% 
+#   arrange( id );
+# exp.vector <- as.vector( exp.vector$X_j );  
+  
+#state import and export to countries 
+state.exports.to.countries <- CENSUS.exp %>%
+  filter(year==yr) %>%
+  group_by(origin) %>%
+  mutate(exp= sum(value)) %>%
+  ungroup() %>%
+  distinct(origin, .keep_all = TRUE) %>%
+  arrange(origin)
+state.exports.to.countries <- matrix(state.exports.to.countries$exp)
+state.imports.from.countries <- CENSUS.imp %>%
+  filter(year==yr) %>%
+  group_by(importer) %>%
+  mutate(imp= sum(value)) %>%
+  ungroup() %>%
+  distinct(importer, .keep_all = TRUE) %>%
+  arrange(importer)
+state.imports.from.countries <- matrix(state.imports.from.countries$imp)
+ 
+X <- matrix( data=rep(1, n.s*3), nrow=n.s*3, ncol=1);
+P_j <- matrix(X[(1):(n.s)]) 
+Pi_i <- matrix(X[(n.s+1):(n.s*2)])  
+X_j <- matrix(X[( (n.s*2)+1 ):(n.s*3)])
 Y_i <- as.matrix( gdp.vector[(1):(n.s)] );
 
-X.inv.new <- rev(X^(-1))
+#Right hand side
+X.inv.new <- matrix(rev(X^(-1)))
 
 X.X <- rbind(X_j, Y_i, X_j)
 
@@ -324,7 +426,7 @@ big.forall <- rbind(forall, forall.tilde, forall.tilde2)
 RHS <- X*( ones.vec- (big.forall*X.X.inv))
 
 
-#left hand side 
+#left hand side
 zeros.ns.ns <- matrix( data=rep(0, n.s), nrow=n.s, ncol=n.s);
 
 tau.ns.ns <- dist.matrix[(1:n.s), (1:n.s)]
@@ -338,7 +440,7 @@ big.tau <- rbind( cbind(zeros.ns.ns, tau.ns.ns, zeros.ns.ns), cbind(zeros.ns.ns,
 ones <- matrix( data=rep(1, n.s), nrow=1, ncol=n.s)
 kron.1 <- ( ((P_j^(-1))*X_j) %x% ones )*tau.ns.ns.diag
 kron.2 <- ( ((Pi_i^(-1))*Y_i) %x% ones )*((-1)*tau.ns.ns.diag)   
-Big.Matrix <- cbind(zeros.ns.ns, kron.1, kron.2)
+Big.Matrix <- rbind(big.tau, cbind(zeros.ns.ns, kron.1, kron.2))
 
 LHS <- Big.Matrix %*%(X.inv.new*X.X)
 
