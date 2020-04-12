@@ -98,7 +98,7 @@ if(yr<2002){yr.=2002}
 state_imp_exp <- data.frame(state_imp_exp.0)
 state_imp_exp <- subset(state_imp_exp.0, year==yr.)
 Base.y=c()
-sec=c(1:12, 14)
+sec=c(14)
 for (sectors in sec) {
   Base.y0= matrix(0, dim(names.countries)[1], dim(names.states)[1])
   Base.y0=data.frame(Base.y0)
@@ -125,7 +125,7 @@ Base.y[is.na(Base.y)] <- 0
 df.base=Base.y
 m2=c()
 sum_country=c()
-sec_relevant=c(1:12, 14)
+sec_relevant=c(14)
 for(k in sec_relevant) {
   df.base1 <- df.base %>%
     filter(sector==k)
@@ -141,7 +141,7 @@ yijkBase=m2/sum_country
 #y
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
-  filter(sector<=12 | sector==14) %>%
+  filter(sector==14) %>%
   filter(importer_country!='USA') 
 
 df.WIOD1 <- df.WIOD %>% select(value_USA)
@@ -151,8 +151,8 @@ sum_country02=matrix(replicate(50,df.WIOD1), nrow = length(df.WIOD1), ncol =  nu
 
 y1=yijkBase*sum_country02
 
-y1$sector = df.WIOD$sector[1:(num.countries*13)]
-y1$importer = df.WIOD$importer_country[1:(num.countries*13)]
+y1$sector = df.WIOD$sector[1:(num.countries*1)]
+y1$importer = df.WIOD$importer_country[1:(num.countries*1)]
 y1 = y1 %>% select(importer, sector, everything())
   
 step3y= y1
@@ -160,7 +160,7 @@ step3y= y1
 #Check
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
-  filter(sector<=12 | sector==14) %>%
+  filter(sector==14) %>%
   filter(importer_country!='USA') 
 
 check.WIOD <- df.WIOD[, 1:4]
@@ -180,7 +180,6 @@ if( is.na(a[2])== TRUE) {
   for (row in 1:(dim(check)[1])) {
     if(is.na(check[row,5])== TRUE){
       r=check[row,2]
-      if(r==14){r=13} #since there is gap between sec 12 and sec 14
       country=check[row,1]
       for (i in 1:37) {
         if(names.countries[i]==country){t=i}
@@ -196,10 +195,10 @@ if( is.na(a[2])== TRUE) {
   y1=yijkBase*sum_country02
   df.WIOD = data.frame(WIOD)
   df.WIOD <- df.WIOD %>%
-    filter(sector<=12 | sector==14) %>%
+    filter(sector==14) %>%
     filter(importer_country!='USA') 
-  y1$sector = df.WIOD$sector[1:(num.countries*13)]
-  y1$importer = df.WIOD$importer_country[1:(num.countries*13)]
+  y1$sector = df.WIOD$sector[1:(num.countries*1)]
+  y1$importer = df.WIOD$importer_country[1:(num.countries*1)]
   y1 = y1 %>% select(importer, sector, everything())
   step3y= y1
 
@@ -221,10 +220,10 @@ step3y <- step3y %>%
 step3y.1 <- rbind(step3y.1, step3y)
 }
 
-CENSUS.2 <- melt(step3y.1, id.var=c("year", "importer"), variable.name = "origin")
-CENSUS.2$origin <- as.character(CENSUS.2$origin)
-write.table(CENSUS.2, file = paste("1-Intermediate_Processed_Data//census.agri.proportionality.csv", sep=""), sep = ",", row.names = FALSE)
-state.exports.to.countries <- CENSUS.2 %>%
+CENSUS.exp <- melt(step3y.1, id.var=c("year", "importer"), variable.name = "origin")
+CENSUS.exp$origin <- as.character(CENSUS.exp$origin)
+write.table(CENSUS.exp, file = paste("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv", sep=""), sep = ",", row.names = FALSE)
+state.exports.to.countries <- CENSUS.exp %>%
   group_by(year, origin) %>%
   mutate(exp= sum(value)) %>%
   ungroup() %>%
@@ -325,5 +324,156 @@ data_agriculture <- data_agriculture %>%
 write.table(data_agriculture, file = paste("1-Intermediate_Processed_Data//data_agriculture.csv", sep=""), sep = ",", row.names = FALSE)
 ```
 
-  
 
+#State import from countries  
+```{r}
+#base
+state_imp_exp <- data.frame(state_imp_exp.0)
+state_imp_exp <- subset(state_imp_exp.0, year==2008)
+Base.e=c()
+sec=c(14)
+step3e.1 <- c()
+for (sectors in sec) {
+  Base.e0= matrix(0, dim(names.states)[1], dim(names.countries)[1])
+  Base.e0=data.frame(Base.e0)
+  for (j in 1:(dim(names.states)[1])) {
+    for (i in 1:(dim(names.countries)[1])) {
+      temp <- state_imp_exp %>%
+        filter(sector==sectors, origin==names.countries[i], destination==names.states[j])
+      val=temp[1,5]
+      Base.e0[j,i]=val
+      
+    }
+  }
+  Base.e0 <- Base.e0 %>%
+    mutate(importer=names.states, sector=sectors) %>%
+    select(importer, sector, everything())
+  Base.e <- rbind(Base.e, Base.e0)
+}
+
+col=c("importer", "sector", names.countries)
+colnames(Base.e)= col
+Base.e[is.na(Base.e)] <- 0
+
+
+
+for (yr in 2000:2007) {
+
+#WIOD
+WIOD <- subset(WIOD.base, year==yr)
+WIOD <- subset(WIOD, select = -year) 
+
+
+##################################################
+
+#e
+df.base=(Base.e)
+m2=c()
+sum_country=c()
+sum_countrym=c()
+sec_relevant=c(14)
+for(k in sec_relevant) {
+  df.base1 <- df.base %>%
+    filter(sector==k)
+  df.base1=df.base1[1:50, 3:dim(df.base1)[2]]
+  colsum=(matrix(colSums(df.base1))) #as column
+  m2=rbind(m2,df.base1)
+  sum_country=matrix(replicate(50,colsum), nrow= length(colsum), ncol = num.states)
+  sum_countrym=rbind(sum_countrym, t(sum_country))
+}
+eijkBase=m2/sum_countrym
+
+
+#######################################Main Varibale
+#e
+df.WIOD = data.frame(WIOD)
+df.WIOD <- df.WIOD %>%
+  filter(sector==14) %>%
+  filter(importer_country=='USA')
+  
+df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country, -sector)
+
+sum_country02=c()
+q1=t(df.WIOD1)
+sum_country2=t(matrix(replicate(50,q1), nrow = length(q1), ncol = num.states))
+sum_country02=rbind(sum_country02, sum_country2)
+
+
+e1=eijkBase*sum_country02
+e1$sector = matrix( data=rep(14, num.states), nrow=num.states, ncol=1)
+e1$importer = states.names
+e1 = e1 %>% select(importer, sector, everything())
+
+step3e = e1
+
+#Check
+df.WIOD = data.frame(WIOD)
+df.WIOD <- df.WIOD %>%
+  filter(sector==14) %>%
+  filter(importer_country=='USA')
+  
+df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country, -sector)
+check.WIOD.e <- df.WIOD1
+
+c=c()
+sec=c(14)
+for (k in sec) {
+  check.step3e = step3e[step3e$sector==k, 3:dim(step3e)[2]]
+  check.step3e = colSums(check.step3e)
+  c=rbind(c, check.step3e)
+}
+
+check=c-check.WIOD.e
+print(sum(check))
+
+
+##############################
+#Correcting if needed
+if( is.na(sum(check))== TRUE) {
+  for (r in 1:(dim(check)[1])) {
+    for (c in 1:dim(check)[2]) {
+      if(is.na(check[r,c])== TRUE){
+        correc.m=m2[(((r-1)*50)+1):((((r-1)*50)+1) + 49),] 
+        correc.denom=sum(correc.m)
+        correct.num=rowSums(correc.m)
+        correc=correct.num/correc.denom
+        eijkBase[(((r-1)*50)+1):((((r-1)*50)+1) + 49),c]=correc
+      }
+    }
+  }
+  
+  e1=eijkBase*sum_country02
+  e1$sector = matrix( data=rep(14, num.states), nrow=num.states, ncol=1)
+  e1$importer = states.names
+  e1 = e1 %>% select(importer, sector, everything())
+  step3e= e1
+  sec=c(14)
+  c=c()
+  for (k in sec) {
+    check.step3e = step3e[step3e$sector==k, 3:dim(step3e)[2]]
+    vec1=check.step3e
+    check.step3e = colSums(check.step3e)
+    c=rbind(c, check.step3e)
+  }
+
+  check=c-check.WIOD.e
+print(sum(check))  
+}
+
+
+
+step3e <- step3e %>%
+  mutate(year=yr) %>%
+  select(year, importer, sector, everything()) %>%
+  filter(sector==14) %>%
+  select(-sector)
+step3e.1 <- rbind(step3e.1, step3e)
+
+
+}
+
+CENSUS.imp <- melt(step3e.1, id.var=c("year", "importer"), variable.name = "origin")
+CENSUS.imp$origin <- as.character(CENSUS.imp$origin)
+write.table(CENSUS.imp, file = paste("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv", sep=""), sep = ",", row.names = FALSE)
+
+```
