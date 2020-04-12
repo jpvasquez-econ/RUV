@@ -298,6 +298,51 @@ write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//agric_vec_l
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ## 7. NEW MATH FOR X_j, P_j, and Pi_j only
-X<-ones.ns;
+X <- matrix( data=rep(1, n.s*3), nrow=n.s*3, ncol=1);
+P_j <- X[(1):(n.s)] 
+Pi_i <- X[(n.s+1):(n.s*2)]  
+X_j <- X[( (n.s*2)+1 ):(n.s*3)]
+
+Y_i <- as.matrix( gdp.vector[(1):(n.s)] );
+
+X.inv.new <- rev(X^(-1))
+
+X.X <- rbind(X_j, Y_i, X_j)
+
+X.X.inv <- X.X^(-1)
+
+ones.vec <- matrix( data=rep(1, n.s*3), nrow=n.s*3, ncol=1)
+
+forall <- state.imports.from.countries
+
+forall.tilde <- state.exports.to.countries
+
+forall.tilde2 <- Y_i + forall - forall.tilde
+
+big.forall <- rbind(forall, forall.tilde, forall.tilde2)
+
+RHS <- X*( ones.vec- (big.forall*X.X.inv))
+
+
+#left hand side 
+zeros.ns.ns <- matrix( data=rep(0, n.s), nrow=n.s, ncol=n.s);
+
+tau.ns.ns <- dist.matrix[(1:n.s), (1:n.s)]
+
+tau.ns.ns.diag <- tau.ns.ns
+
+diag(tau.ns.ns.diag)<- 0
+
+big.tau <- rbind( cbind(zeros.ns.ns, tau.ns.ns, zeros.ns.ns), cbind(zeros.ns.ns, zeros.ns.ns, tau.ns.ns))
+
+ones <- matrix( data=rep(1, n.s), nrow=1, ncol=n.s)
+kron.1 <- ( ((P_j^(-1))*X_j) %x% ones )*tau.ns.ns.diag
+kron.2 <- ( ((Pi_i^(-1))*Y_i) %x% ones )*((-1)*tau.ns.ns.diag)   
+Big.Matrix <- cbind(zeros.ns.ns, kron.1, kron.2)
+
+LHS <- Big.Matrix %*%(X.inv.new*X.X)
+
+
+
 }
 ```
