@@ -71,7 +71,7 @@ wiot.full <- wiot.full %>%
   filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
   mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
   mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) 
-
+epsilon<-0.0001
 
 # # ##################example  (do not run creation of dist.matrix in section 3.1)
 # ####################Select the block of code that you want to comment. Press Ctrl + Shift + C.
@@ -299,11 +299,11 @@ BIG.MAT <- rbind( cbind(zeros.big, block.10),
 write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//agric_mat_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//agric_vec_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 }
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+```
 
+##NEW SYSTEM
+```{r warning=FALSE}
 for (yr in 2000:2007) {
-## 7. NEW MATH FOR X_j, P_j, and Pi_j only
-  
 # 1. LOAD DATA
 # WIOD<-WIOD.base
 # ## WIOD
@@ -373,15 +373,6 @@ gdp.vector <- data_gravity_agriculture %>%
   arrange( id );
 gdp.vector <- matrix( gdp.vector$Y_i );
 
-# 3.3. EXPENDITURE VECTOR 
-# exp.vector <- data_gravity_agriculture %>% 
-#   select( iso_d, X_j ) %>% 
-#   distinct( iso_d, .keep_all=TRUE ) %>% 
-#   left_join( y=id.total, by=c('iso_d'='region') ) %>% 
-#   select( id, X_j ) %>% 
-#   arrange( id );
-# exp.vector <- as.vector( exp.vector$X_j );  
-  
 #state import and export to countries 
 state.exports.to.countries <- CENSUS.exp %>%
   filter(year==yr) %>%
@@ -399,52 +390,63 @@ state.imports.from.countries <- CENSUS.imp %>%
   distinct(importer, .keep_all = TRUE) %>%
   arrange(importer)
 state.imports.from.countries <- matrix(state.imports.from.countries$imp)
- 
-X <- matrix( data=rep(1, n.s*3), nrow=n.s*3, ncol=1);
-P_j <- matrix(X[(1):(n.s)]) 
-Pi_i <- matrix(X[(n.s+1):(n.s*2)])  
-X_j <- matrix(X[( (n.s*2)+1 ):(n.s*3)])
+
+## IMPORTANT ELEMENTS FOR LHS-RHS THAT DO NOT CHANGE BETWEEN ITERATIONS
 Y_i <- as.matrix( gdp.vector[(1):(n.s)] );
-
-#Right hand side
-X.inv.new <- matrix(rev(X^(-1)))
-
-X.X <- rbind(X_j, Y_i, X_j)
-
-X.X.inv <- X.X^(-1)
-
 ones.vec <- matrix( data=rep(1, n.s*3), nrow=n.s*3, ncol=1)
-
+#For RHS
 forall <- state.imports.from.countries
-
 forall.tilde <- state.exports.to.countries
-
 forall.tilde2 <- Y_i + forall - forall.tilde
-
 big.forall <- rbind(forall, forall.tilde, forall.tilde2)
-
-RHS <- X*( ones.vec- (big.forall*X.X.inv))
-
-
-#left hand side
+#For LHS
 zeros.ns.ns <- matrix( data=rep(0, n.s), nrow=n.s, ncol=n.s);
-
 tau.ns.ns <- dist.matrix[(1:n.s), (1:n.s)]
-
 tau.ns.ns.diag <- tau.ns.ns
-
 diag(tau.ns.ns.diag)<- 0
-
 big.tau <- rbind( cbind(zeros.ns.ns, tau.ns.ns, zeros.ns.ns), cbind(zeros.ns.ns, zeros.ns.ns, tau.ns.ns))
-
 ones <- matrix( data=rep(1, n.s), nrow=1, ncol=n.s)
-kron.1 <- ( ((P_j^(-1))*X_j) %x% ones )*tau.ns.ns.diag
-kron.2 <- ( ((Pi_i^(-1))*Y_i) %x% ones )*((-1)*tau.ns.ns.diag)   
-Big.Matrix <- rbind(big.tau, cbind(zeros.ns.ns, kron.1, kron.2))
-
-LHS <- Big.Matrix %*%(X.inv.new*X.X)
 
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 3. SOLVING THE SYSTEM
+##### system to minimize
+gravity.us <- function( x ) {  
+  
+#splitting the guess
+P_j.0 <- matrix(x[(1):(n.s)]) ;
+Pi_i.0 <- matrix(x[(n.s+1):(n.s*2)])  ;
+X_j.0 <- matrix(x[( (n.s*2)+1 ):(n.s*3)]);  
+
+######
+###### RHS
+######
+X.inv.new <- matrix(rev(x^(-1)));
+X.X <- rbind(X_j.0, Y_i, X_j.0);
+X.X.inv <- X.X^(-1);
+#Right hand side
+RHS <- x*( ones.vec- (big.forall*X.X.inv)) ; 
+######
+###### LHS
+######
+kron.1 <- kronecker((P_j.0^(-1))*X_j.0 , ones)*tau.ns.ns.diag;
+kron.2 <- kronecker(((Pi_i.0^(-1))*Y_i), ones)*((-1)*tau.ns.ns.diag);
+Big.Matrix <- rbind(big.tau, cbind(zeros.ns.ns, kron.1, kron.2));
+#left hand side
+LHS <- Big.Matrix %*%(X.inv.new*X.X);
+######
+###### LHS-RHS
+######
+sum((LHS/RHS-1)^2)
+}
+optimal.model <- optimx( par=rep(1, 3*n.s), fn=gravity.us,
+                         lower=rep(0.0000000000001, 3*n.s), upper=rep(1000000000000, 3*n.s),
+                         control=list(maxit=100000, eps=1.0E-20));
+#checking
+if(as.numeric( optimal.model$value )>epsilon) 
+  stop(paste("Cannot find a solution for X_j states for year", yr))
+
+solu<-t(as.matrix(optimal.model[1:150]));
 
 }
 ```
