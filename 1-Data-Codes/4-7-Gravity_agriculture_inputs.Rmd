@@ -34,7 +34,7 @@ X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j} \label{
 $$
 We don't know $\{X_{j}\}_{j\in US}$. But we know: 1) $\{X_{ij}\}\quad\forall i,j\notin US$ (from WIOD), 2) $\{X_{ij}\}\quad\forall i\notin US\;or\:j\notin US$ (from CENSUS). 
 
-##Data and Libraries
+##Libraries
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 remove(list = ls())
@@ -49,7 +49,7 @@ for( i in length(libs)){
 # Carga de bibliotecas
 lapply( libs, require, character.only=TRUE );
 ```
-
+##Data
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # OPTIONS AND LIBRARIES
 options( scipen=100 );
@@ -338,9 +338,6 @@ CENSUS.imp <- CENSUS.imp %>%
   mutate(value= ifelse(origin=="AUT" & importer=="Alabama", example$`X_{ij}`[7], value)) %>%
   mutate(value= ifelse(origin=="AUT" & importer=="Alaska", example$`X_{ij}`[8], value))
 CENSUS.imp$value <- as.numeric(CENSUS.imp$value)
-####
-x=c(100.0000483, 105.8821817, 203.9996694, 221.0001074, 9621.345733, 12972.01184)
-####
 #############
   
 # 1. LOAD DATA
@@ -448,41 +445,82 @@ ones <- matrix( data=rep(1, n.s), nrow=1, ncol=n.s)
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 3. SOLVING THE SYSTEM
-##### system to minimize
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+##### WE WANT TO MINIMIZE THE FUNCTION gravity.us
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gravity.us <- function( x ) {  
   
 #splitting the guess
-P_j.0 <- matrix(x[(1):(n.s)]) ;
-Pi_i.0 <- matrix(x[(n.s+1):(n.s*2)])  ;
-X_j.0 <- matrix(x[( (n.s*2)+1 ):(n.s*3)]);  
-
+P_j.0 <- matrix(x[(1):(n.s)]) 
+Pi_i.0 <- matrix(x[(n.s+1):(n.s*2)]) 
+X_j.0 <- matrix(x[( (n.s*2)+1 ):(n.s*3)])  
 ######
-###### RHS
+###### CONSTRUCTING RHS
 ######
-X.inv.new <- rbind(X_j.0^(-1),Pi_i.0^(-1),P_j.0^(-1));
-X.X <- rbind(X_j.0, Y_i, X_j.0);
-X.X.inv <- X.X^(-1);
+X.inv.new <- rbind(X_j.0^(-1),Pi_i.0^(-1),P_j.0^(-1))
+X.X <- rbind(X_j.0, Y_i, X_j.0)
+X.X.inv <- X.X^(-1)
 #Right hand side
-RHS <- x*( ones.vec- (big.forall*X.X.inv)) ; 
+RHS <- x*( ones.vec- (big.forall*X.X.inv)) 
 ######
-###### LHS
+###### CONSTRUCTING LHS
 ######
-kron.1 <- kronecker((P_j.0^(-1))*X_j.0 , ones)*tau.ns.ns.diag;
-kron.2 <- kronecker(((Pi_i.0^(-1))*Y_i), ones)*((-1)*tau.ns.ns.diag);
-Big.Matrix <- rbind(big.tau, cbind(zeros.ns.ns, kron.1, kron.2));
+kron.1 <- kronecker((P_j.0^(-1))*X_j.0 , ones)*tau.ns.ns.diag
+kron.2 <- kronecker(((Pi_i.0^(-1))*Y_i), ones)*((-1)*tau.ns.ns.diag)
+Big.Matrix <- rbind(big.tau, cbind(zeros.ns.ns, kron.1, kron.2))
 #left hand side
-LHS <- Big.Matrix %*%(X.inv.new*X.X);
+LHS <- Big.Matrix %*%(X.inv.new*X.X)
 ######
-###### LHS-RHS
+###### OBJECTIVE FUNCTION TO MINIMIZE
 ######
-#constraint that first P=100
-constraint<-1000*(x[1]/100-1)^2;
-sum((LHS/RHS-1)^2)+constraint
+#NORMALIZING FIRST P TO 100 
+constraint<-((x[1]/100)-1)*10000
+objective<-rbind((LHS/RHS)-1,constraint)
+#FINAL OBJECTIVE FUNCTION: SUM OF SQUARES OF THE DIFFERENCE
+fx<- apply(objective^2, 2, sum)
+#THE VALUE THE FUNCTION RETURNS: gravity.us(x)=fx
+return(fx)
 }
-optimal.model <- optimx( par=rep(1, 3*n.s), fn=gravity.us,
+#SHOWING THAT IN THE EXAMPLE, THE REAL SOLUTION MAKES FUNCTION CLOSE TO ZERO
+####
+x=c(100.0000483, 105.8821817, 203.9996694, 221.0001074, 9621.345733, 12972.01184)
+####
+gravity.us(x) #seems to work!
+
+####
+#### SOLVING
+####
+
+###FIRST OPTIMIZATION ALGORITHM: LOWER AND UPPER BOUNDS
+optimal.model <- optimx( par=rep(100, 3*n.s), fn=gravity.us,
                          lower=rep(0.0000000000001, 3*n.s), upper=rep(1000000000000, 3*n.s),
                          control=list(maxit=100000, eps=1.0E-20));
+#VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
+optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
+#VECTOR OF SOLUTION
+solu.1<-t(as.matrix(optimal.model[1:(3*n.s)]));  #not the same at the real solution!
+
+###SECOND OPTIMIZATION ALGORITHM
+optimal.model<-optim(par=rep(100, 3*n.s), fn=gravity.us, method = "Nelder-Mead", control = list(maxit = 20000,             abstol=1e-10, reltol=1e-10,ndeps=1e-8))
+#VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
+optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
+#VECTOR OF SOLUTION
+solu.2<-optimal.model$par
+
+###THIRD. STARTING AT THE SOLUTION!
+optimal.model<-optim(par=c(100.0000483, 105.8821817, 203.9996694, 221.0001074, 9621.345733, 12972.01184), fn=gravity.us, method = "Nelder-Mead", control = list(maxit = 20000,             abstol=1e-10, reltol=1e-10,ndeps=1e-8))
+#VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
+optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
+#VECTOR OF SOLUTION
+solu.3<-optimal.model$par
+## comparing solutions
+(solu.3/c(100.0000483, 105.8821817, 203.9996694, 221.0001074, 9621.345733, 12972.01184))-1
+
 #checking
 if(as.numeric( optimal.model$value )>epsilon) 
   stop(paste("Cannot find a solution for X_j states for year", yr))
