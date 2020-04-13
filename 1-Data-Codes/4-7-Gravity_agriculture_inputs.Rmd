@@ -495,9 +495,11 @@ gravity.us(x) #seems to work!
 ####
 #### SOLVING
 ####
-
+#potential initial value: X_j=Y_j (no deficit)
+init<-rep(100, 3*n.s);
+init[((n.s*2)+1 ):(n.s*3)]<-Y_i;
 ###FIRST OPTIMIZATION ALGORITHM: LOWER AND UPPER BOUNDS
-optimal.model <- optimx( par=rep(100, 3*n.s), fn=gravity.us,
+optimal.model <- optimx( par=init, fn=gravity.us,
                          lower=rep(0.0000000000001, 3*n.s), upper=rep(1000000000000, 3*n.s),
                          control=list(maxit=100000, eps=1.0E-20));
 #VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
@@ -506,7 +508,7 @@ optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
 solu.1<-t(as.matrix(optimal.model[1:(3*n.s)]));  #not the same at the real solution!
 
 ###SECOND OPTIMIZATION ALGORITHM
-optimal.model<-optim(par=rep(100, 3*n.s), fn=gravity.us, method = "Nelder-Mead", control = list(maxit = 20000,             abstol=1e-10, reltol=1e-10,ndeps=1e-8))
+optimal.model<-optim(par=init, fn=gravity.us, method = "Nelder-Mead", control = list(maxit = 20000,             abstol=1e-10, reltol=1e-10,ndeps=1e-8))
 #VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
 optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
 #VECTOR OF SOLUTION
