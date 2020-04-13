@@ -477,7 +477,7 @@ LHS <- Big.Matrix %*%(X.inv.new*X.X);
 ###### LHS-RHS
 ######
 #constraint that first P=100
-constraint<-100000000*(x[1]-100)^2;
+constraint<-1000*(x[1]/100-1)^2;
 sum((LHS/RHS-1)^2)+constraint
 }
 optimal.model <- optimx( par=rep(1, 3*n.s), fn=gravity.us,
