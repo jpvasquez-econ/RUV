@@ -62,6 +62,7 @@ n.c <- 37;
 n.s <- 50; 
 WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
 data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
+data_gravity_serv.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
 #state level imports and exports
 CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
 CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
@@ -531,3 +532,216 @@ solu<-t(as.matrix(optimal.model[1:150]));
 
 }
 ```
+
+
+#New system by calculating $X_j first$
+```{r warning=FALSE}
+
+for (yr in 2000:2007){
+
+## Gravity data csv format with comma as the separator
+data_gravity_agriculture <- data_gravity_agriculture.base %>% 
+  filter( year==yr ) %>% 
+  select( -year ) %>% 
+  mutate( iso_o=as.character(iso_o), iso_d=as.character(iso_d) ) %>% 
+  mutate( len_o=ifelse(nchar(iso_o)<4, 'COUNTRY', 'STATE'), 
+          len_d=ifelse(nchar(iso_d)<4, 'COUNTRY', 'STATE') );
+data_gravity_serv <- data_gravity_serv.base %>% 
+  filter( year==yr ) %>% 
+  select( -year )
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# NUMBER STATES AND COUNTRIES
+# States
+id.states <- data_gravity_agriculture %>% 
+  filter( len_o=='STATE' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id=row_number() ) %>% 
+  dplyr::rename( region=iso_o ) %>% 
+  select( id, region );
+# Countries
+id.countries <- data_gravity_agriculture %>% 
+  filter( len_o=='COUNTRY' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id=n.s+row_number() ) %>% 
+  dplyr::rename( region=iso_o ) %>% 
+  select( id, region );
+# Total
+id.total <- rbind( id.states, id.countries );
+state.names <- id.total$region[1:n.s]
+#t(id.total)
+
+# GDP VECTOR: services and agriculture 
+gdp.vector.serv <- data_gravity_serv %>% 
+  select( iso_o, Y_i ) %>% 
+  distinct( iso_o, .keep_all=TRUE ) %>% 
+  left_join( y=id.total, by=c('iso_o'='region') ) %>% 
+  select( id, Y_i ) %>% 
+  arrange( id );
+gdp.vector.serv <- matrix( gdp.vector.serv$Y_i );
+gdp.vector.serv.s <- data.frame(gdp.vector.serv[1:n.s])
+gdp.vector.serv.s$sector <- 13
+gdp.vector.serv.s$exporter <- state.names
+colnames(gdp.vector.serv.s) <- c("export", "sector", "exporter")
+gdp.vector.agri <- data_gravity_agriculture %>% 
+  select( iso_o, Y_i ) %>% 
+  distinct( iso_o, .keep_all=TRUE ) %>% 
+  left_join( y=id.total, by=c('iso_o'='region') ) %>% 
+  select( id, Y_i ) %>% 
+  arrange( id );
+gdp.vector.agri <- matrix( gdp.vector.agri$Y_i );
+gdp.vector.agri.s <- data.frame(gdp.vector.agri[1:n.s])
+gdp.vector.agri.s$sector <- 14
+gdp.vector.agri.s$exporter <- state.names
+colnames(gdp.vector.agri.s) <- c("export", "sector", "exporter")
+
+#Expenditure vector: services
+expenditure.vector.serv <- data_gravity_serv %>% 
+  select( iso_d, X_j ) %>% 
+  distinct( iso_d, .keep_all=TRUE ) %>% 
+  left_join( y=id.total, by=c('iso_d'='region') ) %>% 
+  select( id, X_j ) %>% 
+  arrange( id );
+expenditure.vector.serv <- matrix( expenditure.vector.serv$X_j );
+expenditure.vector.serv.s <- data.frame(expenditure.vector.serv[1:n.s])
+expenditure.vector.serv.s$sector <- 13
+expenditure.vector.serv.s$importer <- state.names
+colnames(expenditure.vector.serv.s) <- c("import", "sector", "importer")
+expenditure.vector.serv.s <- expenditure.vector.serv.s %>% select(importer, sector, import)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#sum.14: first component in X_j
+io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
+io.0 <- io.shares %>%
+  filter(country=="USA", sector==14) %>%
+  select(-year, -country, -sector)
+io.0 <- t(io.0)
+state.state <- read.csv(paste('1-Intermediate_Processed_Data//state_cfs_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+state.country.y <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+state.country.e <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+state.exports <- rbind(state.state, state.country.y)
+exp.v <- c()
+for (sec in 1:12) {
+  state.exports.1 <- state.exports %>%
+    filter(sector==sec) %>%
+    select(-year, -importer, -sector)
+  export <- matrix(colSums(state.exports.1))
+  export <- data.frame(export)
+  export$sector <- sec
+  export$exporter <- state.names
+  exp.v <- rbind(exp.v, export)
+}
+gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
+gdp.tot.v$phi <-NA
+for (sec in 1:14) {
+  gdp.tot.v <- gdp.tot.v %>%
+    mutate(phi= ifelse(sector==sec, io.0[sec], phi))
+}
+gdp.tot.v <- gdp.tot.v %>%
+  mutate(val= phi*export)
+sum.14 <- gdp.tot.v %>%
+  group_by(exporter) %>%
+  mutate(value= sum(val)) %>%
+  ungroup() %>%
+  distinct(exporter, .keep_all = TRUE)
+sum.14 <- sum.14$value  
+  
+#sum.not.14: second component in X_j
+state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4:dim(state.country.e)[2]])
+expenditure.state <- rowSums(state.imports)
+expenditure.state <- cbind( state.state[2:3], expenditure.state)
+colnames(expenditure.state) <- c("importer", "sector", "import")
+expenditure.vector.serv.s <- rbind(expenditure.state, expenditure.vector.serv.s)
+colnames(expenditure.vector.serv.s) <- c("importer", "r", "import")
+
+sum.not.14 <- c()
+for (r in 1:13) {
+io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
+io.0 <- io.shares %>%
+  filter(country=="USA", sector==r) %>%
+  select(-year, -country, -sector)
+io.0 <- t(io.0)
+state.exports <- rbind(state.state, state.country.y)
+exp.v <- c()
+for (sec in 1:12) {
+  state.exports.1 <- state.exports %>%
+    filter(sector==sec) %>%
+    select(-year, -importer, -sector)
+  exp <- matrix(colSums(state.exports.1))
+  exp <- data.frame(exp)
+  exp$sector <- sec
+  exp$exporter <- state.names
+  exp.v <- rbind(exp.v, exp)
+}
+gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
+gdp.tot.v$phi <-NA
+for (sec in 1:14) {
+  gdp.tot.v <- gdp.tot.v %>%
+    mutate(phi= ifelse(sector==sec, io.0[sec], phi))
+}
+gdp.tot.v <- gdp.tot.v %>%
+    mutate(val= phi*exp)
+sum.not.14.0 <- gdp.tot.v %>%
+  group_by(exporter) %>%
+  mutate(value= sum(val)) %>%
+  ungroup() %>%
+  distinct(exporter, .keep_all = TRUE) %>%
+  select(-phi, -val, -exp) %>%
+  select(exporter, sector, value)
+sum.not.14 <- rbind(sum.not.14, sum.not.14.0)
+}
+sum.not.14 <- cbind(sum.not.14, expenditure.vector.serv.s)
+sum.not.14 <- sum.not.14 %>%
+  mutate(diff= import - value) %>%
+  group_by(importer) %>%
+  mutate(sum.not.14= sum(diff)) %>%
+  ungroup() %>%
+  distinct(importer, .keep_all = TRUE) %>%
+  select(importer, sum.not.14)
+
+#share of US agriculture consumption to total US consumption 
+wiot.full.0 <- wiot.full %>%
+  filter(year==yr & row_item!=17 & row_item!=31 & row_item<=34) %>%
+  filter(col_item>=37 & col_item<=42 & col_country=="USA")
+wiot.full.1 <- wiot.full.0 %>%
+  group_by(year, col_country) %>%
+  mutate(C.us= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, col_country, .keep_all = TRUE)
+wiot.full.2 <- wiot.full.0 %>%
+  filter(row_item==1) %>%
+  group_by(year, col_country) %>%
+  mutate(C.us.agri= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, col_country, .keep_all = TRUE)
+C.us <- wiot.full.1$C.us
+C.us.agri <- wiot.full.2$C.us.agri
+gamma <- C.us.agri/C.us
+#gamma
+frac.gamma <- gamma/(1-gamma)
+
+
+#final computation for X_j
+X_j <- sum.14 + (frac.gamma*sum.not.14$sum.not.14)
+
+
+#check
+HOLA <- WIOD.base %>%
+  filter(year==2000, importer_country=="USA", sector==14)
+H=HOLA[5:dim(HOLA)[2]]
+sum(H)
+sum(X_j)
+
+}
+
+
+
+```
+
+
+
+
