@@ -661,10 +661,12 @@ gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
 ##CALCULATING \sum_{s}\phi_{14,s}Y_{j,s} (SUM OF INTERMEDIATE USES IN AGRIC) FOR EACH STATE
 ##
 #reshaping gdp.tot.v
-gdp.tot.v.mat<-spread(gdp.tot.v, exporter, export, fill = NA, convert = FALSE, drop = TRUE, sep = NULL) %>%
-               select(-sector);
+gdp.tot.v.mat<-spread(gdp.tot.v, sector, export, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL) 
+gdp.tot.v.mat<-t(gdp.tot.v.mat[,-1])
+class(gdp.tot.v.mat) <- "numeric"
+
 #product of a 1x14 row vect with \phi_{14,s} and a 14x50 matrix with the Y_j,s
-sum.14<-as.matrix(io.0)  %*% as.matrix(gdp.tot.v.mat);
+sum.14<-as.matrix(io.0)  %*% gdp.tot.v.mat;
 sum.14<-t(sum.14.v); #i confirmed this is the same as the other calculation
 
 ####
@@ -679,27 +681,35 @@ state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4
 expenditure.state <- rowSums(state.imports)
 expenditure.state <- cbind( state.state[2:3], expenditure.state)
 colnames(expenditure.state) <- c("importer", "sector", "import")
-expenditure.vector.serv.s <- rbind(expenditure.state, expenditure.vector.serv.s)
-colnames(expenditure.vector.serv.s) <- c("importer", "r", "import")
+expenditure.vector <- rbind(expenditure.state, expenditure.vector.serv.s)
+colnames(expenditure.vector) <- c("importer", "r", "import")
 
-expenditure.mat<-spread(expenditure.vector.serv.s, importer, import, fill = NA, convert = FALSE, drop = TRUE, sep =                  NULL) %>%  select(-r);
+expenditure.mat<-spread(expenditure.vector, importer, import, fill = NA, convert = FALSE, drop = TRUE, sep =                  NULL) %>%  select(-r);
 expenditure.mat<-t(expenditure.mat);                 
 #IO shares
 io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))%>%
              filter(country=="USA") %>%
              select(-year, -country, -sector);
 #sum for all receiving sectors
-sum.not.14.v<-as.matrix(io.shares)  %*% as.matrix(gdp.tot.v.mat);
+sum.not.14.v<-as.matrix(io.shares)  %*% gdp.tot.v.mat;
 sum.not.14.v<-as.data.frame(t(sum.not.14.v)) %>%
             select(-V14);
 #sum over r
-sum.not.14.vector<-expenditure.mat-sum.not.14.v
-sum.not.14.vector<-apply(as.data.frame(sum.not.14.vector),MARGIN=1, FUN=sum)
-
+sum.not.14.vector<-as.data.frame(rowSums(expenditure.mat-sum.not.14.v))
 
 ####
 #### Marco's way
 ####
+
+# X_j for all other sectors
+state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4:dim(state.country.e)[2]])
+expenditure.state <- rowSums(state.imports)
+expenditure.state <- cbind( state.state[2:3], expenditure.state)
+colnames(expenditure.state) <- c("importer", "sector", "import")
+expenditure.vector.serv.s <- rbind(expenditure.state, expenditure.vector.serv.s)
+colnames(expenditure.vector.serv.s) <- c("importer", "r", "import")
+
+
 sum.not.14 <- c()
 for (r in 1:13) {
 io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
