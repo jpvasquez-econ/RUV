@@ -101,12 +101,13 @@ for(yr in 2000:2007){
     colnames(m.country) <- c(1:14)
     m.country$country <- country
     m.country$year <- yr
-    m.country <- m.country %>% select(year, country, everything())
+    m.country$sector <- c(1:14)
+    m.country <- m.country %>% select(year, country, sector, everything())
     m.coun <- rbind(m.coun, m.country)  
   }
   #Check point
   h1= matrix(38, nrow = 14)
-  h2= colSums(m.coun[, 3:dim(m.coun)[2]])
+  h2= colSums(m.coun[, 4:dim(m.coun)[2]])
   print(sum(h1-h2))
   write.table(m.coun, file = paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE) 
 }
