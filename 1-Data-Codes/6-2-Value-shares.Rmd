@@ -40,6 +40,8 @@ This code calculates the share of value added in gross output for each US state 
 
 ## Importing datasets to R
 ```{r}
+n.s <- 50
+n.c <- 37
 
 #Final matrices
 Base=c()
@@ -98,7 +100,7 @@ SUBSIDIES <- SUBSIDIES %>%
 
 
 #Value-added for countries
-COUNTRY_VALUE=c()
+COUNTRY_VALUE <- c()
 for (yr in 0:7) {
 country_value <- read_excel(paste("0-Raw_Data//WIOD//wiot0", yr, "_row_apr12.xlsx", sep=""))
 country_value=data.frame(country_value)
@@ -107,7 +109,7 @@ rows <- c(4,5,1446) #referring to rows of wiot imported to R, not to wiot in exc
 country_value = country_value[rows, 5:1439]
 rownames(country_value) = c("country", "column", "value")
 country_value=data.frame(t(country_value))
-c=c(14, 14, 1, 2, 2, 3, 3, 4:12, 0, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 0, 13, 13, 13, 0)
+c=c(14, 4, 1, 2, 2, 3, 3, 4:12, 0, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 0, 13, 13, 13, 0)
 col=(1:35)
 c=cbind(c,col)
 v=c()
@@ -117,12 +119,13 @@ for (i in 1:41) {
 country_value$sector=v[,1]
 country_value$year=yr+2000
 country_value <- country_value %>%
-  filter(country != "LVA" & country != "LUX" & country != "MLT" & country != "USA") %>%   # taking out countries not of interest
+  filter(country != "LVA" & country != "LUX" & country != "MLT") %>%
   mutate(country= recode(country, "ROM"="ROU")) %>%
   filter(sector != 0) %>%
   mutate(sector= sector+100) %>%
   select(year, everything())
 COUNTRY_VALUE <- rbind(COUNTRY_VALUE, country_value)
+
 }
 
 
@@ -195,58 +198,62 @@ COUNTRY_VALUE1 <- COUNTRY_VALUE %>%
   distinct(year, country, sector, .keep_all=TRUE ) %>%
   select(-column, -value) %>%
   arrange(year, country, sector)
-
-
 colnames(COUNTRY_VALUE1)= c("year", "region", "sector", "value_added")
 colnames(value1)= c("year", "region", "sector", "value_added")
 
-value1 = rbind(value1, COUNTRY_VALUE1)
-value1 <- value1 %>%
-  arrange(year, region, sector) #%>%
-  #mutate(region= recode(region, "ROM"="ROU")) %>%
-  #mutate(region= recode(region, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
+US.value <- COUNTRY_VALUE1 %>%
+  arrange(year, region, sector) %>%
+  filter(region=="USA")
+COUNTRY_VALUE1 <- COUNTRY_VALUE1 %>%
+  filter(region!="USA")
+VA.US <-as.matrix(US.value[, 4])
+VA.US.mat <- matrix( data=rep(VA.US, n.s), ncol=(n.s), byrow=FALSE );
 
+#proportionality for states' VA
+VA.s<-spread(value1, region, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+VA.s.1 <- VA.s[ , (3:dim(VA.s)[2])] /rowSums(VA.s[ , (3:dim(VA.s)[2])])
+# check <- rowSums(VA.s.1)
+# print(check)
+value1 <- VA.s.1*VA.US.mat
+# check1 <- as.matrix(US.value[, 4]) - rowSums(value1)
+# print(check1)
+value1 <- cbind(VA.s[, 1:2], value1)
+value1 <- melt(value1, id.vars=c("year", "sector"), variable.name="region", value.name = "value_added")
+value1 <- value1 %>% select(year, region, sector, value_added)
+value1$region <- as.character(value1$region)
+
+value1 = rbind(value1, COUNTRY_VALUE1)
+id.tot <- data.frame(unique(Base$importer))
+id.tot$id <- c(1:(n.s+n.c))
+colnames(id.tot) <- c("regions", "id")
+
+value1 <- value1 %>%
+  left_join(id.tot, by=c('region'='regions')) %>%
+  mutate(region=id) %>%
+  select(-id) %>%
+  arrange(year, region, sector) 
+
+VA.0<-spread(value1, sector, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+VA <- VA.0 %>% select(-region)
 
 ```
 
 share of value added in gross output
 $Labor share = \frac{VA_{i,k}}{Y_{i,k}}$
 ```{r}
-
-regions=as.character(Base$importer[1:87])
-for (yr in 2000:2007) {
-output <- Y %>%
-  filter(year==yr) %>%
-  select(-year)
-labor_shares = matrix(0, 87, 14)
-labor_shares = data.frame(labor_shares)
-colnames(labor_shares) = c(101:114)
-for (i in 1:87) {
-  for (j in 1:14) {
-    r=i
-    trans <- value1 %>%
-      filter(year==yr & region==regions[i] & sector==(j+100))
-    labor_shares[r,j]=(trans$value_added[1] / output[r,j])
-    if(is.na(labor_shares[r,j])==TRUE) {
-      labor_shares[r,j]=0
-      print(yr)
-      print(i)
-      print(j)
-    }
-    if(labor_shares[r,j]>1) {
-      labor_shares[r,j]=1
-    }
-    if(labor_shares[r,j]<(-1)) {
-      labor_shares[r,j]=-1
-    }
-  }
-}
-labor_shares$year= yr
-labor_shares$region= regions
+labor_shares <- VA[, 2:dim(VA)[2]] / Y[, 2:dim(Y)[2]]
+labor_shares[labor_shares>1] <- 1
+labor_shares[labor_shares<(-1)] <- (-1)
+labor_shares <- cbind(VA.0[, 1:2], labor_shares)
 labor_shares <- labor_shares %>%
-  select(year, region, everything())
-write.table(labor_shares, file = paste("1-Intermediate_Processed_Data//labor_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+  left_join(id.tot, by=c('region'='id')) %>%
+  mutate(region=regions) %>%
+  select(-regions)
 
+for (yr in 2000:2007) {
+  final <- labor_shares %>%
+    filter(year==yr)
+  write.table(final, file = paste("1-Intermediate_Processed_Data//labor_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
 
