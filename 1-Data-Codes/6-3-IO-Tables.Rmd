@@ -43,14 +43,9 @@ $$ s_{k^I,k,c,t}= \frac{ M_{k^I,k,c,t}^{allcountries}}{\sum_{k^I} M_{k^I,k,c,t}^
 ## Importing datasets to R
 ```{r}
 #WIOD Full
-WIOD.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-
-```
-
-#Calculating input-output matrices
-```{r}
+wiot.full.inter <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 #Transforming WIOD sectors to 1-14 CDP sectors
-WIOD.full1 <- WIOD.full %>%
+wiot.full.inter <- wiot.full.inter %>%
   mutate(col_country= recode(col_country, "ROM"="ROU")) %>%
   mutate(row_country= recode(row_country, "ROM"="ROU")) %>%
   filter(col_country != "LVA" & col_country != "LUX" & col_country != "MLT") %>%
@@ -63,58 +58,32 @@ WIOD.full1 <- WIOD.full %>%
   mutate(value1= sum(value)) %>%
   ungroup() %>%
   distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
-  select(-value)
-
-#Country names
-temp <- data.frame(unique(WIOD.full1$row_country))
-colnames(temp) <- c("country")
-temp <- temp %>% 
-  filter(country!="USA")
-names.countries <- rbind("USA", temp)
-names.countries <- names.countries[1:dim(names.countries)[1], 1]
-
-#Calculating shares
-for(yr in 2000:2007){
-  WIOD.full2 <- WIOD.full1 %>%
-    filter(year==yr)
-  m.coun <- c()
-  for (country in names.countries) {
-    WIOD.full3 <- WIOD.full2 %>%
-      filter(col_country==country) %>%
-      group_by(col_item, row_item) %>%
-      mutate(value2= sum(value1)) %>%
-      ungroup() %>%
-      select(-value1) %>%
-      distinct(col_item, row_item, .keep_all = TRUE)
-    m.country <- matrix(0, nrow = 14, ncol = 14)
-    for(r.sec in 1:14){
-      for (c.sec in 1:14) {
-        WIOD.full4 <- WIOD.full3 %>%
-          filter(col_item==c.sec, row_item==r.sec)
-        if(dim(WIOD.full4)[1]!=0){m.country[r.sec, c.sec]= WIOD.full4$value2[1]}
-      }
-    }
-    c.sum <- colSums(m.country)
-    c.sum= t(matrix(replicate(14, c.sum), nrow = length(c.sum), ncol = 14))
-    m.country <- m.country/c.sum
-    m.country <- data.frame(m.country)
-    colnames(m.country) <- c(1:14)
-    m.country$country <- country
-    m.country$year <- yr
-    m.country$sector <- c(1:14)
-    m.country <- m.country %>% select(year, country, sector, everything())
-    m.coun <- rbind(m.coun, m.country)  
-  }
-  #Check point
-  h1= matrix(38, nrow = 14)
-  h2= colSums(m.coun[, 4:dim(m.coun)[2]])
-  print(sum(h1-h2))
-  write.table(m.coun, file = paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE) 
-}
-
-
+  select(-value) %>%
+  dplyr::rename(value=value1)
 
 ```
 
+#Calculating input-output matrices
+```{r}
+num <- wiot.full.inter %>%
+  group_by(year, col_country, col_item, row_item) %>%
+  mutate(val= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, col_country, col_item, row_item, .keep_all = TRUE) %>%
+  select(-row_country, -value) %>%
+  dplyr::rename(region=col_country, sector_o=row_item, sector_d=col_item)
 
+num <-spread(num, sector_o, val, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+
+io.shares <- num[, 4:dim(num)[2]] / rowSums(num[, 4:dim(num)[2]])
+io.shares <- cbind(num[, 1:3], io.shares)
+
+for (yr in 2000:2007) {
+  final <- io.shares %>%
+    filter(year==yr)
+  write.table(final, file = paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+}
+
+
+```
 
