@@ -121,7 +121,7 @@ labor_shares <- cbind(VA[, 1:2], labor_shares)
 for (yr in 2000:2007) {
   final <- labor_shares %>%
     filter(year==yr)
-  write.table(final, file = paste("1-Intermediate_Processed_Data//value_shares_countries", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+  write.table(final, file = paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
 

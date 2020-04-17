@@ -113,7 +113,7 @@ io <- io %>%
 for (yr in 2000:2007) {
   final <- io %>%
     filter(year==yr)
-  write.table(final, file = paste("1-Intermediate_Processed_Data//labor_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+  write.table(final, file = paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
 
