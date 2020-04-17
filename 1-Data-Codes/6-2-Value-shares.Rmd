@@ -60,6 +60,10 @@ m <- m %>% select(year, everything())
 Base=rbind(Base, m)
 }
 
+names.all <- unique(Base$importer)
+names.state <- names.all[1:n.s]
+names.country <- names.all[(n.s+1):(n.s+n.c)]
+
 
 #State GDP
 GDP=c()
@@ -107,62 +111,68 @@ SUBSIDIES <- SUBSIDIES %>%
 #These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP5. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 
 
-#Value-added for countries
-COUNTRY_VALUE <- c()
-for (yr in 0:7) {
-country_value <- read_excel(paste("0-Raw_Data//WIOD//wiot0", yr, "_row_apr12.xlsx", sep=""))
-country_value=data.frame(country_value)
-colnames(country_value)=country_value[4,]
-rows <- c(4,5,1446) #referring to rows of wiot imported to R, not to wiot in excel
-country_value = country_value[rows, 5:1439]
-rownames(country_value) = c("country", "column", "value")
-country_value=data.frame(t(country_value))
-c=c(14, 4, 1, 2, 2, 3, 3, 4:12, 0, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 0, 13, 13, 13, 0)
-col=(1:35)
-c=cbind(c,col)
-v=c()
-for (i in 1:41) {
-  v=rbind(v,c)
-}
-country_value$sector=v[,1]
-country_value$year=yr+2000
-country_value <- country_value %>%
-  filter(country != "LVA" & country != "LUX" & country != "MLT") %>%
-  mutate(country= recode(country, "ROM"="ROU")) %>%
-  filter(sector != 0) %>%
-  mutate(sector= sector+100) %>%
-  select(year, everything())
-COUNTRY_VALUE <- rbind(COUNTRY_VALUE, country_value)
-
-}
-
-
+#WIOD
+wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
+wiot.full=data.frame(wiot.full)
+wiot.full.inter <- wiot.full %>% 
+  filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% 
+  mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
+  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) %>%
+  mutate(row_item= recode(row_item, '1'=14L, '2'=4L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=0L, '38'=0L, '39'=0L, '40'=0L, '41'=0L, '42'=0L )) %>%
+  mutate(col_item= recode(col_item, '1'=14L, '2'=4L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=0L, '38'=0L, '39'=0L, '40'=0L, '41'=0L, '42'=0L )) %>%
+  filter(col_item!=0 & row_item!=0) %>%
+  arrange(year, row_country, col_country, row_item, col_item) %>%
+  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
+  mutate(value1= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
+  select(-value) %>%
+  dplyr::rename(value=value1)
 ```
 
 
 Gross output for each region, for each sector
 $Y_{i,k}= \sum_j X_{ij,k} \quad for \quad all \quad j$
 ```{r}
-
 Y=c()
 for (yr in 2000:2007) {
-Base1 <- Base %>%
-  filter(year==yr) %>%
-  select(-year, -importer)
 output=c()
 for (k in 101:114) {
-  Base2 <- Base1 %>%
-    filter(sector==k) %>%
-    select(-sector)
-  out=matrix(colSums(Base2))
+  Base1 <- Base %>%
+    filter(year==yr, sector==k) %>%
+    select(-year, -importer, -sector)
+  out=matrix(colSums(Base1))
   output=cbind(output,out)
 }
 output=data.frame(output)
 colnames(output) = c(101:114)
 output$year=yr
-output <- output %>% select(year, everything())
+output$region=names.all
+output <- output %>% select(year, region, everything())
 Y <- rbind(Y, output)
 }
+
+#output for US
+Y.US <- Y %>%
+  filter(region %in% names.state)
+Y.US <- melt(Y.US, id.vars=c("year", "region"), variable.name="sector", value.name = "value")
+Y.US <- Y.US %>%
+  group_by(year, sector) %>%
+  mutate(val= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, sector, .keep_all = TRUE) %>%
+  mutate(region="USA") %>%
+  select(-value) 
+
+#output for countries
+Y.c <- Y %>%
+  filter(region %in% names.country)
+Y.c <- melt(Y.c, id.vars=c("year", "region"), variable.name="sector", value.name = "val")
+
+#output all countries (including USA)
+Y.c <- rbind(Y.c, Y.US)
+Y.c <- Y.c %>% arrange(year, sector, region)
+
 ```
 
 
@@ -179,7 +189,7 @@ value$gdp=as.numeric(as.character(value$gdp)) #some NA generated because base is
 value$tax=as.numeric(as.character(value$tax))
 value$sub=as.numeric(as.character(value$sub))
 
-value1 <- value %>%
+VA.s <- value %>%
   mutate(gdp= ifelse(is.na(gdp)==TRUE, 0, gdp)) %>%
   mutate(tax= ifelse(is.na(tax)==TRUE, 0, tax)) %>%
   mutate(sub= ifelse(is.na(sub)==TRUE, 0, sub)) %>%
@@ -197,62 +207,66 @@ value1 <- value %>%
   distinct(year, state, sector, .keep_all=TRUE ) %>%
   select(-amount) %>%
   arrange(year, state, sector) %>%
-  select(-gdp, -tax, -sub)
+  select(-gdp, -tax, -sub) %>%
+  dplyr::rename(region=state)
 
-COUNTRY_VALUE1 <- COUNTRY_VALUE %>%
-  group_by(year, country, sector) %>%
-  mutate(value_added=sum(as.numeric(as.character(value)))) %>%
+
+#calculating value added for countries
+sum.s.X_jsk <- wiot.full.inter %>%
+  group_by(year, col_country, col_item) %>%
+  mutate(val= sum(value)) %>%
   ungroup() %>%
-  distinct(year, country, sector, .keep_all=TRUE ) %>%
-  select(-column, -value) %>%
-  arrange(year, country, sector)
-colnames(COUNTRY_VALUE1)= c("year", "region", "sector", "value_added")
-colnames(value1)= c("year", "region", "sector", "value_added")
+  distinct(year, col_country, col_item, .keep_all = TRUE) %>%
+  select(-row_country, -row_item, -value) %>%
+  dplyr::rename(region=col_country, sector=col_item) %>%
+  arrange(year, sector, region)
+VA.c <- Y.c$val - sum.s.X_jsk$val
+VA.c <- cbind(Y.c[1:3], VA.c)
+colnames(VA.c) <- c("year", "region", "sector", "value_added")
 
-US.value <- COUNTRY_VALUE1 %>%
-  arrange(year, region, sector) %>%
+VA.US <- VA.c %>%
   filter(region=="USA")
-COUNTRY_VALUE1 <- COUNTRY_VALUE1 %>%
+VA.c <- VA.c %>%
   filter(region!="USA")
-VA.US <-as.matrix(US.value[, 4])
+
+VA.US <-as.matrix(VA.US[, 4])
 VA.US.mat <- matrix( data=rep(VA.US, n.s), ncol=(n.s), byrow=FALSE );
 
 #proportionality for states' VA
-VA.s<-spread(value1, region, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+VA.s<-spread(VA.s, region, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 VA.s.1 <- VA.s[ , (3:dim(VA.s)[2])] /rowSums(VA.s[ , (3:dim(VA.s)[2])])
 # check <- rowSums(VA.s.1)
 # print(check)
 value1 <- VA.s.1*VA.US.mat
-# check1 <- as.matrix(US.value[, 4]) - rowSums(value1)
+# check1 <- VA.US - rowSums(value1)
 # print(check1)
-value1 <- cbind(VA.s[, 1:2], value1)
-value1 <- melt(value1, id.vars=c("year", "sector"), variable.name="region", value.name = "value_added")
-value1 <- value1 %>% select(year, region, sector, value_added)
-value1$region <- as.character(value1$region)
+VA.s <- cbind(VA.s[, 1:2], value1)
+VA.s <- melt(VA.s, id.vars=c("year", "sector"), variable.name="region", value.name = "value_added")
+VA.s <- VA.s %>% select(year, region, sector, value_added)
+VA.s$region <- as.character(VA.s$region)
 
-value1 = rbind(value1, COUNTRY_VALUE1)
+VA = rbind(VA.s, VA.c)
 id.tot <- data.frame(unique(Base$importer))
 id.tot$id <- c(1:(n.s+n.c))
 colnames(id.tot) <- c("regions", "id")
 
-value1 <- value1 %>%
+VA <- VA %>%
   left_join(id.tot, by=c('region'='regions')) %>%
   mutate(region=id) %>%
   select(-id) %>%
-  arrange(year, region, sector) 
+  arrange(year, sector, region) 
 
-VA.0<-spread(value1, sector, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-VA <- VA.0 %>% select(-region)
+VA<-spread(VA, sector, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
 ```
 
 share of value added in gross output
 $Labor share = \frac{VA_{i,k}}{Y_{i,k}}$
 ```{r}
-labor_shares <- VA[, 2:dim(VA)[2]] / Y[, 2:dim(Y)[2]]
+labor_shares <- VA[, 3:dim(VA)[2]] / Y[, 3:dim(Y)[2]]
 labor_shares[labor_shares>1] <- 1
 labor_shares[labor_shares<(-1)] <- (-1)
-labor_shares <- cbind(VA.0[, 1:2], labor_shares)
+labor_shares <- cbind(VA[, 1:2], labor_shares)
 labor_shares <- labor_shares %>%
   left_join(id.tot, by=c('region'='id')) %>%
   mutate(region=regions) %>%
