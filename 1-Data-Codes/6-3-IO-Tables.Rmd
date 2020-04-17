@@ -35,10 +35,13 @@ lapply( libs, require, character.only=TRUE );
 
 # General Instructions
 
-This code calculates the input output trade shares for each sector, country and year. Specifically, a share for year, t, country, c, and sector, k, represents the proportion of c's sector k imports from all countries'sector $k^I$, of c's sector k total imports from all countries. The final output of this code, for each year separately, is a (14*38)x(14+2) matrix, where the first two columns indicate the year and country, and the rest the sectors associated with the shares of the country.    
+This code calculates the input output trade shares for each sector, country and year. The final output of this code, for each year separately, is a (sectors*countries)$\times$(2+sectors) matrix, where the first two columns indicate the year and country, and the rest the sectors associated with the shares of the country.    
 
-Each share is defined as follows:
-$$ s_{k^I,k,c,t}= \frac{ M_{k^I,k,c,t}^{allcountries}}{\sum_{k^I} M_{k^I,k,c,t}^{allcountries}}$$
+Define $\alpha_{j,ks}$ for region j as the share of purchases of sector s that come from sector k in the total purchases of sector s (this is the input output coefficient). We have that:
+
+$$\alpha_{j,ks}=\dfrac{\sum_{i}X_{ij,ks}}{\sum_{r}\sum_{i}X_{ij,rs}}=\dfrac{X_{j,ks}}{\sum_{r}X_{j,rs}}$$
+
+Note that $\sum_{k}\alpha_{j,ks}=1\quad\forall j$. 
 
 ## Importing datasets to R
 ```{r}
