@@ -46,7 +46,8 @@ WIOD.full=data.frame(WIOD.full)
 WIOD.full <- WIOD.full %>% 
   filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
   mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
-  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country))
+  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) %>%
+  filter(row_item!=17 & row_item!=31 & row_item!=35 & col_item!=17 & col_item!=31 & col_item!=35)
 #CENSUS
 CENSUS <- read.dta13("1-Intermediate_Processed_Data//state_imports_exports.dta")
 CENSUS <- CENSUS %>%
