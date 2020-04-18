@@ -107,6 +107,7 @@ replace row_sector=22 if row_item==34
 *23.	(NAICS 111-115) Agriculture, Forestry, Fishing, and Hunting (c1)
 replace row_sector=23 if row_item==1  
 keep if row_sector!=. 
+keep if col_item!=17 & col_item!=31 & col_item!=35
 *checks that we have 23 manuf sectors
 distinct row_sector 
 assert `r(ndistinct)'==23
