@@ -71,7 +71,8 @@ wiot.full=data.frame(wiot.full)
 wiot.full <- wiot.full %>% 
   filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
   mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
-  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) 
+  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) %>%
+  filter(row_item!=17 & row_item!=31 & row_item!=35 & col_item!=17 & col_item!=31 & col_item!=35)
 epsilon<-0.0001
 
 # # ##################example  (do not run creation of dist.matrix in section 3.1)
@@ -637,9 +638,18 @@ frac.gamma <- gamma/(1-gamma)
 
 #sum.14: first component in X_j
 io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
+labor.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""))
+
 io.0 <- io.shares %>%
-  filter(country=="USA", sector==14) %>%
-  select(-year, -country, -sector)
+  filter(region=="USA", sector==14) %>%
+  select(-year, -region, -sector)
+
+labor.shares.0 <- labor.shares %>%
+  filter(region=="USA") %>%
+  select(-year, -region)
+
+phi.14 <- io.0*(1-labor.shares.0)
+
 state.state <- read.csv(paste('1-Intermediate_Processed_Data//state_cfs_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
 state.country.y <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
 state.country.e <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
@@ -666,8 +676,8 @@ gdp.tot.v.mat<-t(gdp.tot.v.mat[,-1])
 class(gdp.tot.v.mat) <- "numeric"
 
 #product of a 1x14 row vect with \phi_{14,s} and a 14x50 matrix with the Y_j,s
-sum.14<-as.matrix(io.0)  %*% gdp.tot.v.mat;
-sum.14<-t(sum.14.v); #i confirmed this is the same as the other calculation
+sum.14<-as.matrix(phi.14)  %*% gdp.tot.v.mat;
+sum.14<-t(sum.14); #i confirmed this is the same as the other calculation
 
 ####
 #### My way
@@ -681,87 +691,96 @@ state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4
 expenditure.state <- rowSums(state.imports)
 expenditure.state <- cbind( state.state[2:3], expenditure.state)
 colnames(expenditure.state) <- c("importer", "sector", "import")
-expenditure.vector <- rbind(expenditure.state, expenditure.vector.serv.s)
+expenditure.vector <- rbind(expenditure.state, expenditure.vector.serv.s) #sec: 1-13
 colnames(expenditure.vector) <- c("importer", "r", "import")
 
 expenditure.mat<-spread(expenditure.vector, importer, import, fill = NA, convert = FALSE, drop = TRUE, sep =                  NULL) %>%  select(-r);
-expenditure.mat<-t(expenditure.mat);                 
+expenditure.mat<-t(expenditure.mat);
+
 #IO shares
 io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))%>%
-             filter(country=="USA") %>%
-             select(-year, -country, -sector);
+             filter(region=="USA") %>%
+             select(-year, -region, -sector);
+labor.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""))%>%
+             filter(region=="USA") %>%
+             select(-year, -region);
+labor.shares <- matrix( data=rep(as.matrix(labor.shares), (14)), nrow=(14), byrow=TRUE );
+
+
+phi.ks <- io.shares*(1-labor.shares)
+
 #sum for all receiving sectors
-sum.not.14.v<-as.matrix(io.shares)  %*% gdp.tot.v.mat;
+sum.not.14.v<-as.matrix(phi.ks)  %*% gdp.tot.v.mat;
 sum.not.14.v<-as.data.frame(t(sum.not.14.v)) %>%
             select(-V14);
 #sum over r
 sum.not.14.vector<-as.data.frame(rowSums(expenditure.mat-sum.not.14.v))
 
-####
-#### Marco's way
-####
 
-# X_j for all other sectors
-state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4:dim(state.country.e)[2]])
-expenditure.state <- rowSums(state.imports)
-expenditure.state <- cbind( state.state[2:3], expenditure.state)
-colnames(expenditure.state) <- c("importer", "sector", "import")
-expenditure.vector.serv.s <- rbind(expenditure.state, expenditure.vector.serv.s)
-colnames(expenditure.vector.serv.s) <- c("importer", "r", "import")
-
-
-sum.not.14 <- c()
-for (r in 1:13) {
-io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
-io.0 <- io.shares %>%
-  filter(country=="USA", sector==r) %>%
-  select(-year, -country, -sector)
-io.0 <- t(io.0)
-state.exports <- rbind(state.state, state.country.y)
-exp.v <- c()
-for (sec in 1:12) {
-  state.exports.1 <- state.exports %>%
-    filter(sector==sec) %>%
-    select(-year, -importer, -sector)
-  exp <- matrix(colSums(state.exports.1))
-  exp <- data.frame(exp)
-  exp$sector <- sec
-  exp$exporter <- state.names
-  exp.v <- rbind(exp.v, exp)
-}
-names(exp.v)<-c("export","sector","exporter")
-gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
-gdp.tot.v$phi <-NA
-for (sec in 1:14) {
-  gdp.tot.v <- gdp.tot.v %>%
-    mutate(phi= ifelse(sector==sec, io.0[sec], phi))
-}
-gdp.tot.v <- gdp.tot.v %>%
-    mutate(val= phi*exp$exp)
-sum.not.14.0 <- gdp.tot.v %>%
-  group_by(exporter) %>%
-  mutate(value= sum(val)) %>%
-  ungroup() %>%
-  distinct(exporter, .keep_all = TRUE) %>%
-  select(-phi, -val) %>%
-  select(exporter, sector, value)
-sum.not.14 <- rbind(sum.not.14, sum.not.14.0)
-}
-sum.not.14 <- cbind(sum.not.14, expenditure.vector.serv.s)
-sum.not.14 <- sum.not.14 %>%
-  mutate(diff= import - value) %>%
-  group_by(importer) %>%
-  mutate(sum.not.14= sum(diff)) %>%
-  ungroup() %>%
-  distinct(importer, .keep_all = TRUE) %>%
-  select(importer, sum.not.14)
-#############################
-############################# MY WAY - MARCO'S WAY are different
-#############################
-as.vector(sum.not.14.vector) -sum.not.14$sum.not.14
+# ####
+# #### Marco's way
+# ####
+# 
+# # X_j for all other sectors
+# state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4:dim(state.country.e)[2]])
+# expenditure.state <- rowSums(state.imports)
+# expenditure.state <- cbind( state.state[2:3], expenditure.state)
+# colnames(expenditure.state) <- c("importer", "sector", "import")
+# expenditure.vector.serv.s <- rbind(expenditure.state, expenditure.vector.serv.s)
+# colnames(expenditure.vector.serv.s) <- c("importer", "r", "import")
+# 
+# sum.not.14 <- c()
+# for (r in 1:13) {
+# io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
+# io.0 <- io.shares %>%
+#   filter(country=="USA", sector==r) %>%
+#   select(-year, -country, -sector)
+# io.0 <- t(io.0)
+# state.exports <- rbind(state.state, state.country.y)
+# exp.v <- c()
+# for (sec in 1:12) {
+#   state.exports.1 <- state.exports %>%
+#     filter(sector==sec) %>%
+#     select(-year, -importer, -sector)
+#   exp <- matrix(colSums(state.exports.1))
+#   exp <- data.frame(exp)
+#   exp$sector <- sec
+#   exp$exporter <- state.names
+#   exp.v <- rbind(exp.v, exp)
+# }
+# names(exp.v)<-c("export","sector","exporter")
+# gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
+# gdp.tot.v$phi <-NA
+# for (sec in 1:14) {
+#   gdp.tot.v <- gdp.tot.v %>%
+#     mutate(phi= ifelse(sector==sec, io.0[sec], phi))
+# }
+# gdp.tot.v <- gdp.tot.v %>%
+#     mutate(val= phi*export)
+# sum.not.14.0 <- gdp.tot.v %>%
+#   group_by(exporter) %>%
+#   mutate(value= sum(val)) %>%
+#   ungroup() %>%
+#   distinct(exporter, .keep_all = TRUE) %>%
+#   select(-phi, -val) %>%
+#   select(exporter, sector, value)
+# sum.not.14 <- rbind(sum.not.14, sum.not.14.0)
+# }
+# sum.not.14 <- cbind(sum.not.14, expenditure.vector.serv.s)
+# sum.not.14 <- sum.not.14 %>%
+#   mutate(diff= import - value) %>%
+#   group_by(importer) %>%
+#   mutate(sum.not.14= sum(diff)) %>%
+#   ungroup() %>%
+#   distinct(importer, .keep_all = TRUE) %>%
+#   select(importer, sum.not.14)
+# #############################
+# ############################# MY WAY - MARCO'S WAY are different
+# #############################
+# as.vector(sum.not.14.vector) -sum.not.14$sum.not.14
 
 #final computation for X_j
-X_j <- sum.14 + (frac.gamma*sum.not.14$sum.not.14)
+X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
 
 #check
@@ -774,6 +793,9 @@ sum(X_j)
 }
 
 
+
+HOLA <- gdp.tot.v %>%
+  filter(exporter=="Alabama")
 
 ```
 
