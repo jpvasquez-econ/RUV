@@ -673,51 +673,50 @@ for (sec in 1:12) {
 #TOTAL Y_i PER STATE
 gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
 
-######################################## checks
-c.names <- as.vector(unique(WIOD.base$importer_country))
-c.names <- c.names[2:38]
-#checks for sectors
-for (s in 1:12) {
-  h <- WIOD.base %>% filter(year==yr, sector==s)
-  h1=sum(h[(1:38), 5])
-  HOLIS <- state.exports %>%
-    filter(year==yr, sector==s) %>%
-    select(-year, -importer, -sector)
-  h2=sum(HOLIS)
-  print(h1-h2)
-}
-for (s in 13:14) {
-  h <- WIOD.base %>% filter(year==yr, sector==s)
-  h1=sum(h[(1:38), 5])
-  HOLIS <- gdp.tot.v %>%
-    filter(sector==s)
-  h2=sum(HOLIS$export)
-  print(h1-h2)
-}
+# ######################################## checks: Y
+# c.names <- as.vector(unique(WIOD.base$importer_country))
+# c.names <- c.names[2:38]
+# #checks for sectors
+# for (s in 1:12) {
+#   h <- WIOD.base %>% filter(year==yr, sector==s)
+#   h1=sum(h[(1:38), 5])
+#   HOLIS <- state.exports %>%
+#     filter(year==yr, sector==s) %>%
+#     select(-year, -importer, -sector)
+#   h2=sum(HOLIS)
+#   print(h1-h2)
+# }
+# for (s in 13:14) {
+#   h <- WIOD.base %>% filter(year==yr, sector==s)
+#   h1=sum(h[(1:38), 5])
+#   HOLIS <- gdp.tot.v %>%
+#     filter(sector==s)
+#   h2=sum(HOLIS$export)
+#   print(h1-h2)
+# }
+# 
+# 
+# #services.Y.countries (RUS and RoW order)
+# h <- data_gravity_serv.base %>%
+#   filter(year==yr, iso_o %in% c.names) %>%
+#   distinct(iso_o, .keep_all = TRUE)
+# h2=0
+# for (i in c.names) {
+# h <- WIOD.base %>% filter(year==yr, sector==13)
+# print(sum(h[(1:38), 6+h2]))
+# h2=h2+1
+# }
+# 
+# #services.Y.states ()
+# h <- data_gravity_serv.base %>%
+#   filter(year==yr, iso_o %in% state.names) %>%
+#   distinct(iso_o, .keep_all = TRUE)
+# h1=sum(h$Y_i)
+# h <- WIOD.base %>% filter(year==yr, sector==13)
+# h2=sum(h[(1:38), 5])
+# h1-h2
 
-
-#services.Y.countries (RUS and RoW order)
-h <- data_gravity_serv.base %>%
-  filter(year==yr, iso_o %in% c.names) %>%
-  distinct(iso_o, .keep_all = TRUE)
-h2=0
-for (i in c.names) {
-h <- WIOD.base %>% filter(year==yr, sector==13)
-print(sum(h[(1:38), 6+h2]))
-h2=h2+1
-}
-
-#services.Y.states ()
-h <- data_gravity_serv.base %>%
-  filter(year==yr, iso_o %in% state.names) %>%
-  distinct(iso_o, .keep_all = TRUE)
-h1=sum(h$Y_i)
-h <- WIOD.base %>% filter(year==yr, sector==13)
-h2=sum(h[(1:38), 5])
-h1-h2
-
-#####################################################3
-
+#####################################################
 
 ##
 ##CALCULATING \sum_{s}\phi_{14,s}Y_{j,s} (SUM OF INTERMEDIATE USES IN AGRIC) FOR EACH STATE
@@ -731,15 +730,12 @@ class(gdp.tot.v.mat) <- "numeric"
 sum.14<-as.matrix(phi.14)  %*% gdp.tot.v.mat;
 sum.14<-t(sum.14); #i confirmed this is the same as the other calculation
 
-####
-#### My way
-####
-#
+
+
 # sum.not.14: second component in X_j
-#
 
 # X_j for all other sectors
-state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4:dim(state.country.e)[2]])
+state.imports <- cbind(state.state[4:dim(state.state)[2]], state.country.e[4:dim(state.country.e)[2]])
 expenditure.state <- rowSums(state.imports)
 expenditure.state <- cbind( state.state[2:3], expenditure.state)
 colnames(expenditure.state) <- c("importer", "sector", "import")
@@ -769,78 +765,17 @@ sum.not.14.v<-as.data.frame(t(sum.not.14.v)) %>%
 sum.not.14.vector<-as.data.frame(rowSums(expenditure.mat-sum.not.14.v))
 
 
-# ####
-# #### Marco's way
-# ####
-# 
-# # X_j for all other sectors
-# state.imports <- cbind(state.state[4:dim(state.country.e)[2]], state.country.e[4:dim(state.country.e)[2]])
-# expenditure.state <- rowSums(state.imports)
-# expenditure.state <- cbind( state.state[2:3], expenditure.state)
-# colnames(expenditure.state) <- c("importer", "sector", "import")
-# expenditure.vector.serv.s <- rbind(expenditure.state, expenditure.vector.serv.s)
-# colnames(expenditure.vector.serv.s) <- c("importer", "r", "import")
-# 
-# sum.not.14 <- c()
-# for (r in 1:13) {
-# io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
-# io.0 <- io.shares %>%
-#   filter(country=="USA", sector==r) %>%
-#   select(-year, -country, -sector)
-# io.0 <- t(io.0)
-# state.exports <- rbind(state.state, state.country.y)
-# exp.v <- c()
-# for (sec in 1:12) {
-#   state.exports.1 <- state.exports %>%
-#     filter(sector==sec) %>%
-#     select(-year, -importer, -sector)
-#   exp <- matrix(colSums(state.exports.1))
-#   exp <- data.frame(exp)
-#   exp$sector <- sec
-#   exp$exporter <- state.names
-#   exp.v <- rbind(exp.v, exp)
-# }
-# names(exp.v)<-c("export","sector","exporter")
-# gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
-# gdp.tot.v$phi <-NA
-# for (sec in 1:14) {
-#   gdp.tot.v <- gdp.tot.v %>%
-#     mutate(phi= ifelse(sector==sec, io.0[sec], phi))
-# }
-# gdp.tot.v <- gdp.tot.v %>%
-#     mutate(val= phi*export)
-# sum.not.14.0 <- gdp.tot.v %>%
-#   group_by(exporter) %>%
-#   mutate(value= sum(val)) %>%
-#   ungroup() %>%
-#   distinct(exporter, .keep_all = TRUE) %>%
-#   select(-phi, -val) %>%
-#   select(exporter, sector, value)
-# sum.not.14 <- rbind(sum.not.14, sum.not.14.0)
-# }
-# sum.not.14 <- cbind(sum.not.14, expenditure.vector.serv.s)
-# sum.not.14 <- sum.not.14 %>%
-#   mutate(diff= import - value) %>%
-#   group_by(importer) %>%
-#   mutate(sum.not.14= sum(diff)) %>%
-#   ungroup() %>%
-#   distinct(importer, .keep_all = TRUE) %>%
-#   select(importer, sum.not.14)
-# #############################
-# ############################# MY WAY - MARCO'S WAY are different
-# #############################
-# as.vector(sum.not.14.vector) -sum.not.14$sum.not.14
-
 #final computation for X_j
 X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
 
 #check
-HOLA <- WIOD.base %>%
-  filter(year==2002, importer_country=="USA", sector==14)
-H=HOLA[5:dim(HOLA)[2]]
-sum(H)
-sum(X_j)
+check1 <- WIOD.base %>%
+  filter(year==yr, importer_country=="USA", sector==14)
+c1=check1[5:dim(check1)[2]]
+c1=sum(c1)
+c2=sum(X_j)
+print(c1-c2)
 
 }
 
