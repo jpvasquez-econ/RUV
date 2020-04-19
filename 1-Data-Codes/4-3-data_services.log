@@ -1,8 +1,40 @@
+
+  ___  ____  ____  ____  ____ (R)
+ /__    /   ____/   /   ____/
+___/   /   /___/   /   /___/   13.1   Copyright 1985-2013 StataCorp LP
+  Statistics/Data Analysis            StataCorp
+                                      4905 Lakeway Drive
+     MP - Parallel Edition            College Station, Texas 77845 USA
+                                      800-STATA-PC        http://www.stata.com
+                                      979-696-4600        stata@stata.com
+                                      979-696-4601 (fax)
+
+3-user 8-core Stata network perpetual license:
+       Serial number:  501306208483
+         Licensed to:  IDRE-UCLA
+                       IDRE-UCLA
+
+Notes:
+      1.  (/v# option or -set maxvar-) 5000 maximum variables
+      2.  Stata running in batch mode
+
+. do 4-3-data_services.do 
+
+. capture log close
+
+. * Written by JP 
+. clear all
+
+. set more off
+
+. set linesize 150
+
+. log using 3-Log_Files\4-2-data_services.log, replace
 ------------------------------------------------------------------------------------------------------------------------------------------------------
       name:  <unnamed>
-       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\1-Codes\3-Log_Files\4-2-data_services.log
+       log:  C:\Users\Jose Pablo\Dropbox\NK trade\JP\Data_Construction\RUV\1-Data-Codes\3-Log_Files\4-2-data_services.log
   log type:  text
- opened on:  13 Mar 2020, 18:22:29
+ opened on:  18 Apr 2020, 09:46:07
 
 . /*
 > ***********************************************************************************************************************************************
@@ -25,16 +57,16 @@
 
 . global coordinates_counties "0-Raw_Data\Fips\us_states_coordinates_counties.xlsx"
 
-. global state_exp_gdp_services "2-Final_Data\state_exp_gdp_services.dta"
+. global state_exp_gdp_services "1-Intermediate_Processed_Data\state_exp_gdp_services.dta"
 
 . global country_coordinates "1-Intermediate_Processed_Data\country_coordinates.dta"
 
-. global WIOD "2-Final_Data\WIOD_countries.dta"
+. global WIOD "1-Intermediate_Processed_Data\WIOD_countries.dta"
 
 . ********************** 
 . ***  OUTPUT FILES  ***  
 . **********************
-. global outputfile ""2-Final_Data\data_services.csv""
+. global outputfile ""1-Intermediate_Processed_Data\data_services.csv""
 
 . 
 . *************************************************** 
@@ -593,7 +625,7 @@ file C:\Users\JOSEPA~1\AppData\Local\Temp\ST_0100000n.tmp saved
 
 . 
 . export delimited using $outputfile, replace
-file 2-Final_Data\data_services.csv saved
+file 1-Intermediate_Processed_Data\data_services.csv saved
 
 . 
 end of do-file
