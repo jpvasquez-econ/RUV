@@ -62,7 +62,10 @@ n.c <- 37;
 n.s <- 50; 
 WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
 data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
-data_gravity_serv.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
+data_gravity_serv.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," ) %>%
+  mutate(iso_o= recode(iso_o, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
+  mutate(iso_d= recode(iso_d, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
+
 #state level imports and exports
 CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
 CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
@@ -636,6 +639,8 @@ gamma <- C.us.agri/C.us
 #gamma
 frac.gamma <- gamma/(1-gamma)
 
+
+
 #sum.14: first component in X_j
 io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
 labor.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""))
@@ -667,6 +672,53 @@ for (sec in 1:12) {
 }
 #TOTAL Y_i PER STATE
 gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
+
+######################################## checks
+c.names <- as.vector(unique(WIOD.base$importer_country))
+c.names <- c.names[2:38]
+#checks for sectors
+for (s in 1:12) {
+  h <- WIOD.base %>% filter(year==yr, sector==s)
+  h1=sum(h[(1:38), 5])
+  HOLIS <- state.exports %>%
+    filter(year==yr, sector==s) %>%
+    select(-year, -importer, -sector)
+  h2=sum(HOLIS)
+  print(h1-h2)
+}
+for (s in 13:14) {
+  h <- WIOD.base %>% filter(year==yr, sector==s)
+  h1=sum(h[(1:38), 5])
+  HOLIS <- gdp.tot.v %>%
+    filter(sector==s)
+  h2=sum(HOLIS$export)
+  print(h1-h2)
+}
+
+
+#services.Y.countries (RUS and RoW order)
+h <- data_gravity_serv.base %>%
+  filter(year==yr, iso_o %in% c.names) %>%
+  distinct(iso_o, .keep_all = TRUE)
+h2=0
+for (i in c.names) {
+h <- WIOD.base %>% filter(year==yr, sector==13)
+print(sum(h[(1:38), 6+h2]))
+h2=h2+1
+}
+
+#services.Y.states ()
+h <- data_gravity_serv.base %>%
+  filter(year==yr, iso_o %in% state.names) %>%
+  distinct(iso_o, .keep_all = TRUE)
+h1=sum(h$Y_i)
+h <- WIOD.base %>% filter(year==yr, sector==13)
+h2=sum(h[(1:38), 5])
+h1-h2
+
+#####################################################3
+
+
 ##
 ##CALCULATING \sum_{s}\phi_{14,s}Y_{j,s} (SUM OF INTERMEDIATE USES IN AGRIC) FOR EACH STATE
 ##
@@ -785,7 +837,7 @@ X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
 #check
 HOLA <- WIOD.base %>%
-  filter(year==2000, importer_country=="USA", sector==14)
+  filter(year==2002, importer_country=="USA", sector==14)
 H=HOLA[5:dim(HOLA)[2]]
 sum(H)
 sum(X_j)
@@ -793,9 +845,6 @@ sum(X_j)
 }
 
 
-
-HOLA <- gdp.tot.v %>%
-  filter(exporter=="Alabama")
 
 ```
 
