@@ -130,6 +130,7 @@ epsilon<-0.0001
 # CENSUS.exp$value <- as.numeric(CENSUS.exp$value)
 # # ##############################
 
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 
@@ -538,7 +539,8 @@ solu<-t(as.matrix(optimal.model[1:150]));
 ```
 
 
-#New system by calculating $X_j first$
+#New system 
+
 ```{r warning=FALSE}
 
 for (yr in 2000:2007){
@@ -618,6 +620,7 @@ expenditure.vector.serv.s <- expenditure.vector.serv.s %>% select(importer, sect
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #share of US agriculture consumption to total US consumption 
 wiot.full.0 <- wiot.full %>%
   filter(year==yr & row_item!=17 & row_item!=31 & row_item<=34) %>%
@@ -640,7 +643,7 @@ gamma <- C.us.agri/C.us
 frac.gamma <- gamma/(1-gamma)
 
 
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #sum.14: first component in X_j
 io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
 labor.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""))
@@ -717,7 +720,6 @@ gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
 # h1-h2
 
 #####################################################
-
 ##
 ##CALCULATING \sum_{s}\phi_{14,s}Y_{j,s} (SUM OF INTERMEDIATE USES IN AGRIC) FOR EACH STATE
 ##
@@ -731,9 +733,8 @@ sum.14<-as.matrix(phi.14)  %*% gdp.tot.v.mat;
 sum.14<-t(sum.14); #i confirmed this is the same as the other calculation
 
 
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # sum.not.14: second component in X_j
-
 # X_j for all other sectors
 state.imports <- cbind(state.state[4:dim(state.state)[2]], state.country.e[4:dim(state.country.e)[2]])
 expenditure.state <- rowSums(state.imports)
@@ -763,26 +764,96 @@ sum.not.14.v<-as.data.frame(t(sum.not.14.v)) %>%
             select(-V14);
 #sum over r
 sum.not.14.vector<-as.data.frame(rowSums(expenditure.mat-sum.not.14.v))
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #final computation for X_j
 X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
-
-#check
+#check: sum(X_j)=WIOD
 check1 <- WIOD.base %>%
   filter(year==yr, importer_country=="USA", sector==14)
 c1=check1[5:dim(check1)[2]]
 c1=sum(c1)
 c2=sum(X_j)
 print(c1-c2)
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+## Calculating lambda and B matrix
+
+#### DISTANCE MATRIX
+dist.matrix <- data_gravity_agriculture %>% 
+  select( iso_o, iso_d, dist ) %>% 
+  left_join( y=id.total, by=c('iso_o'='region') ) %>% 
+  dplyr::rename( id_o=id ) %>% 
+  left_join( y=id.total, by=c('iso_d'='region') ) %>% 
+  dplyr::rename( id_d=id ) %>% 
+  select( id_o, id_d, dist ) %>% 
+  arrange( id_o, id_d ) %>% 
+  spread( key=id_d, value=dist );
+dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
+#we use the coefficients from 4-4-Country_Gravity_WIOD.
+#own dummy=4.1, Distance elasticity=-1.8
+phi<-diag(x = 4.1, n.c+n.s, n.c+n.s);
+phi<-exp(phi);
+phi<-phi/dist.matrix^1.8; 
+dist.matrix<-phi
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#lambda_j
+expenditure.vector.agri.s <- (as.matrix(X_j))
+state.imports.from.countries<-spread(CENSUS.imp, origin, value, fill = NA, convert = FALSE, drop = TRUE, sep =                  NULL) 
+state.imports.from.countries <- state.imports.from.countries %>%
+  filter(year==yr) %>%
+  select(-year, -importer)
+state.imports.from.countries <- state.imports.from.countries/expenditure.vector.agri.s
+lambda.j <- 1 - rowSums(state.imports.from.countries)
+
+#chi_i
+gdp.vector.agri.s <- (as.matrix(gdp.vector.agri.s$export))
+state.exports.to.countries<-spread(CENSUS.exp, importer, value, fill = NA, convert = FALSE, drop = TRUE, sep =                  NULL) 
+state.exports.to.countries <- state.exports.to.countries %>%
+  filter(year==yr) %>%
+  select(-year, -origin)
+state.exports.to.countries <- state.exports.to.countries/gdp.vector.agri.s
+chi.i <- 1 - rowSums(state.exports.to.countries)
+
+### lambda vector
+lambda_vector <- rbind(as.matrix(lambda.j), as.matrix(chi.i));
+
+print(max(lambda_vector))
+print(min(lambda_vector))
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+##### BIG MATRICES
+
+#Matrices X and Y 
+mat.Y <- matrix( data=rep(gdp.vector.agri.s, (n.s)), nrow=(n.s), byrow=TRUE );
+mat.X <- matrix( data=rep(expenditure.vector.agri.s, (n.s)), nrow=(n.s), byrow=TRUE );
+
+#Submatrices: TX and TY
+##phi*Y submatrices
+phi.Y.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.Y;
+## phi*X submatrices
+phi.X.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.X;
+
+##Big zeros matrices
+zeros.big <- matrix( data=rep(0, (n.s)*(n.s)), nrow=(n.s), ncol=(n.s) );
+
+##GIANT MATRIX 
+### Relevant matrix
+BIG.MAT <- rbind( cbind(zeros.big, phi.Y.ss),
+                  cbind(phi.X.ss, zeros.big) );
+
+### Saving input matrices for the matlab code
+write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//agric_mat_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//agric_vec_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 
 }
 
-
-
 ```
-
 
 
 
