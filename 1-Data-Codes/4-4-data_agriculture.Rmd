@@ -89,6 +89,16 @@ if(yr<2002){yr.=2002}
 CENSUS.1 <- CENSUS %>% filter(year==yr., sector==14, origin!="All States", file=="i in US, j not in US")
 names.countries <- matrix(unique(CENSUS.1$destination))
 names.states <- matrix(unique(CENSUS.1$origin))
+
+names.countries <- data.frame(names.countries)
+names.countries <- names.countries %>%
+  arrange(names.countries)
+names.countries <- as.matrix(names.countries)
+
+names.states <- data.frame(names.states)
+names.states <- names.states %>%
+  arrange(names.states)
+names.states <- as.matrix(names.states)
   
 #WIOD
 WIOD <- subset(WIOD.base, year==yr)
@@ -328,6 +338,7 @@ write.table(data_agriculture, file = paste("1-Intermediate_Processed_Data//data_
 
 #State import from countries  
 ```{r}
+
 #base
 state_imp_exp <- data.frame(state_imp_exp.0)
 state_imp_exp <- subset(state_imp_exp.0, year==2008)
@@ -385,7 +396,7 @@ for(k in sec_relevant) {
 eijkBase=m2/sum_countrym
 
 
-#######################################Main Varibale
+#######################################Main Variable
 #e
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
@@ -476,5 +487,9 @@ step3e.1 <- rbind(step3e.1, step3e)
 CENSUS.imp <- melt(step3e.1, id.var=c("year", "importer"), variable.name = "origin")
 CENSUS.imp$origin <- as.character(CENSUS.imp$origin)
 write.table(CENSUS.imp, file = paste("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv", sep=""), sep = ",", row.names = FALSE)
+
+
+
+
 
 ```
