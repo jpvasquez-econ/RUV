@@ -1,0 +1,150 @@
+---
+title: "Checks WIOD"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+- \newcommand{\xmark}{\ding{55}}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'reshape2');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+# General Instructions
+
+The final goal is to check that the final trade matrices are consistent with WIOD database.
+
+## Importing datasets to R
+```{r}
+#Final WIOD
+WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+
+CDP.base <- c()
+#Final matrices 
+for (yr in 2000:2007) {
+##Gravity step: services  
+matrix <- read.csv(paste("1-Intermediate_Processed_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
+matrix$year <- yr
+matrix <- matrix %>% select(year, everything())
+
+CDP.base <- rbind(CDP.base, matrix)
+}
+
+#id 
+n.s <- 50
+n.c <- 37
+state.names <- matrix$importer[1:n.s]
+c.names <- matrix$importer[(n.s+1):(n.s+n.c)]
+
+colnames(WIOD.base) <- c("year", "importer_country", "sector", "importer", "USA", c.names)
+
+```
+
+
+#Checks
+```{r}
+for (yr in 2000:2007) {
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#country-country  
+wiot <- melt(WIOD.base, id.vars=c("year", "importer_country", "sector", "importer"), variable.name="exporter", value.name = "value")
+wiot.cc <- wiot %>%
+  filter(year==yr, importer_country %in% c.names, exporter %in% c.names) %>%
+  arrange(sector, exporter, importer)
+
+CDP <- melt(CDP.base, id.vars=c("year", "importer", "sector"), variable.name="exporter", value.name = "value")
+CDP.cc <- CDP %>%
+  filter(year==yr, importer %in% c.names, exporter %in% c.names) %>%
+  arrange(sector, exporter, importer)
+
+print(sum(CDP.cc$value -wiot.cc$value))
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#state-to-country
+
+wiot.cs <- wiot %>%
+  filter(year==yr, importer_country %in% c.names, exporter %in% c("USA")) %>%
+  arrange(sector, exporter, importer)
+
+
+CDP.cs <- CDP %>%
+  filter(year==yr, importer %in% c.names, exporter %in% state.names) %>%
+  group_by(sector, importer) %>%
+  mutate(val=sum(value)) %>%
+  ungroup() %>%
+  distinct(year, sector, importer, .keep_all = TRUE) %>%
+  arrange(sector, exporter, importer)
+
+print(sum(CDP.cs$val -wiot.cs$value))
+temp <- data.frame(CDP.cs$val -wiot.cs$value) 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# country-to-state
+
+wiot.sc <- wiot %>%
+  filter(year==yr, importer_country %in% c("USA"), exporter %in% c.names) %>%
+  arrange(sector, exporter, importer)
+
+
+CDP.sc <- CDP %>%
+  filter(year==yr, importer %in% state.names, exporter %in% c.names) %>%
+  group_by(sector, exporter) %>%
+  mutate(val=sum(value)) %>%
+  ungroup() %>%
+  distinct(year, sector, exporter, .keep_all = TRUE) %>%
+  arrange(sector, exporter, importer)
+
+print(sum(CDP.sc$val -wiot.sc$value))
+temp <- data.frame(CDP.sc$val -wiot.sc$value) 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#state-state
+
+wiot.ss <- wiot %>%
+  filter(year==yr, importer_country %in% c("USA"), exporter %in% c("USA")) %>%
+  arrange(sector, exporter, importer)
+
+
+CDP.ss <- CDP %>%
+  filter(year==yr, importer %in% state.names, exporter %in% state.names) %>%
+  group_by(sector) %>%
+  mutate(val=sum(value)) %>%
+  ungroup() %>%
+  distinct(year, sector, .keep_all = TRUE) %>%
+  arrange(sector, exporter, importer)
+
+print(sum(CDP.ss$val -wiot.ss$value))
+temp <- data.frame(CDP.ss$val -wiot.ss$value) 
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+}
+```
+
+
