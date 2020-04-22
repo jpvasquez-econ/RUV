@@ -57,7 +57,7 @@ countries <- read.csv("1-Intermediate_Processed_Data//country_country_step_2000.
 names.countries=matrix(countries$importer[1:n.c])
 
 num.sec <- 12
-epsilon<-0.001;
+epsilon<-0.0001;
 
 ```
 
