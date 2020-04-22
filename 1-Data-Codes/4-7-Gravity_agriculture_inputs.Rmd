@@ -78,13 +78,19 @@ wiot.full <- wiot.full %>%
   filter(row_item!=17 & row_item!=31 & row_item!=35 & col_item!=17 & col_item!=31 & col_item!=35)
 epsilon<-0.0001
 
-# # ##################example  (do not run creation of dist.matrix in section 3.1)
+# # ##################example  (run directly the lambda vector and B matrix calculations)
 # ####################Select the block of code that you want to comment. Press Ctrl + Shift + C.
-# example <- read_excel( "1-Intermediate_Processed_Data//ejemplo_new.xlsx")
-# n.c <- 2; 
-# n.s <- 2; 
-# WIOD.base <- as.data.frame(matrix(0, n.c+1, 5+n.c)); 
-# names(WIOD.base)<-c("year", "importer_country", "sector", "importer", "value_USA", "value_AUS", "value_AUT");
+example <- read_excel( "1-Intermediate_Processed_Data//ejemplo_new.xlsx")
+n.c <- 2;
+n.s <- 2;
+# WIOD.base <- as.data.frame(matrix(0, nrow = 3, ncol = 3))
+# colnames(WIOD.base) <- c("value_USA", "value_AUS", "value_AUT")
+# WIOD.base <- WIOD.base %>%
+#   mutate(sector=14) %>%
+#   mutate(year=2000) %>%
+#   mutate(importer_country=c("USA", "AUS", "AUT")) %>%
+#   mutate(importer=c(1,2,3)) %>%
+#   select(year, importer_country, importer, sector, everything())
 # WIOD.base$value_AUS[2] <- example$`X_{ij}`[1]
 # WIOD.base$value_AUS[3] <- example$`X_{ij}`[2]
 # WIOD.base$value_AUT[2] <- example$`X_{ij}`[5]
@@ -94,12 +100,7 @@ epsilon<-0.0001
 # WIOD.base$value_USA[2] <- example$`X_{ij}`[9] + example$`X_{ij}`[13]
 # WIOD.base$value_USA[3] <- example$`X_{ij}`[10] + example$`X_{ij}`[14]
 # WIOD.base$value_USA[1] <- NA
-# WIOD.base <- WIOD.base %>%
-#   mutate(sector=14) %>%
-#   mutate(year=2000) %>%
-#   mutate(importer_country=c("USA", "AUS", "AUT")) %>%
-#   mutate(importe=c(1,2,3));
-# 
+
 # data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
 # data_gravity_agriculture.base <- data_gravity_agriculture.base %>%
 #   filter(year==2000, (iso_o=="Alabama" | iso_o=="Alaska" | iso_o=="AUS" | iso_o=="AUT"), (iso_d=="Alabama" | iso_d=="Alaska" | iso_d=="AUS" | iso_d=="AUT") ) %>%
@@ -110,23 +111,37 @@ epsilon<-0.0001
 #   mutate(X_j= ifelse(iso_d=="Alabama", example$X_j[3], X_j)) %>%
 #   mutate(X_j= ifelse(iso_d=="Alaska",  example$X_j[4], X_j)) %>%
 #   mutate(Y_i= ifelse(iso_o=="Alabama", example$Y_i[9], Y_i)) %>%
-#   mutate(Y_i= ifelse(iso_o=="Alaska",  example$Y_i[13], Y_i)) 
+#   mutate(Y_i= ifelse(iso_o=="Alaska",  example$Y_i[13], Y_i))
 # data_gravity_agriculture.base$Y_i <- as.numeric((data_gravity_agriculture.base$Y_i))
 # data_gravity_agriculture.base$X_j <- as.numeric(as.character(data_gravity_agriculture.base$X_j))
-# 
-# dist.matrix <- matrix(c(example$phi_ij[11], example$phi_ij[12], example$phi_ij[9], example$phi_ij[10], example$phi_ij[15], example$phi_ij[16], example$phi_ij[13], example$phi_ij[14], example$phi_ij[3], example$phi_ij[4], example$phi_ij[1], example$phi_ij[2], example$phi_ij[7], example$phi_ij[8], example$phi_ij[5], example$phi_ij[6]), nrow=4, ncol=4)
-# dist.matrix <- data.frame(dist.matrix)
-# colnames(dist.matrix) <- c("1", "2", "3", "4")
-# dist.matrix <- matrix(unlist(dist.matrix), ncol = 4, byrow = TRUE)
-# 
-# yr=2000
-# CENSUS.exp <- CENSUS.exp %>%
-#   filter(year==2000, (origin=="Alabama" | origin=="Alaska"), (importer=="AUS" | importer=="AUT")) %>%
-#   mutate(value= ifelse(origin=="Alabama" & importer=="AUS", example$`X_{ij}`[9], value)) %>%
-#   mutate(value= ifelse(origin=="Alabama" & importer=="AUT", example$`X_{ij}`[10], value)) %>%
-#   mutate(value= ifelse(origin=="Alaska" & importer=="AUS", example$`X_{ij}`[13], value)) %>%
-#   mutate(value= ifelse(origin=="Alaska" & importer=="AUT", example$`X_{ij}`[14], value))
-# 
+
+dist.matrix <- matrix(c(example$phi_ij[11], example$phi_ij[12], example$phi_ij[9], example$phi_ij[10], example$phi_ij[15], example$phi_ij[16], example$phi_ij[13], example$phi_ij[14], example$phi_ij[3], example$phi_ij[4], example$phi_ij[1], example$phi_ij[2], example$phi_ij[7], example$phi_ij[8], example$phi_ij[5], example$phi_ij[6]), nrow=4, ncol=4)
+dist.matrix <- data.frame(dist.matrix)
+colnames(dist.matrix) <- c("1", "2", "3", "4")
+dist.matrix <- matrix(unlist(dist.matrix), ncol = 4, byrow = TRUE)
+
+gdp.vector.agri.s <- data.frame(c(example$Y_i[12], example$Y_i[13]))
+colnames(gdp.vector.agri.s) <- c("export")
+X_j <- c(example$X_j[11], example$X_j[12])
+
+
+yr=2000
+CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
+CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
+CENSUS.exp <- CENSUS.exp %>%
+  filter(year==2000, (origin=="Alabama" | origin=="Alaska"), (importer=="AUS" | importer=="AUT")) %>%
+  mutate(value= ifelse(origin=="Alabama" & importer=="AUS", example$`X_{ij}`[9], value)) %>%
+  mutate(value= ifelse(origin=="Alabama" & importer=="AUT", example$`X_{ij}`[10], value)) %>%
+  mutate(value= ifelse(origin=="Alaska" & importer=="AUS", example$`X_{ij}`[13], value)) %>%
+  mutate(value= ifelse(origin=="Alaska" & importer=="AUT", example$`X_{ij}`[14], value))
+
+CENSUS.imp <- CENSUS.imp %>%
+  filter(year==2000, (origin=="AUS" | origin=="AUT"), (importer=="Alabama" | importer=="Alaska")) %>%
+  mutate(value= ifelse(origin=="AUS" & importer=="Alabama", example$`X_{ij}`[3], value)) %>%
+  mutate(value= ifelse(origin=="AUT" & importer=="Alabama", example$`X_{ij}`[7], value)) %>%
+  mutate(value= ifelse(origin=="AUS" & importer=="Alaska", example$`X_{ij}`[4], value)) %>%
+  mutate(value= ifelse(origin=="AUT" & importer=="Alaska", example$`X_{ij}`[8], value))
+
 # wiot.full <- wiot.full %>%
 #   filter(year==2000, (row_country=="AUS" | row_country=="AUT" | row_country=="USA"), (col_country=="AUS" | col_country=="AUT" | col_country=="USA"), row_item==1, col_item==1) %>%
 #   mutate(value= ifelse(row_country=="AUS" & col_country=="AUS", WIOD.base$value_AUS[2], value)) %>%
