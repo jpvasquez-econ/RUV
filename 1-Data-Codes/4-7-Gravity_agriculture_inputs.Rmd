@@ -80,35 +80,35 @@ epsilon<-0.0001
 
 # # ##################example  (run directly the lambda vector and B matrix calculations)
 # ####################Select the block of code that you want to comment. Press Ctrl + Shift + C.
-example <- read_excel( "1-Intermediate_Processed_Data//ejemplo_new.xlsx")
-n.c <- 2;
-n.s <- 2;
-
-dist.matrix <- matrix(c(example$phi_ij[11], example$phi_ij[12], example$phi_ij[9], example$phi_ij[10], example$phi_ij[15], example$phi_ij[16], example$phi_ij[13], example$phi_ij[14], example$phi_ij[3], example$phi_ij[4], example$phi_ij[1], example$phi_ij[2], example$phi_ij[7], example$phi_ij[8], example$phi_ij[5], example$phi_ij[6]), nrow=4, ncol=4)
-dist.matrix <- data.frame(dist.matrix)
-colnames(dist.matrix) <- c("1", "2", "3", "4")
-dist.matrix <- matrix(unlist(dist.matrix), ncol = 4, byrow = TRUE)
-
-gdp.vector.agri.s <- data.frame(c(example$Y_i[12], example$Y_i[13]))
-colnames(gdp.vector.agri.s) <- c("export")
-X_j <- c(example$X_j[11], example$X_j[12])
-
-yr=2000
-CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
-CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
-CENSUS.exp <- CENSUS.exp %>%
-  filter(year==2000, (origin=="Alabama" | origin=="Alaska"), (importer=="AUS" | importer=="AUT")) %>%
-  mutate(value= ifelse(origin=="Alabama" & importer=="AUS", example$`X_{ij}`[9], value)) %>%
-  mutate(value= ifelse(origin=="Alabama" & importer=="AUT", example$`X_{ij}`[10], value)) %>%
-  mutate(value= ifelse(origin=="Alaska" & importer=="AUS", example$`X_{ij}`[13], value)) %>%
-  mutate(value= ifelse(origin=="Alaska" & importer=="AUT", example$`X_{ij}`[14], value))
-
-CENSUS.imp <- CENSUS.imp %>%
-  filter(year==2000, (origin=="AUS" | origin=="AUT"), (importer=="Alabama" | importer=="Alaska")) %>%
-  mutate(value= ifelse(origin=="AUS" & importer=="Alabama", example$`X_{ij}`[3], value)) %>%
-  mutate(value= ifelse(origin=="AUT" & importer=="Alabama", example$`X_{ij}`[7], value)) %>%
-  mutate(value= ifelse(origin=="AUS" & importer=="Alaska", example$`X_{ij}`[4], value)) %>%
-  mutate(value= ifelse(origin=="AUT" & importer=="Alaska", example$`X_{ij}`[8], value))
+# example <- read_excel( "1-Intermediate_Processed_Data//ejemplo_new.xlsx")
+# n.c <- 2;
+# n.s <- 2;
+# 
+# dist.matrix <- matrix(c(example$phi_ij[11], example$phi_ij[12], example$phi_ij[9], example$phi_ij[10], example$phi_ij[15], example$phi_ij[16], example$phi_ij[13], example$phi_ij[14], example$phi_ij[3], example$phi_ij[4], example$phi_ij[1], example$phi_ij[2], example$phi_ij[7], example$phi_ij[8], example$phi_ij[5], example$phi_ij[6]), nrow=4, ncol=4)
+# dist.matrix <- data.frame(dist.matrix)
+# colnames(dist.matrix) <- c("1", "2", "3", "4")
+# dist.matrix <- matrix(unlist(dist.matrix), ncol = 4, byrow = TRUE)
+# 
+# gdp.vector.agri.s <- data.frame(c(example$Y_i[12], example$Y_i[13]))
+# colnames(gdp.vector.agri.s) <- c("export")
+# X_j <- c(example$X_j[11], example$X_j[12])
+# 
+# yr=2000
+# CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
+# CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
+# CENSUS.exp <- CENSUS.exp %>%
+#   filter(year==2000, (origin=="Alabama" | origin=="Alaska"), (importer=="AUS" | importer=="AUT")) %>%
+#   mutate(value= ifelse(origin=="Alabama" & importer=="AUS", example$`X_{ij}`[9], value)) %>%
+#   mutate(value= ifelse(origin=="Alabama" & importer=="AUT", example$`X_{ij}`[10], value)) %>%
+#   mutate(value= ifelse(origin=="Alaska" & importer=="AUS", example$`X_{ij}`[13], value)) %>%
+#   mutate(value= ifelse(origin=="Alaska" & importer=="AUT", example$`X_{ij}`[14], value))
+# 
+# CENSUS.imp <- CENSUS.imp %>%
+#   filter(year==2000, (origin=="AUS" | origin=="AUT"), (importer=="Alabama" | importer=="Alaska")) %>%
+#   mutate(value= ifelse(origin=="AUS" & importer=="Alabama", example$`X_{ij}`[3], value)) %>%
+#   mutate(value= ifelse(origin=="AUT" & importer=="Alabama", example$`X_{ij}`[7], value)) %>%
+#   mutate(value= ifelse(origin=="AUS" & importer=="Alaska", example$`X_{ij}`[4], value)) %>%
+#   mutate(value= ifelse(origin=="AUT" & importer=="Alaska", example$`X_{ij}`[8], value))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 
@@ -128,7 +128,8 @@ data_gravity_serv <- data_gravity_serv.base %>%
   filter( year==yr ) %>% 
   select( -year )
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# NUMBER STATES AND COUNTRIES
+# 1. ID OF STATES AND COUNTRIES
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # States
 id.states <- data_gravity_agriculture %>% 
   filter( len_o=='STATE' ) %>% 
@@ -151,7 +152,9 @@ id.countries <- data_gravity_agriculture %>%
 id.total <- rbind( id.states, id.countries );
 state.names <- id.total$region[1:n.s]
 #t(id.total)
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 2. PRODUCTION AND EXPENDITURE: services and agriculture
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # GDP VECTOR: services and agriculture 
 gdp.vector.serv <- data_gravity_serv %>% 
   select( iso_o, Y_i ) %>% 
@@ -191,9 +194,8 @@ colnames(expenditure.vector.serv.s) <- c("import", "sector", "importer")
 expenditure.vector.serv.s <- expenditure.vector.serv.s %>% select(importer, sector, import)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+# 3. share of US agriculture consumption to total US consumption (\gamma)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#share of US agriculture consumption to total US consumption 
 wiot.full.0 <- wiot.full %>%
   filter(year==yr & row_item!=17 & row_item!=31 & row_item<=34) %>%
   filter(col_item>=37 & col_item<=42 & col_country=="USA")
@@ -214,9 +216,12 @@ gamma <- C.us.agri/C.us
 #gamma
 frac.gamma <- gamma/(1-gamma)
 
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#sum.14: first component in X_j
+# 4. CALCULATING X_j FOR AGRICULTURE
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+##
+## 4.1 sum.14: first component in X_j
+##
 io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep=""))
 labor.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""))
 
@@ -248,52 +253,8 @@ for (sec in 1:12) {
 #TOTAL Y_i PER STATE
 gdp.tot.v <- rbind(exp.v, gdp.vector.serv.s, gdp.vector.agri.s)
 
-# ######################################## checks: Y
-# c.names <- as.vector(unique(WIOD.base$importer_country))
-# c.names <- c.names[2:38]
-# #checks for sectors
-# for (s in 1:12) {
-#   h <- WIOD.base %>% filter(year==yr, sector==s)
-#   h1=sum(h[(1:38), 5])
-#   HOLIS <- state.exports %>%
-#     filter(year==yr, sector==s) %>%
-#     select(-year, -importer, -sector)
-#   h2=sum(HOLIS)
-#   print(h1-h2)
-# }
-# for (s in 13:14) {
-#   h <- WIOD.base %>% filter(year==yr, sector==s)
-#   h1=sum(h[(1:38), 5])
-#   HOLIS <- gdp.tot.v %>%
-#     filter(sector==s)
-#   h2=sum(HOLIS$export)
-#   print(h1-h2)
-# }
-# 
-# 
-# #services.Y.countries (RUS and RoW order)
-# h <- data_gravity_serv.base %>%
-#   filter(year==yr, iso_o %in% c.names) %>%
-#   distinct(iso_o, .keep_all = TRUE)
-# h2=0
-# for (i in c.names) {
-# h <- WIOD.base %>% filter(year==yr, sector==13)
-# print(sum(h[(1:38), 6+h2]))
-# h2=h2+1
-# }
-# 
-# #services.Y.states ()
-# h <- data_gravity_serv.base %>%
-#   filter(year==yr, iso_o %in% state.names) %>%
-#   distinct(iso_o, .keep_all = TRUE)
-# h1=sum(h$Y_i)
-# h <- WIOD.base %>% filter(year==yr, sector==13)
-# h2=sum(h[(1:38), 5])
-# h1-h2
-
-#####################################################
 ##
-##CALCULATING \sum_{s}\phi_{14,s}Y_{j,s} (SUM OF INTERMEDIATE USES IN AGRIC) FOR EACH STATE
+## 4.2 CALCULATING \sum_{s}\phi_{14,s}Y_{j,s} (SUM OF INTERMEDIATE USES IN AGRIC) FOR EACH STATE
 ##
 #reshaping gdp.tot.v
 gdp.tot.v.mat<-spread(gdp.tot.v, sector, export, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL) 
@@ -304,9 +265,10 @@ class(gdp.tot.v.mat) <- "numeric"
 sum.14<-as.matrix(phi.14)  %*% gdp.tot.v.mat;
 sum.14<-t(sum.14); #i confirmed this is the same as the other calculation
 
+##
+## 4.3 sum.not.14: second component in X_j
+##
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# sum.not.14: second component in X_j
 # X_j for all other sectors
 state.imports <- cbind(state.state[4:dim(state.state)[2]], state.country.e[4:dim(state.country.e)[2]])
 expenditure.state <- rowSums(state.imports)
@@ -336,10 +298,10 @@ sum.not.14.v<-as.data.frame(t(sum.not.14.v)) %>%
             select(-V14);
 #sum over r
 sum.not.14.vector<-as.data.frame(rowSums(expenditure.mat-sum.not.14.v))
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#final computation for X_j
+##
+## 4.4 final computation for X_j
+##
 X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
 #check: sum(X_j)=WIOD
@@ -349,12 +311,14 @@ c1=check1[5:dim(check1)[2]]
 c1=sum(c1)
 c2=sum(X_j)
 print(c1-c2)
+if(abs(c1/c2-1)>epsilon) 
+  stop(paste("sum(X_j) over states != US WIOD for year", yr))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+# 5. Calculating lambda and B matrix for the system
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-## Calculating lambda and B matrix
-
-#### DISTANCE MATRIX
+#
+# 5.1 DISTANCE MATRIX
+#
 dist.matrix <- data_gravity_agriculture %>% 
   select( iso_o, iso_d, dist ) %>% 
   left_join( y=id.total, by=c('iso_o'='region') ) %>% 
@@ -372,7 +336,9 @@ phi<-exp(phi);
 phi<-phi/dist.matrix^1.8; 
 dist.matrix<-phi
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+# 5.2 lambda vector 
+#
 
 #lambda_j
 expenditure.vector.agri.s <- (as.matrix(X_j))
@@ -392,53 +358,43 @@ state.exports.to.countries <- state.exports.to.countries %>%
 state.exports.to.countries <- state.exports.to.countries/gdp.vector.agri.s
 chi.i <- 1 - rowSums(state.exports.to.countries)
 
-### lambda vector
+# lambda vector
 lambda_vector <- rbind(as.matrix(lambda.j), as.matrix(chi.i));
 
-print(max(lambda_vector))
-print(min(lambda_vector))
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-##### BIG MATRICES
+#
+# 5.3 BIG MATRIX B
+#
 
 #Matrices X and Y 
 mat.Y <- matrix( data=rep(gdp.vector.agri.s, (n.s)), nrow=(n.s), byrow=TRUE );
 mat.X <- matrix( data=rep(expenditure.vector.agri.s, (n.s)), nrow=(n.s), byrow=TRUE );
 
-#Submatrices: TX and TY
-##phi*Y submatrices
+##Submatrices: TX and TY
+#phi*Y submatrices
 phi.Y.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.Y;
-## phi*X submatrices
+# phi*X submatrices
 phi.X.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.X;
 
-##Big zeros matrices
+#Big zeros matrices
 zeros.big <- matrix( data=rep(0, (n.s)*(n.s)), nrow=(n.s), ncol=(n.s) );
 
-##GIANT MATRIX 
-### Relevant matrix
+#Relevant matrix
 BIG.MAT <- rbind( cbind(zeros.big, phi.Y.ss),
                   cbind(phi.X.ss, zeros.big) );
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 6. SOLVING THE SYSTEM
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# SYSTEM
+#
+# 6.1 objective function
+#
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-##### WE WANT TO MINIMIZE THE FUNCTION gravity.us
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-gravity.us <- function( x, Lambda, Beta ) {  
-######
-###### CONSTRUCTING RHS
-######
+gravity.us <- function( x, Lambda, B ) {  
 #Right hand side
 RHS <- Beta %*% x^(-1)
-######
-###### CONSTRUCTING LHS
-######
 #left hand side
 LHS <- Lambda*x
-######
-###### OBJECTIVE FUNCTION TO MINIMIZE
-######
+## OBJECTIVE FUNCTION TO MINIMIZE
 #NORMALIZING FIRST P TO 100 
 constraint<-((x[1]/100)-1)
 objective<-rbind((LHS/RHS)-1,constraint)
@@ -448,18 +404,20 @@ fx<- apply(objective^2, 2, sum)
 return(fx)
 }
 
-#SHOWING THAT IN THE EXAMPLE, THE REAL SOLUTION MAKES FUNCTION CLOSE TO ZERO
-####
-#x=c(100.0000, 105.8821817, 203.9996694, 221.0001074)
-####
-#gravity.us(x,Lambda=lambda_vector,Beta=BIG.MAT) #seems to work!
+#
+# 6.2 minimizing objective fuction
+#
 
-####
-#### SOLVING
-####
-#potential initial value: X_j=Y_j (no deficit)
+##run for example only
+#SHOWING THAT IN THE EXAMPLE, THE REAL SOLUTION MAKES FUNCTION CLOSE TO ZERO
+#x=c(100.0000, 105.8821817, 203.9996694, 221.0001074)
+#gravity.us(x,Lambda=lambda_vector,Beta=BIG.MAT) #seems to work!
+## end run for example only
+
+## SOLVING
+
 init<-rep(100, 2*n.s);
-###FIRST OPTIMIZATION ALGORITHM: LOWER AND UPPER BOUNDS
+#FIRST OPTIMIZATION ALGORITHM: LOWER AND UPPER BOUNDS
 optimal.model <- optimx( par=init, fn=gravity.us, Lambda=lambda_vector,Beta=BIG.MAT ,
                          lower=rep(0.0000000000001, 2*n.s), upper=rep(1000000000000, 2*n.s),
                          control=list(maxit=100000, eps=1.0E-20));
@@ -468,7 +426,7 @@ optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
 #VECTOR OF SOLUTION
 solu.1<-t(as.matrix(optimal.model[1:(2*n.s)]));  #not the same at the real solution!
 
-###SECOND OPTIMIZATION ALGORITHM
+#SECOND OPTIMIZATION ALGORITHM
 optimal.model<-optim(par=init, fn=gravity.us, Lambda=lambda_vector,Beta=BIG.MAT ,
                      method = "Nelder-Mead", control = list(maxit = 20000, abstol=1e-10, reltol=1e-10,ndeps=1e-8))
 #VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
@@ -482,7 +440,6 @@ solu.2<-optimal.model$par
 ### Saving input matrices for the matlab code
 write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//agric_mat_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//agric_vec_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
-
 }
 
 ```
