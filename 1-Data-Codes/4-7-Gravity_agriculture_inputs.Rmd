@@ -83,37 +83,6 @@ epsilon<-0.0001
 example <- read_excel( "1-Intermediate_Processed_Data//ejemplo_new.xlsx")
 n.c <- 2;
 n.s <- 2;
-# WIOD.base <- as.data.frame(matrix(0, nrow = 3, ncol = 3))
-# colnames(WIOD.base) <- c("value_USA", "value_AUS", "value_AUT")
-# WIOD.base <- WIOD.base %>%
-#   mutate(sector=14) %>%
-#   mutate(year=2000) %>%
-#   mutate(importer_country=c("USA", "AUS", "AUT")) %>%
-#   mutate(importer=c(1,2,3)) %>%
-#   select(year, importer_country, importer, sector, everything())
-# WIOD.base$value_AUS[2] <- example$`X_{ij}`[1]
-# WIOD.base$value_AUS[3] <- example$`X_{ij}`[2]
-# WIOD.base$value_AUT[2] <- example$`X_{ij}`[5]
-# WIOD.base$value_AUT[3] <- example$`X_{ij}`[6]
-# WIOD.base$value_AUS[1] <- example$`X_{ij}`[3] + example$`X_{ij}`[4]
-# WIOD.base$value_AUT[1] <- example$`X_{ij}`[7] + example$`X_{ij}`[8]
-# WIOD.base$value_USA[2] <- example$`X_{ij}`[9] + example$`X_{ij}`[13]
-# WIOD.base$value_USA[3] <- example$`X_{ij}`[10] + example$`X_{ij}`[14]
-# WIOD.base$value_USA[1] <- NA
-
-# data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
-# data_gravity_agriculture.base <- data_gravity_agriculture.base %>%
-#   filter(year==2000, (iso_o=="Alabama" | iso_o=="Alaska" | iso_o=="AUS" | iso_o=="AUT"), (iso_d=="Alabama" | iso_d=="Alaska" | iso_d=="AUS" | iso_d=="AUT") ) %>%
-#   mutate(X_j= ifelse(iso_d=="AUS", example$X_j[1], X_j)) %>%
-#   mutate(X_j= ifelse(iso_d=="AUT", example$X_j[2], X_j)) %>%
-#   mutate(Y_i= ifelse(iso_o=="AUS", example$Y_i[1], Y_i)) %>%
-#   mutate(Y_i= ifelse(iso_o=="AUT", example$Y_i[5], Y_i)) %>%
-#   mutate(X_j= ifelse(iso_d=="Alabama", example$X_j[3], X_j)) %>%
-#   mutate(X_j= ifelse(iso_d=="Alaska",  example$X_j[4], X_j)) %>%
-#   mutate(Y_i= ifelse(iso_o=="Alabama", example$Y_i[9], Y_i)) %>%
-#   mutate(Y_i= ifelse(iso_o=="Alaska",  example$Y_i[13], Y_i))
-# data_gravity_agriculture.base$Y_i <- as.numeric((data_gravity_agriculture.base$Y_i))
-# data_gravity_agriculture.base$X_j <- as.numeric(as.character(data_gravity_agriculture.base$X_j))
 
 dist.matrix <- matrix(c(example$phi_ij[11], example$phi_ij[12], example$phi_ij[9], example$phi_ij[10], example$phi_ij[15], example$phi_ij[16], example$phi_ij[13], example$phi_ij[14], example$phi_ij[3], example$phi_ij[4], example$phi_ij[1], example$phi_ij[2], example$phi_ij[7], example$phi_ij[8], example$phi_ij[5], example$phi_ij[6]), nrow=4, ncol=4)
 dist.matrix <- data.frame(dist.matrix)
@@ -123,7 +92,6 @@ dist.matrix <- matrix(unlist(dist.matrix), ncol = 4, byrow = TRUE)
 gdp.vector.agri.s <- data.frame(c(example$Y_i[12], example$Y_i[13]))
 colnames(gdp.vector.agri.s) <- c("export")
 X_j <- c(example$X_j[11], example$X_j[12])
-
 
 yr=2000
 CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
@@ -141,22 +109,6 @@ CENSUS.imp <- CENSUS.imp %>%
   mutate(value= ifelse(origin=="AUT" & importer=="Alabama", example$`X_{ij}`[7], value)) %>%
   mutate(value= ifelse(origin=="AUS" & importer=="Alaska", example$`X_{ij}`[4], value)) %>%
   mutate(value= ifelse(origin=="AUT" & importer=="Alaska", example$`X_{ij}`[8], value))
-
-# wiot.full <- wiot.full %>%
-#   filter(year==2000, (row_country=="AUS" | row_country=="AUT" | row_country=="USA"), (col_country=="AUS" | col_country=="AUT" | col_country=="USA"), row_item==1, col_item==1) %>%
-#   mutate(value= ifelse(row_country=="AUS" & col_country=="AUS", WIOD.base$value_AUS[2], value)) %>%
-#   mutate(value= ifelse(row_country=="AUS" & col_country=="AUT", WIOD.base$value_AUS[3], value)) %>%
-#   mutate(value= ifelse(row_country=="AUS" & col_country=="USA", WIOD.base$value_AUS[1], value)) %>%
-#   mutate(value= ifelse(row_country=="AUT" & col_country=="AUS", WIOD.base$value_AUT[2], value)) %>%
-#   mutate(value= ifelse(row_country=="AUT" & col_country=="AUT", WIOD.base$value_AUT[3], value)) %>%
-#   mutate(value= ifelse(row_country=="AUT" & col_country=="USA", WIOD.base$value_AUT[1], value)) %>%
-#   mutate(value= ifelse(row_country=="USA" & col_country=="AUS", WIOD.base$value_USA[2], value)) %>%
-#   mutate(value= ifelse(row_country=="USA" & col_country=="AUT", WIOD.base$value_USA[3], value)) %>%
-#   mutate(value= ifelse(row_country=="USA" & col_country=="USA", WIOD.base$value_USA[1], value))
-# CENSUS.exp$value <- as.numeric(CENSUS.exp$value)
-# # ##############################
-
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 
@@ -466,6 +418,66 @@ zeros.big <- matrix( data=rep(0, (n.s)*(n.s)), nrow=(n.s), ncol=(n.s) );
 ### Relevant matrix
 BIG.MAT <- rbind( cbind(zeros.big, phi.Y.ss),
                   cbind(phi.X.ss, zeros.big) );
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# SYSTEM
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+##### WE WANT TO MINIMIZE THE FUNCTION gravity.us
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+gravity.us <- function( x, Lambda, Beta ) {  
+######
+###### CONSTRUCTING RHS
+######
+#Right hand side
+RHS <- Beta %*% x^(-1)
+######
+###### CONSTRUCTING LHS
+######
+#left hand side
+LHS <- Lambda*x
+######
+###### OBJECTIVE FUNCTION TO MINIMIZE
+######
+#NORMALIZING FIRST P TO 100 
+constraint<-((x[1]/100)-1)
+objective<-rbind((LHS/RHS)-1,constraint)
+#FINAL OBJECTIVE FUNCTION: SUM OF SQUARES OF THE DIFFERENCE
+fx<- apply(objective^2, 2, sum)
+#THE VALUE THE FUNCTION RETURNS: gravity.us(x)=fx
+return(fx)
+}
+
+#SHOWING THAT IN THE EXAMPLE, THE REAL SOLUTION MAKES FUNCTION CLOSE TO ZERO
+####
+#x=c(100.0000, 105.8821817, 203.9996694, 221.0001074)
+####
+#gravity.us(x,Lambda=lambda_vector,Beta=BIG.MAT) #seems to work!
+
+####
+#### SOLVING
+####
+#potential initial value: X_j=Y_j (no deficit)
+init<-rep(100, 2*n.s);
+###FIRST OPTIMIZATION ALGORITHM: LOWER AND UPPER BOUNDS
+optimal.model <- optimx( par=init, fn=gravity.us, Lambda=lambda_vector,Beta=BIG.MAT ,
+                         lower=rep(0.0000000000001, 2*n.s), upper=rep(1000000000000, 2*n.s),
+                         control=list(maxit=100000, eps=1.0E-20));
+#VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
+optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
+#VECTOR OF SOLUTION
+solu.1<-t(as.matrix(optimal.model[1:(2*n.s)]));  #not the same at the real solution!
+
+###SECOND OPTIMIZATION ALGORITHM
+optimal.model<-optim(par=init, fn=gravity.us, Lambda=lambda_vector,Beta=BIG.MAT ,
+                     method = "Nelder-Mead", control = list(maxit = 20000, abstol=1e-10, reltol=1e-10,ndeps=1e-8))
+#VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
+optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
+#VECTOR OF SOLUTION
+solu.2<-optimal.model$par
+## comparing solutions
+(solu.1/solu.2)-1
+
 
 ### Saving input matrices for the matlab code
 write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//agric_mat_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
