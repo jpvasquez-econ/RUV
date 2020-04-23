@@ -60,6 +60,7 @@ c.names <- matrix$importer[(n.s+1):(n.s+n.c)]
 
 colnames(WIOD.base) <- c("year", "importer_country", "sector", "importer", "USA", c.names)
 
+epsilon <- 0.0001
 ```
 
 
@@ -79,7 +80,9 @@ CDP.cc <- CDP %>%
   filter(year==yr, importer %in% c.names, exporter %in% c.names) %>%
   arrange(sector, exporter, importer)
 
-print(sum(CDP.cc$value -wiot.cc$value))
+#print(sum(CDP.cc$value -wiot.cc$value))
+if(sum(abs(CDP.cc$value/wiot.cc$value -1 ))>epsilon) 
+  stop(paste("countries' exports to countries != countries' WIOD exports for year", yr))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,8 +101,10 @@ CDP.cs <- CDP %>%
   distinct(year, sector, importer, .keep_all = TRUE) %>%
   arrange(sector, exporter, importer)
 
-print(sum(CDP.cs$val -wiot.cs$value))
-temp <- data.frame(CDP.cs$val -wiot.cs$value) 
+#print(sum(CDP.cs$val -wiot.cs$value))
+#temp <- data.frame(CDP.cs$val -wiot.cs$value) 
+if(sum(abs(CDP.cs$val/wiot.cs$value -1))>epsilon) 
+  stop(paste("states' exports to countries != US WIOD exports to countries for year", yr))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,8 +123,10 @@ CDP.sc <- CDP %>%
   distinct(year, sector, exporter, .keep_all = TRUE) %>%
   arrange(sector, exporter, importer)
 
-print(sum(CDP.sc$val -wiot.sc$value))
-temp <- data.frame(CDP.sc$val -wiot.sc$value) 
+#print(sum(CDP.sc$val -wiot.sc$value))
+#temp <- data.frame(CDP.sc$val -wiot.sc$value)
+if(sum(abs(CDP.sc$val/wiot.sc$value -1))>epsilon) 
+  stop(paste("countries' exports to states != countries' WIOD exports to US for year", yr))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,8 +145,10 @@ CDP.ss <- CDP %>%
   distinct(year, sector, .keep_all = TRUE) %>%
   arrange(sector, exporter, importer)
 
-print(sum(CDP.ss$val -wiot.ss$value))
-temp <- data.frame(CDP.ss$val -wiot.ss$value) 
+#print(sum(CDP.ss$val -wiot.ss$value))
+#temp <- data.frame(CDP.ss$val -wiot.ss$value) 
+if(sum(abs(CDP.ss$val/wiot.ss$value -1))>epsilon) 
+  stop(paste("states' exports to states != US WIOD exports to US for year", yr))
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
