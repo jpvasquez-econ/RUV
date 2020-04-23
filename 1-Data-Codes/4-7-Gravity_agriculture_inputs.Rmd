@@ -236,8 +236,8 @@ labor.shares.0 <- labor.shares %>%
 phi.14 <- io.0*(1-labor.shares.0)
 
 state.state <- read.csv(paste('1-Intermediate_Processed_Data//state_cfs_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
-state.country.y <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
-state.country.e <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+state.country.y <- data.frame(read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector<=12)
+state.country.e <- data.frame(read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector<=12)
 state.exports <- rbind(state.state, state.country.y)
 exp.v <- c()
 for (sec in 1:12) {
