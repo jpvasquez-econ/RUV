@@ -23,7 +23,7 @@ remove(list = ls())
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'reshape2');
 # Install libraries in case they are not installed
 for( i in length(libs)){ 
   if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
@@ -45,7 +45,9 @@ CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
 WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
 
 #General parameters
-nstates=50
+n.s <- 50
+
+epsilon <- 0.0001
 ```
 
 ##Step 2 
@@ -118,8 +120,8 @@ XijkCFS_1 = c()
 denominator = c()
 n_relevant_sectors = 12
 for (i in 1:length(relevant_sectors)) {
-  denominator = rbind(denominator,matrix(replicate(nstates*nstates,sum_hl_XhlkCFS[i]), 
-                                         nrow = nstates, ncol = nstates))
+  denominator = rbind(denominator,matrix(replicate(n.s*n.s,sum_hl_XhlkCFS[i]), 
+                                         nrow = n.s, ncol = n.s))
   XijkCFS_1 = rbind(XijkCFS_1,XijkCFS[df$sector==relevant_sectors[i],])
 }
 
@@ -143,26 +145,23 @@ X_USA_USA_k = X_USA_USA_k[1:12]
 
 Xijk = c()
 for(i in 1:12) {
-  Xijk = rbind(Xijk, xijkCFS[((i-1)*nstates + 1):(nstates*i),]*X_USA_USA_k[i])
+  Xijk = rbind(Xijk, xijkCFS[((i-1)*n.s + 1):(n.s*i),]*X_USA_USA_k[i])
 }
 
 ###########################################Check that the following condition holds:
   
-Xijk$sector = df$sector[1:(12*nstates)]
-Xijk$importer = df$importer[1:(12*nstates)]
+Xijk$sector = df$sector[1:(12*n.s)]
+Xijk$importer = df$importer[1:(12*n.s)]
 Xijk = Xijk %>% select(importer, sector, everything())
 
-xijkCFS$sector = df$sector[1:(12*nstates)]
-xijkCFS$importer = df$importer[1:(12*nstates)]
+xijkCFS$sector = df$sector[1:(12*n.s)]
+xijkCFS$importer = df$importer[1:(12*n.s)]
 xijkCFS = xijkCFS %>% select(importer, sector, everything())
 
-# Check sum_ij xijk = 1, which is the same as sum_ij Xijk = X_USUSk
-for(k in 1:12) {
-  sum(xijkCFS[xijkCFS$sector==1,3:52])
-}
 # Check for all  k
 for(k in 1:12) {
-  print(c(sum(Xijk[Xijk$sector==k,3:52]),X_USA_USA_k[k]))
+  if(sum(abs(Xijk[Xijk$sector==k,3:52])/X_USA_USA_k[k] -1)>epsilon) 
+    stop(paste("states' exports to states != US WIOD exports to US for year", yr))
 }
 
 Step2 <- Xijk 
