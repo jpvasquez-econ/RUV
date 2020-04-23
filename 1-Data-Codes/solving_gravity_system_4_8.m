@@ -47,10 +47,13 @@ global matrixB vectorlambda
 
 % Optimization parameters
 
-tolfun         = 1e-8;
-tolx           = 1e-8;
+tolfun         = 1e-12;
+tolx           = 1e-12;
 optfs          = optimoptions('fsolve','Display','iter','TolFun',tolfun,'TolX',tolx,'MaxIter',500000,'MaxFunEvals',500000);
+ncountries     = 37;
+nstates        = 50;
 
+%% Section 2: SERVICES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%% SERVICES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +64,7 @@ veclambda= sprintf('1-Intermediate_Processed_Data/vector_lambda_%s.csv',num2str(
 % Import data
 matrixB        = table2array(readtable(matB));
 vectorlambda   = table2array(readtable(veclambda));
-init           = ones(174,1);
+init           = ones(2*(ncountries+nstates),1);
 if k>2000
 init=solution;
 end
@@ -78,7 +81,7 @@ Residual       = vectorlambda.*solution - matrixB * (solution.^(-1));
 disp(sum(Residual.^2)) 
 
 end
-
+%% Section 3: AGRICULTURE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%% AGRICULTURE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,15 +92,14 @@ veclambda= sprintf('1-Intermediate_Processed_Data/agric_vec_lambda_%s.csv',num2s
 % Import data
 matrixB        = table2array(readtable(matB));
 vectorlambda   = table2array(readtable(veclambda));
-init           = ones(174,1);
-init(100:140)  = 150;
+init           = ones(2*nstates,1);
+
 if k>2000
 init=solution;
 end
 
-lb= 0.00001*ones(174,1);
-ub= 10000000*ones(174,1);
-%solution       = fsolve(@gravity_system,init,optfs);
+lb= 0.00001*ones(2*nstates,1);
+ub= 10000000*ones(2*nstates,1);
 solution       = lsqnonlin(@gravity_system,init,lb,ub,optfs);
 
 % Save solution to an excel spreadsheet
