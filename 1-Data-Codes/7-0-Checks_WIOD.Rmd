@@ -60,7 +60,7 @@ c.names <- matrix$importer[(n.s+1):(n.s+n.c)]
 
 colnames(WIOD.base) <- c("year", "importer_country", "sector", "importer", "USA", c.names)
 
-epsilon <- 0.0001
+epsilon <- 0.01
 ```
 
 
