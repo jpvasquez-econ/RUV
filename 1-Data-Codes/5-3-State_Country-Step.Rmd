@@ -47,8 +47,8 @@ state_imp_exp.0 <- state_imp_exp.0 %>%
 #WIOD
 WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
 #General parameters
-n.s=50
-n.c=37
+n.s <- 50
+n.c <- 37
 #state names
 states <- read.csv("1-Intermediate_Processed_Data//state_cfs_step_2000.txt", header = TRUE, sep = ",", dec = ".")
 names.states=matrix(states$importer[1:n.s])
@@ -111,7 +111,7 @@ state_imp_exp <- data.frame(state_imp_exp.0) %>%
 state_imp_exp <-spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 Base.e <- state_imp_exp %>% 
   arrange(sector, destination) %>%
-  filter(sector<=12)
+  filter(sector<=12 | sector==14)
 
 colnames(Base.e)= c("importer", "sector", names.countries)
 Base.e[is.na(Base.e)] <- 0
@@ -135,7 +135,7 @@ eijkBase <- eijkBase[, 3:dim(eijkBase)[2]] / rowSums(eijkBase[, 3:dim(eijkBase)[
 #e
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
-  filter(sector<=12) %>%
+  filter(sector<=12 | sector==14) %>%
   filter(importer_country=='USA')
 df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country)
 colnames(df.WIOD1) <- c("sector", names.countries)
@@ -152,7 +152,7 @@ check= as.matrix(rowSums(step3e[, 3:dim(step3e)[2]]) - df.WIOD1$value)
 ##############################
 #Correcting if needed
 m.correct <- c()
-for (sec in 1:12) {
+for (sec in c(1:12, 14)) {
 m <- Base.e %>% filter(sector==sec)
 m <- (rowSums(m[, 3:dim(m)[2]]) / sum(m[, 3:dim(m)[2]]))
 m= t(matrix(replicate(n.c, m), nrow = length(m), ncol = n.c))
@@ -206,7 +206,7 @@ state_imp_exp$sector <- as.numeric(state_imp_exp$sector)
 
 Base.y <- state_imp_exp %>% 
   arrange(sector, destination) %>%
-  filter(sector<=12)
+  filter(sector<=12 | sector==14)
 colnames(Base.y)= c("importer", "sector", names.states)
 Base.y[is.na(Base.y)] <- 0
 Base.y <- cbind(Base.y[, 1:2], mapply(Base.y[, 3:dim(Base.y)[2]], FUN=as.numeric))
@@ -222,7 +222,7 @@ yijkBase <- Base.y[, 3:dim(Base.y)[2]] / rowSums(Base.y[, 3:dim(Base.y)[2]])
 #y
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
-  filter(sector<=12) %>%
+  filter(sector<=12 | sector==14) %>%
   filter(importer_country!='USA') 
 
 df.WIOD1 <- df.WIOD %>% select(importer_country, sector, value_USA)
@@ -240,7 +240,7 @@ Base.y1 <- melt(Base.y, id.vars=c("importer", "sector"), variable.name="origin",
 Base.y1 <-spread(Base.y1, importer, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
 m.correct <- c()
-for (sec in 1:12) {
+for (sec in c(1:12, 14)) {
 m <- Base.y1 %>% filter(sector==sec)
 m <- (rowSums(m[, 3:dim(m)[2]]) / sum(m[, 3:dim(m)[2]]))
 m= t(matrix(replicate(n.c, m), nrow = length(m), ncol = n.c))
