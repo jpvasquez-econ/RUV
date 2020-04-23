@@ -389,14 +389,14 @@ BIG.MAT <- rbind( cbind(zeros.big, phi.Y.ss),
 # 6.1 objective function
 #
 
-gravity.us <- function( x, Lambda, B ) {  
+gravity.us <- function( x, lambda_vector, BIG.MAT ) {  
 #Right hand side
-RHS <- Beta %*% x^(-1)
+RHS <- BIG.MAT %*% x^(-1)
 #left hand side
-LHS <- Lambda*x
+LHS <- lambda_vector*x
 ## OBJECTIVE FUNCTION TO MINIMIZE
 #NORMALIZING FIRST P TO 100 
-constraint<-((x[1]/100)-1)
+constraint<-((x[1]/100)-1)*100
 objective<-rbind((LHS/RHS)-1,constraint)
 #FINAL OBJECTIVE FUNCTION: SUM OF SQUARES OF THE DIFFERENCE
 fx<- apply(objective^2, 2, sum)
@@ -411,14 +411,14 @@ return(fx)
 ##run for example only
 #SHOWING THAT IN THE EXAMPLE, THE REAL SOLUTION MAKES FUNCTION CLOSE TO ZERO
 #x=c(100.0000, 105.8821817, 203.9996694, 221.0001074)
-#gravity.us(x,Lambda=lambda_vector,Beta=BIG.MAT) #seems to work!
+#gravity.us(x,lambda_vector=lambda_vector,BIG.MAT=BIG.MAT) #seems to work!
 ## end run for example only
 
 ## SOLVING
 
-init<-rep(100, 2*n.s);
+init<-rep(1, 2*n.s);
 #FIRST OPTIMIZATION ALGORITHM: LOWER AND UPPER BOUNDS
-optimal.model <- optimx( par=init, fn=gravity.us, Lambda=lambda_vector,Beta=BIG.MAT ,
+optimal.model <- optimx( par=init, fn=gravity.us, lambda_vector=lambda_vector,BIG.MAT=BIG.MAT ,
                          lower=rep(0.0000000000001, 2*n.s), upper=rep(1000000000000, 2*n.s),
                          control=list(maxit=100000, eps=1.0E-20));
 #VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
@@ -427,7 +427,7 @@ optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
 solu.1<-t(as.matrix(optimal.model[1:(2*n.s)]));  #not the same at the real solution!
 
 #SECOND OPTIMIZATION ALGORITHM
-optimal.model<-optim(par=init, fn=gravity.us, Lambda=lambda_vector,Beta=BIG.MAT ,
+optimal.model<-optim(par=init, fn=gravity.us, lambda_vector=lambda_vector,BIG.MAT=BIG.MAT ,
                      method = "Nelder-Mead", control = list(maxit = 20000, abstol=1e-10, reltol=1e-10,ndeps=1e-8))
 #VALUE THAT SHOWS OBJECTIVE FUNCTION EVALUATED AT THE SOLUTION
 optimal.model$value #THIS SHOULD BE CLOSE TO ZERO!
