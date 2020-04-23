@@ -23,7 +23,7 @@ remove(list = ls())
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'foreign');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'foreign', 'reshape2');
 # Install libraries in case they are not installed
 for( i in length(libs)){ 
   if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
