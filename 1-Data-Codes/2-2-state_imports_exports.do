@@ -121,36 +121,36 @@ destring sec_naics, replace
 ***********************************************************************************************************************************************
 ***  	 SECTORS USED AND THEIR MAPPING TO WIOD (indexed by ci)
 ***********************************************************************************************************************************************
-1.	(NAICS 311–312) Food Products, Beverage, and Tobacco Products (c3);
-2.	(NAICS 313–316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4–c5); 
-3.	(NAICS 321–323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6–c7); 
+1.	(NAICS 311Ã±312) Food Products, Beverage, and Tobacco Products (c3);
+2.	(NAICS 313Ã±316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4Ã±c5); 
+3.	(NAICS 321Ã±323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6Ã±c7); 
 4.	(NAICS 324 , 211-213) Petroleum and Coal Products and mining (c2, c8);
 5.	(NAICS 325) Chemical (c9); 
 6.	(NAICS 326) Plastics and Rubber Products (c10); 
 7.	(NAICS 327) Nonmetallic Mineral Products (c11); 
-8.	(NAICS 331–332) Primary Metal and Fabricated Metal Products (c12); 
+8.	(NAICS 331Ã±332) Primary Metal and Fabricated Metal Products (c12); 
 9.	(NAICS 333); Machinery (c13); 
-10.	(NAICS 334–335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
+10.	(NAICS 334Ã±335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
 11.	(NAICS 336) Transportation Equipment (c15); 
-12.	(NAICS 337– 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
+12.	(NAICS 337Ã± 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
 13.	((NAICS XX) Construction (c18); 
-14.	(NAICS 42-45) Wholesale and Retail Trade (c19–c21); 
-15.	(NAICS 481-488) Transport Services (c23–c26);
-16.	(NAICS 511–518) Information Services (c27); 
-17.	(NAICS 521–525) Finance and Insurance (c28); 
-18.	(NAICS 531-533)  Real Estate (c29–c30); 
+14.	(NAICS 42-45) Wholesale and Retail Trade (c19Ã±c21); 
+15.	(NAICS 481-488) Transport Services (c23Ã±c26);
+16.	(NAICS 511Ã±518) Information Services (c27); 
+17.	(NAICS 521Ã±525) Finance and Insurance (c28); 
+18.	(NAICS 531-533)  Real Estate (c29Ã±c30); 
 19.	(NAICS 61) Education (c32); 
-20.	(NAICS 621–624) Health Care (c33); 
-21.	(NAICS 721–722) Accommodation and Food Services (c22); 
-22.	(NAICS 493, 541, 55, 561, 562, 711–713, 811-814) Other Services (c34).
+20.	(NAICS 621Ã±624) Health Care (c33); 
+21.	(NAICS 721Ã±722) Accommodation and Food Services (c22); 
+22.	(NAICS 493, 541, 55, 561, 562, 711Ã±713, 811-814) Other Services (c34).
 23.	(NAICS 111-115) Agriculture (c1).
 */
 gen sector=.
-*1.	(NAICS 311–312) Food Products, Beverage, and Tobacco Products (c3);
+*1.	(NAICS 311Ã±312) Food Products, Beverage, and Tobacco Products (c3);
 replace sector=1 if sec_naics==311 | sec_naics==312
-*2.	(NAICS 313–316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4–c5);
+*2.	(NAICS 313Ã±316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4Ã±c5);
 replace sector=2 if sec_naics==313 | sec_naics==314 | sec_naics==315 | sec_naics==316
-*3.	(NAICS 321–323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6–c7); 
+*3.	(NAICS 321Ã±323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6Ã±c7); 
 replace sector=3 if sec_naics==321 | sec_naics==322 | sec_naics==323
 *4.	(NAICS 324, 211-213) Petroleum and Coal Products (c8) and mining (c2);
 replace sector=4 if sec_naics==324 | sec_naics==211 | sec_naics==212 |sec_naics==213
@@ -160,17 +160,17 @@ replace sector=5 if sec_naics==325
 replace sector=6 if sec_naics==326
 *7.	(NAICS 327) Nonmetallic Mineral Products (c11); 
 replace sector=7 if sec_naics==327
-*8.	(NAICS 331–332) Primary Metal and Fabricated Metal Products (c12); 
+*8.	(NAICS 331Ã±332) Primary Metal and Fabricated Metal Products (c12); 
 replace sector=8 if sec_naics==331 | sec_naics==332
 *9.	(NAICS 333); Machinery (c13); 
 replace sector=9 if sec_naics==333
-*10.	(NAICS 334–335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
+*10.	(NAICS 334Ã±335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
 replace sector=10 if sec_naics==334 | sec_naics==335
 *11.	(NAICS 336) Transportation Equipment (c15); 
 replace sector=11 if sec_naics==336
-*12.	(NAICS 337– 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
+*12.	(NAICS 337Ã± 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
 replace sector=12 if sec_naics==337 | sec_naics==338 | sec_naics==339
-*16.	(NAICS 511–518) Information Services (c27);
+*16.	(NAICS 511Ã±518) Information Services (c27);
 replace sector=16 if sec_naics==511 
 *14.	(NAICS 111-115, 211-213) Agriculture and Mining (c1).
 replace sector=14 if sec_naics<=115 
@@ -194,5 +194,8 @@ clear
 use `exports'
 append using `imports'
 replace sector=13 if sector>12 & sector!=14
+
+replace origin = subinstr(origin, " ", "", .)
+replace destination = subinstr(destination, " ", "", .)
 
 save $state_imports_exports, replace

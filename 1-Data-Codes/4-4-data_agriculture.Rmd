@@ -57,25 +57,16 @@ WIOD.full <- WIOD.full %>%
 
 #CENSUS
 CENSUS <- read.dta13("1-Intermediate_Processed_Data//state_imports_exports.dta")
-CENSUS <- CENSUS %>%
-  mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
-  mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-state_imp_exp.0 <- CENSUS
+state_imp_exp.0 <- CENSUS %>%
+  filter(origin!="AllStates", destination!="AllStates")
   
 #Agriculture production states
 data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
-data_agri <- data_agri %>%  
-  mutate(iso_o= recode(iso_o, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-data_agri$iso_o <- as.character(data_agri$iso_o) 
 
 #Trade distances
 data_agriculture <- read.csv("1-Intermediate_Processed_Data//data_services.csv")
 data_agriculture <- data_agriculture %>%
-  mutate(Y_i=NA, X_j=NA, Y_i.1=NA, Y_i.2=NA) %>%
-    mutate(iso_o= recode(iso_o, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
-    mutate(iso_d= recode(iso_d, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-data_agriculture$iso_o <- as.character(data_agriculture$iso_o)
-data_agriculture$iso_d <- as.character(data_agriculture$iso_d)
+  mutate(Y_i=NA, X_j=NA, Y_i.1=NA, Y_i.2=NA)
 
 epsilon <- 0.0001
 
@@ -106,7 +97,7 @@ WIOD <- subset(WIOD, select = -year)
 yr.=yr
 if(yr<2002){yr.=2002}
 state_imp_exp <- data.frame(state_imp_exp.0) %>% 
-  filter(year==yr., file=="i in US, j not in US", origin!="All States", destination!="All States") %>%
+  filter(year==yr., file=="i in US, j not in US") %>%
   select(-year, -file)
 state_imp_exp <-spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 #no trade from US states to SVK in sector 4 in 2002
@@ -286,7 +277,7 @@ write.table(data_agriculture, file = paste("1-Intermediate_Processed_Data//data_
 ```{r}
 ### Base year for imports (2008)
 state_imp_exp <- data.frame(state_imp_exp.0) %>% 
-  filter(year==2008, file=="i not in US, j in US", origin!="All States", destination!="All States") %>%
+  filter(year==2008, file=="i not in US, j in US") %>%
   select(-year, -file)
 
 state_imp_exp <-spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)

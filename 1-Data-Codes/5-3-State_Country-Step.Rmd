@@ -41,9 +41,7 @@ To use $X_{ij,k}^{Base}$ and $X_{ij,k}^{WIOD}$ plus proportionality to calculate
 ```{r}
 #state level imports and exports
 state_imp_exp.0 <- read_dta("1-Intermediate_Processed_Data//state_imports_exports.dta")
-state_imp_exp.0 <- state_imp_exp.0 %>%
-  mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
-  mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
+state_imp_exp.0 <- state_imp_exp.0 %>% filter(origin!="AllStates", destination!="AllStates")
 
 #WIOD
 WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
@@ -110,7 +108,7 @@ $$
 ```{r}
 ### Base year for imports (2008)
 state_imp_exp <- data.frame(state_imp_exp.0) %>% 
-  filter(year==2008, file=="i not in US, j in US", origin!="All States", destination!="All States") %>%
+  filter(year==2008, file=="i not in US, j in US") %>%
   select(-year, -file)
 
 state_imp_exp <-spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
@@ -201,7 +199,7 @@ WIOD <- subset(WIOD, select = -year)
 yr.=yr
 if(yr<2002){yr.=2002}
 state_imp_exp <- data.frame(state_imp_exp.0) %>% 
-  filter(year==yr., file=="i in US, j not in US", origin!="All States", destination!="All States") %>%
+  filter(year==yr., file=="i in US, j not in US") %>%
   select(-year, -file)
 state_imp_exp <-spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 #no trade from US states to SVK in sector 4 in 2002

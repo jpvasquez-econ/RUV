@@ -302,4 +302,7 @@ drop _m
 sort year iso_o iso_d
 order year iso_o iso_d dist Y_i X_j, first
 
+replace iso_o = subinstr(iso_o, " ", "", .)
+replace iso_d = subinstr(iso_d, " ", "", .)
+
 export delimited using $outputfile, replace

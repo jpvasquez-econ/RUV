@@ -44,6 +44,16 @@ where $\lambda_t$ is a time FE, $\delta_{i}^{o}$ is an origin FE, $\delta_{j}^{d
 We will focus on countries only (we forget about the states but care about USA as a country), and our focus is on sector 13 only.
 
 ```{r}
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country", region!="USA")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names)
+
 #WIOD
 WIOD <- read_dta("1-Intermediate_Processed_Data\\wiot_full.dta")
 WIOD=data.frame(WIOD)
@@ -89,6 +99,7 @@ us_pop=data.frame(us_pop)
   row_item=34
   
 ```{r}
+
 #only sector 13: origin
 WIOD1 <- WIOD %>%
   filter(row_item>=18 & row_item<=34 & row_item!=31) %>%
@@ -147,7 +158,7 @@ data_servicesUS2 <- data_services %>%
   mutate(pond=0)
 
 data_servicesUS3=data_servicesUS2
-for(i in 1:50){
+for(i in 1:n.s){
   data_servicesUS3 <- data_servicesUS3 %>%
     mutate(pond=replace(pond, iso_d==us_pop1$State[i], us_pop1$pond[i]))
 }
@@ -185,7 +196,7 @@ USserv <- data_services %>%
   mutate(dist=(1/dist))
   
 
-for(i in 1:50){
+for(i in 1:n.s){
   USserv <- USserv %>%
     mutate(pond_r=replace(pond_r, iso_o==us_pop1$State[i], us_pop1$pond[i])) %>%
     mutate(pond_s=replace(pond_s, iso_d==us_pop1$State[i], us_pop1$pond[i]))
@@ -319,7 +330,7 @@ data_agricultureUS2 <- data_agriculture %>%
   mutate(pond=0)
 
 data_agricultureUS3=data_agricultureUS2
-for(i in 1:50){
+for(i in 1:n.s){
   data_agricultureUS3 <- data_agricultureUS3 %>%
     mutate(pond=replace(pond, iso_d==us_pop1$State[i], us_pop1$pond[i]))
 }
@@ -357,7 +368,7 @@ USagri <- data_agriculture %>%
   mutate(dist=(1/dist))
   
 
-for(i in 1:50){
+for(i in 1:n.s){
   USagri <- USagri %>%
     mutate(pond_r=replace(pond_r, iso_o==us_pop1$State[i], us_pop1$pond[i])) %>%
     mutate(pond_s=replace(pond_s, iso_d==us_pop1$State[i], us_pop1$pond[i]))
