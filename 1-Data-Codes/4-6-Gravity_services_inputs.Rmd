@@ -249,7 +249,7 @@ BIG.MAT <- rbind( cbind(zeros.big, block.10),
                   cbind(block.11, zeros.big) );
 
 ## Saving input matrices for the matlab code
-write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data\\matrix_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
-write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data\\vector_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//matrix_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//vector_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 }
 ```
