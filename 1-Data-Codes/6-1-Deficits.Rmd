@@ -55,25 +55,20 @@ $$
 D_{i,k}=\sum_j X_{ij,k} - \sum_j X_{ji,k}
 $$
 ```{r}
+tot.imp <- rowSums(Base[, 4:dim(Base)[2]])
+
+Base1 <- melt(Base, id.vars=c("year", "importer", "sector"), variable.name="exporter", value.name = "value")
+Base1 <-spread(Base1, importer, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+tot.exp <- rowSums(Base1[, 4:dim(Base1)[2]])
+
+#deficit
+deficit <- data.frame(tot.exp - tot.imp)
+deficit <- cbind(Base[, 1:3], deficit)
+colnames(deficit) <- c("year", "importer", "sector", "deficit")
+
 for (yr in 2000:2007) {
-  final_matrix=c()
-  for (k in 101:114) {
-    matrix <- Base %>%
-      filter(year==yr, sector==k) %>%
-      select(-importer, -sector, -year)
-    tot_exp=colSums(matrix)
-    tot_imp=rowSums(matrix)
-    deficit=tot_exp-tot_imp
-    final=data.frame(deficit)
-    final$sector=k
-    final$year=yr
-    final$region=Base$importer[1:87]
-    final <- final %>% select(year, region, sector, deficit)
-    final_matrix=rbind(final_matrix, final)
-  }
-write.table(final_matrix, file = paste("1-Intermediate_Processed_Data//deficits_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+  final <- deficit %>% filter(year==yr)
+  write.table(final, file = paste("1-Intermediate_Processed_Data//deficits_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
 ```
-
-
