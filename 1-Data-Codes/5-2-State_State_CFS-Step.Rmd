@@ -45,7 +45,13 @@ CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
 WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
 
 #General parameters
-n.s <- 50
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+n.s <- length(s.names)
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+n.sec <- length(unique(sector.file$final_sector)) -3
 
 epsilon <- 0.0001
 ```
@@ -114,15 +120,13 @@ for(k in 1:n_sectors) {
   sum_hl_XhlkCFS[k] = sum(XijkCFS[df$sector==k,])
 }
 
-relevant_sectors = 1:12
 
 XijkCFS_1 = c()
 denominator = c()
-n_relevant_sectors = 12
-for (i in 1:length(relevant_sectors)) {
+for (i in 1:n.sec) {
   denominator = rbind(denominator,matrix(replicate(n.s*n.s,sum_hl_XhlkCFS[i]), 
                                          nrow = n.s, ncol = n.s))
-  XijkCFS_1 = rbind(XijkCFS_1,XijkCFS[df$sector==relevant_sectors[i],])
+  XijkCFS_1 = rbind(XijkCFS_1,XijkCFS[df$sector==i,])
 }
 
 # Compute xijkCFS
@@ -141,26 +145,26 @@ USA_exporter_indices = df_WIOD$importer_country == "USA"
 
 # Take into account only the first 12 sectors 
 X_USA_USA_k = df_WIOD$value_USA[USA_exporter_indices]
-X_USA_USA_k = X_USA_USA_k[1:12]
+X_USA_USA_k = X_USA_USA_k[1:n.sec]
 
 Xijk = c()
-for(i in 1:12) {
+for(i in 1:n.sec) {
   Xijk = rbind(Xijk, xijkCFS[((i-1)*n.s + 1):(n.s*i),]*X_USA_USA_k[i])
 }
 
 ###########################################Check that the following condition holds:
   
-Xijk$sector = df$sector[1:(12*n.s)]
-Xijk$importer = df$importer[1:(12*n.s)]
+Xijk$sector = df$sector[1:(n.sec*n.s)]
+Xijk$importer = df$importer[1:(n.sec*n.s)]
 Xijk = Xijk %>% select(importer, sector, everything())
 
-xijkCFS$sector = df$sector[1:(12*n.s)]
-xijkCFS$importer = df$importer[1:(12*n.s)]
+xijkCFS$sector = df$sector[1:(n.sec*n.s)]
+xijkCFS$importer = df$importer[1:(n.sec*n.s)]
 xijkCFS = xijkCFS %>% select(importer, sector, everything())
 
 # Check for all  k
-for(k in 1:12) {
-  if(sum(abs(Xijk[Xijk$sector==k,3:52])/X_USA_USA_k[k] -1)>epsilon) 
+for(k in 1:n.sec) {
+  if(abs(sum(Xijk[Xijk$sector==k,3:52])/X_USA_USA_k[k] -1)>epsilon) 
     stop(paste("states' exports to states != US WIOD exports to US for year", yr))
 }
 
@@ -172,7 +176,7 @@ Step2 <- Step2 %>%
 
 
 #Exporting 
-colnames(Step2)[4:dim(Step2)[2]]= CFS.base$importer[1:50]
+colnames(Step2)[4:dim(Step2)[2]]= CFS.base$importer[1:n.s]
 
   #Exporting
 write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)

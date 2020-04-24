@@ -58,8 +58,16 @@ options( scipen=100 );
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ## real
 # number of countries (n.c) and number of states (n.s)
-n.c <- 37; 
-n.s <- 50; 
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country", region!="USA")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names)
+
 WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
 data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
 data_gravity_serv.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," ) %>%
@@ -72,11 +80,13 @@ CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportio
 wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 wiot.full<-data.frame(wiot.full);
 wiot.full <- wiot.full %>% 
-  filter(year>=2000, year<=2007, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
-  mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
-  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) %>%
+  filter(col_country %in% c(c.names, "USA"), row_country %in% c(c.names, "USA")) %>% #take out countries not of interest
   filter(row_item!=17 & row_item!=31 & row_item!=35 & col_item!=17 & col_item!=31 & col_item!=35)
+
 epsilon<-0.0001
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+n.sec <- length(unique(sector.file$final_sector)) -3
 
 # # ##################example  (run directly the lambda vector and B matrix calculations)
 # ####################Select the block of code that you want to comment. Press Ctrl + Shift + C.
@@ -164,7 +174,7 @@ gdp.vector.serv <- data_gravity_serv %>%
   arrange( id );
 gdp.vector.serv <- matrix( gdp.vector.serv$Y_i );
 gdp.vector.serv.s <- data.frame(gdp.vector.serv[1:n.s])
-gdp.vector.serv.s$sector <- 13
+gdp.vector.serv.s$sector <- n.sec+1
 gdp.vector.serv.s$exporter <- state.names
 colnames(gdp.vector.serv.s) <- c("export", "sector", "exporter")
 gdp.vector.agri <- data_gravity_agriculture %>% 
@@ -175,7 +185,7 @@ gdp.vector.agri <- data_gravity_agriculture %>%
   arrange( id );
 gdp.vector.agri <- matrix( gdp.vector.agri$Y_i );
 gdp.vector.agri.s <- data.frame(gdp.vector.agri[1:n.s])
-gdp.vector.agri.s$sector <- 14
+gdp.vector.agri.s$sector <- n.sec+2
 gdp.vector.agri.s$exporter <- state.names
 colnames(gdp.vector.agri.s) <- c("export", "sector", "exporter")
 
@@ -188,7 +198,7 @@ expenditure.vector.serv <- data_gravity_serv %>%
   arrange( id );
 expenditure.vector.serv <- matrix( expenditure.vector.serv$X_j );
 expenditure.vector.serv.s <- data.frame(expenditure.vector.serv[1:n.s])
-expenditure.vector.serv.s$sector <- 13
+expenditure.vector.serv.s$sector <- n.sec+1
 expenditure.vector.serv.s$importer <- state.names
 colnames(expenditure.vector.serv.s) <- c("import", "sector", "importer")
 expenditure.vector.serv.s <- expenditure.vector.serv.s %>% select(importer, sector, import)
@@ -197,8 +207,7 @@ expenditure.vector.serv.s <- expenditure.vector.serv.s %>% select(importer, sect
 # 3. share of US agriculture consumption to total US consumption (\gamma)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 wiot.full.0 <- wiot.full %>%
-  filter(year==yr & row_item!=17 & row_item!=31 & row_item<=34) %>%
-  filter(col_item>=37 & col_item<=42 & col_country=="USA")
+  filter(year==yr, col_item>=37 & col_item<=42 & col_country=="USA")
 wiot.full.1 <- wiot.full.0 %>%
   group_by(year, col_country) %>%
   mutate(C.us= sum(value)) %>%
@@ -226,7 +235,7 @@ io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", y
 labor.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""))
 
 io.0 <- io.shares %>%
-  filter(region=="USA", sector==14) %>%
+  filter(region=="USA", sector==n.sec+2) %>%
   select(-year, -region, -sector)
 
 labor.shares.0 <- labor.shares %>%
@@ -236,11 +245,11 @@ labor.shares.0 <- labor.shares %>%
 phi.14 <- io.0*(1-labor.shares.0)
 
 state.state <- read.csv(paste('1-Intermediate_Processed_Data//state_cfs_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
-state.country.y <- data.frame(read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector<=12)
-state.country.e <- data.frame(read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector<=12)
+state.country.y <- data.frame(read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector<=n.sec)
+state.country.e <- data.frame(read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector<=n.sec)
 state.exports <- rbind(state.state, state.country.y)
 exp.v <- c()
-for (sec in 1:12) {
+for (sec in 1:n.sec) {
   state.exports.1 <- state.exports %>%
     filter(sector==sec) %>%
     select(-year, -importer, -sector)
@@ -287,7 +296,7 @@ io.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//io_shares", y
 labor.shares <- read.csv( file= paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""))%>%
              filter(region=="USA") %>%
              select(-year, -region);
-labor.shares <- matrix( data=rep(as.matrix(labor.shares), (14)), nrow=(14), byrow=TRUE );
+labor.shares <- matrix( data=rep(as.matrix(labor.shares), (n.sec+2)), nrow=(n.sec+2), byrow=TRUE );
 
 
 phi.ks <- io.shares*(1-labor.shares)
@@ -306,7 +315,7 @@ X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
 #check: sum(X_j)=WIOD
 check1 <- WIOD.base %>%
-  filter(year==yr, importer_country=="USA", sector==14)
+  filter(year==yr, importer_country=="USA", sector==(n.sec+2))
 c1=check1[5:dim(check1)[2]]
 c1=sum(c1)
 c2=sum(X_j)

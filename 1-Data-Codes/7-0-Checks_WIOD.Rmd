@@ -38,8 +38,20 @@ The final goal is to check that the final trade matrices are consistent with WIO
 
 ## Importing datasets to R
 ```{r}
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country", region!="USA")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names)
+
 #Final WIOD
 WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+colnames(WIOD.base) <- c("year", "importer_country", "sector", "importer", "USA", c.names)
+
 
 CDP.base <- c()
 #Final matrices 
@@ -52,14 +64,7 @@ matrix <- matrix %>% select(year, everything())
 CDP.base <- rbind(CDP.base, matrix)
 }
 
-#id 
-n.s <- 50
-n.c <- 37
-state.names <- matrix$importer[1:n.s]
-c.names <- matrix$importer[(n.s+1):(n.s+n.c)]
-
-colnames(WIOD.base) <- c("year", "importer_country", "sector", "importer", "USA", c.names)
-
+#
 epsilon <- 0.0001
 ```
 
@@ -80,7 +85,7 @@ CDP.cc <- CDP %>%
   filter(year==yr, importer %in% c.names, exporter %in% c.names) %>%
   arrange(sector, exporter, importer)
 
-if((sum(CDP.cc$val)/sum(wiot.cc$value) -1)>epsilon) 
+if(abs(sum(CDP.cc$val)/sum(wiot.cc$value) -1)>epsilon) 
   stop(paste("countries' exports to countries != countries' WIOD exports for year", yr))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -93,14 +98,14 @@ wiot.cs <- wiot %>%
 
 
 CDP.cs <- CDP %>%
-  filter(year==yr, importer %in% c.names, exporter %in% state.names) %>%
+  filter(year==yr, importer %in% c.names, exporter %in% s.names) %>%
   group_by(sector, importer) %>%
   mutate(val=sum(value)) %>%
   ungroup() %>%
   distinct(year, sector, importer, .keep_all = TRUE) %>%
   arrange(sector, exporter, importer)
 
-if((sum(CDP.cs$val)/sum(wiot.cs$value) -1)>epsilon) 
+if(abs(sum(CDP.cs$val)/sum(wiot.cs$value) -1)>epsilon) 
   stop(paste("states' exports to countries != US WIOD exports to countries for year", yr))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -113,14 +118,14 @@ wiot.sc <- wiot %>%
 
 
 CDP.sc <- CDP %>%
-  filter(year==yr, importer %in% state.names, exporter %in% c.names) %>%
+  filter(year==yr, importer %in% s.names, exporter %in% c.names) %>%
   group_by(sector, exporter) %>%
   mutate(val=sum(value)) %>%
   ungroup() %>%
   distinct(year, sector, exporter, .keep_all = TRUE) %>%
   arrange(sector, exporter, importer)
 
-if((sum(CDP.sc$val)/sum(wiot.sc$value) -1)>epsilon) 
+if(abs(sum(CDP.sc$val)/sum(wiot.sc$value) -1)>epsilon) 
   stop(paste("countries' exports to states != countries' WIOD exports to US for year", yr))
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -133,14 +138,14 @@ wiot.ss <- wiot %>%
 
 
 CDP.ss <- CDP %>%
-  filter(year==yr, importer %in% state.names, exporter %in% state.names) %>%
+  filter(year==yr, importer %in% s.names, exporter %in% s.names) %>%
   group_by(sector) %>%
   mutate(val=sum(value)) %>%
   ungroup() %>%
   distinct(year, sector, .keep_all = TRUE) %>%
   arrange(sector, exporter, importer)
 
-if((sum(CDP.ss$val)/sum(wiot.ss$value) -1)>epsilon) 
+if(abs(sum(CDP.ss$val)/sum(wiot.ss$value) -1)>epsilon) 
   stop(paste("states' exports to states != US WIOD exports to US for year", yr))
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

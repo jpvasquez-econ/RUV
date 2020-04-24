@@ -38,30 +38,26 @@ lapply( libs, require, character.only=TRUE );
 # Data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # number of countries (n.c) and number of states (n.s)
-n.c <- 37; 
-n.s <- 50; 
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country", region!="USA")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names)
+
 WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
 data_gravity_services.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
 WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
 data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
-#state level imports and exports
-CENSUS.2 <- read.csv("1-Intermediate_Processed_Data//census.agri.proportionality.csv")
-state_imp_exp.0 <- read.dta13("1-Intermediate_Processed_Data//state_imports_exports.dta")
-state_imp_exp.0 <- state_imp_exp.0 %>%
-  mutate(origin= recode(origin, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia")) %>%
-  mutate(destination= recode(destination, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
-wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-wiot.full=data.frame(wiot.full)
-wiot.full <- wiot.full %>% 
-  filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% #since distances are available from that year on
-  mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
-  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) 
-#CFS
-CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
-CFS <- subset(CFS.base, year==2002)
-CFS <- subset(CFS, select = -year )
+
 #### epsilon to check between calculations
-epsilon<-0.001;
+epsilon<-0.0001;
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+n.sec <- length(unique(sector.file$final_sector)) -3
 ```
 
 ##Loop for years
@@ -76,25 +72,25 @@ WIOD<-WIOD.base
 ## path
 ## WIOD US
 us.us.wiod <- WIOD %>% 
-  filter( year==yr, sector==13 ) %>% 
+  filter( year==yr, sector==n.sec+1 ) %>% 
   filter( importer_country=='USA' ) %>% 
   select( value_USA );
 us.us.wiod <- as.numeric(us.us.wiod[1]);
 # US exports
 us.exports.wiod <- WIOD %>% 
-  filter( year==yr, sector==13 ) %>% 
+  filter( year==yr, sector==n.sec+1 ) %>% 
   filter( importer_country!='USA' ) %>% 
   select( value_USA ); 
 #us.exports.wiod <-sum(us.exports.wiod)
 # US imports
 us.imports.wiod <- WIOD %>% 
-  filter( year==yr, sector==13 ) %>% 
+  filter( year==yr, sector==n.sec+1 ) %>% 
   filter( importer_country=='USA' ) %>% 
   select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
 #us.imports.wiod <-sum(us.imports.wiod)
 ## WIOD
 WIOD <- WIOD.base %>% 
-  filter( year==yr, sector==13 ) %>% 
+  filter( year==yr, sector==n.sec+1 ) %>% 
   filter( importer_country!='USA' ) %>% 
   select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
 ## Gravity data csv format with comma as the separator
@@ -268,7 +264,7 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_ser
 #CHECK: US consumption from US =US consumption from US from WIOD
 value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
 value2 <- WIOD.base %>%
-  filter(sector==13, year==yr, importer_country=="USA") %>%
+  filter(sector==n.sec+1, year==yr, importer_country=="USA") %>%
   select(-importer, -importer_country, -sector, -year)
 value2=value2$value_USA;
 #checking
@@ -278,7 +274,7 @@ if(abs(value1/value2-1)>epsilon)
 #Check: states' exports to countries add to WIOD US exports to countries (sector 13)
 value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), (1:n.s)])
 value2 <- WIOD.base %>%
-  filter(year==yr, sector==13, importer_country!="USA")
+  filter(year==yr, sector==n.sec+1, importer_country!="USA")
 value2 <- sum(value2$value_USA)
 if(abs(value1/value2-1)>epsilon) 
   stop(paste("states' exports to countries != WIOD US exports to countries for", yr, " value=", abs(value1/value2-1)))
@@ -286,7 +282,7 @@ if(abs(value1/value2-1)>epsilon)
 #Check: states' imports from countries add to WIOD US imports from countries (sector 13)
 value1 <- sum(Xij.matrix[(1:n.s), ((n.s+1):(n.s+n.c))])
 value2 <- WIOD.base %>%
-  filter(year==yr, sector==13, importer_country=="USA") %>%
+  filter(year==yr, sector==n.sec+1, importer_country=="USA") %>%
   select(-year, -importer, -importer_country, -sector, - value_USA)
 value2 <- sum(value2)
 if(abs(value1/value2-1)>epsilon) 
@@ -296,7 +292,7 @@ if(abs(value1/value2-1)>epsilon)
 #Check: states' exports to states add to WIOD US exports to US (sector 13)
 value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
 value2 <- WIOD.base %>%
-  filter(year==yr, sector==13, importer_country=="USA")
+  filter(year==yr, sector==n.sec+1, importer_country=="USA")
 value2 <- value2$value_USA[1]
 if(abs(value1/value2-1)>epsilon) 
   stop(paste("states' exports to states != WIOD US exports to US for", yr, " value=", abs(value1/value2-1)))
