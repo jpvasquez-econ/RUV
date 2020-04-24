@@ -48,19 +48,32 @@ We need to compute the share of value added in gross output the 50 for US states
 
 ## Importing datasets to R
 ```{r}
-n.s <- 50
-n.c <- 37
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names) -1
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+id.sectors <- sector.file %>% 
+  select(final_sector, WIOD_sector) %>%
+  distinct(WIOD_sector, .keep_all = TRUE)
 
 #WIOD
 wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-wiot.full=data.frame(wiot.full)
-wiot.full <- wiot.full %>% 
-  filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% 
-  mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
-  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) %>%
-  mutate(row_item= recode(row_item, '1'=14L, '2'=4L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=37L, '38'=37L, '39'=37L, '40'=37L, '41'=37L, '42'=37L )) %>%
-  mutate(col_item= recode(col_item, '1'=14L, '2'=4L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=37L, '38'=37L, '39'=37L, '40'=37L, '41'=37L, '42'=37L )) %>%
-  filter(col_item!=0 & row_item!=0) %>% #consumption is sec 37
+wiot.full <- wiot.full %>%
+  filter(col_country %in% c.names, row_country %in% c.names) %>% #take out countries not of interest
+  left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
+  mutate(row_item = final_sector) %>%
+  select(-final_sector) %>%
+  left_join(id.sectors, by=c('col_item'='WIOD_sector')) %>%
+  mutate(col_item = final_sector) %>%
+  select(-final_sector) %>%
+  filter(is.na(row_item)==FALSE, is.na(col_item)==FALSE) %>%
   arrange(year, row_country, col_country, row_item, col_item) %>%
   group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
   mutate(value1= sum(value)) %>%
@@ -70,7 +83,7 @@ wiot.full <- wiot.full %>%
   dplyr::rename(value=value1)
 
 wiot.full.inter <- wiot.full %>%
-  filter(col_item!=37)
+  filter(row_item!=0, col_item!=0) #NOT CONSUMPTION
 ```
 
 
