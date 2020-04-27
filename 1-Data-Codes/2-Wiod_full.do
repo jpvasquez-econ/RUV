@@ -45,6 +45,12 @@ append using `file_`i''
 capture replace row_country="ROU" if row_country=="ROM"
 capture replace col_country="ROU" if col_country=="ROM"
 
+keep if row_country!="LVA" & row_country!="LUX" & row_country!="MLT"
+keep if col_country!="LVA" & col_country!="LUX" & col_country!="MLT"
+
+keep if row_item!=17 & row_item!=31 & row_item!=35
+keep if col_item!=17 & col_item!=31 & col_item!=35
+
 * Saving 
 save 1-Intermediate_Processed_Data\wiot_full.dta, replace
 
