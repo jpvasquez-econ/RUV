@@ -65,14 +65,13 @@ id.sectors <- sector.file %>%
 wiot.full.inter <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
 #Transforming WIOD sectors to 1-14 CDP sectors
 wiot.full.inter <- wiot.full.inter %>%
-  filter(col_country %in% c.names, row_country %in% c.names) %>% #take out countries not of interest
   left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
   mutate(row_item = final_sector) %>%
   select(-final_sector) %>%
   left_join(id.sectors, by=c('col_item'='WIOD_sector')) %>%
   mutate(col_item = final_sector) %>%
   select(-final_sector) %>%
-  filter(is.na(row_item)==FALSE, is.na(col_item)==FALSE, row_item!=0, col_item!=0) %>%#NOT CONSUMPTION
+  filter(row_item!=0, col_item!=0) %>%#NOT CONSUMPTION
   arrange(year, row_country, col_country, row_item, col_item) %>%
   group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
   mutate(value1= sum(value)) %>%

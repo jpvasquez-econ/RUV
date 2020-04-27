@@ -54,18 +54,40 @@ s.names <- s.names$region
 n.s <- length(s.names)
 n.c <- length(c.names)
 
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+n.sec <- length(unique(sector.file$final_sector)) -3
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+id.sectors <- sector.file %>% 
+  select(final_sector, WIOD_sector) %>%
+  distinct(WIOD_sector, .keep_all = TRUE)
+
 #WIOD
-WIOD <- read_dta("1-Intermediate_Processed_Data\\wiot_full.dta")
+WIOD <- read_dta("1-Intermediate_Processed_Data//wiot_full.dta")
 WIOD=data.frame(WIOD)
-WIOD <- WIOD %>% filter(year>=2000) #since distances are available from that year on  
+WIOD <- WIOD %>% 
+  filter(year>=2000) %>% #since distances are available from that year on  
+  left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
+  mutate(row_item = final_sector) %>%
+  select(-final_sector) %>%
+  left_join(id.sectors, by=c('col_item'='WIOD_sector')) %>%
+  mutate(col_item = final_sector) %>%
+  select(-final_sector) %>%
+  arrange(year, row_country, col_country, row_item, col_item) %>%
+  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
+  mutate(value1= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
+  select(-value) %>%
+  dplyr::rename(value=value1)
 
 #Trade distances
-data_services <- read.csv("1-Intermediate_Processed_Data\\data_services.csv")
+data_services <- read.csv("1-Intermediate_Processed_Data//data_services.csv")
 data_services=data.frame(data_services)
 data_servicesUS <- data_services %>% filter(year==2000)
 
 #US population in 2010
-us_pop <- read_excel("0-Raw_Data\\Fips\\us_states_coordinates_counties.xlsx")
+us_pop <- read_excel("0-Raw_Data//Fips//us_states_coordinates_counties.xlsx")
 us_pop=data.frame(us_pop)
 
 #Trade distances
@@ -102,7 +124,7 @@ us_pop=data.frame(us_pop)
 
 #only sector 13: origin
 WIOD1 <- WIOD %>%
-  filter(row_item>=18 & row_item<=34 & row_item!=31) %>%
+  filter(row_item==n.sec+1) %>%
   group_by(year, row_country, col_country) %>%
   mutate(ag_value=sum(value)) %>% 
   ungroup() %>% 
@@ -274,7 +296,7 @@ We will focus on countries only (we forget about the states but care about USA a
 ```{r}
 #only sector 14: origin
 WIOD1 <- WIOD %>%
-  filter(row_item==1) %>%
+  filter(row_item==n.sec+2) %>%
   group_by(year, row_country, col_country) %>%
   mutate(ag_value=sum(value)) %>% 
   ungroup() %>% 
