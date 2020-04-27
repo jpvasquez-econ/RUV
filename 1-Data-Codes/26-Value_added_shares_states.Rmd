@@ -35,7 +35,7 @@ lapply( libs, require, character.only=TRUE );
 
 # General Instructions
 
-This code calculates the share of value added in gross output for each US state and each country, for each sector.
+This code calculates the share of value added in gross output for each US state, for each sector.
 
 ### Constructing Value-Added ("Labor Shares")
 
@@ -48,130 +48,90 @@ We need to compute the share of value added in gross output the 50 for US states
 
 ## Importing datasets to R
 ```{r}
-n.s <- 50
-n.c <- 37
 
-#Final matrices
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country", region!="USA")
+c.names <- c.names$region
+c.names <- as.matrix(c.names)
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+s.names <- as.matrix(s.names)
+
+names.all <- rbind(s.names, c.names)
+
+n.s <- length(s.names)
+n.c <- length(c.names)
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+id.sectors <- sector.file %>% 
+  select(final_sector, WIOD_sector) %>%
+  distinct(WIOD_sector, .keep_all = TRUE)
+
 Base=c()
+VA.US=c()
+GDP=c()
+TAXES=c()
+SUBSIDIES=c()
 for (yr in 2000:2007) {
+#Final matrices
 m <- read.csv(paste("1-Intermediate_Processed_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 m$year=yr
 m <- m %>% select(year, everything())
 Base=rbind(Base, m)
-}
 
-names.all <- unique(Base$importer)
-names.state <- names.all[1:n.s]
-names.country <- names.all[(n.s+1):(n.s+n.c)]
-
+#Value added USA
+m1 <- read.csv(paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
+VA.US=rbind(VA.US, m1)
 
 #State GDP
-GDP=c()
-for (yr in 2000:2007) {
 gdp <- read.csv(paste("0-Raw_Data//Labor_shares//gdp_state_", yr, ".csv", sep=""), header = FALSE, sep = ",", dec = ".")
 gdp = gdp[6:(dim(gdp)[1]-7),1:dim(gdp)[2]]
 gdp=data.frame(gdp)
 gdp$year= yr
 gdp <- gdp %>% select(year, everything())
 GDP=rbind(GDP, gdp)  
-}
-GDP <- GDP %>%
-  mutate(V2= recode(V2, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
 #These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP2. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 #Each of this annual base needs an additional column that was added manually in excel. The column's name is "code" and contains the sectors' code in expanded form (1-24). If the base needs to be downloaded again in the future all that has to be done to the new one is copy and paste this "code" column (as it is) to the new base.
 
-
 #State taxes
-TAXES=c()
-for (yr in 2000:2007) {
 taxes <- read.csv(paste("0-Raw_Data//Labor_shares//taxes_state_", yr, ".csv", sep=""), header = FALSE, sep = ",", dec = ".")
 taxes = taxes[6:(dim(taxes)[1]-6),1:dim(taxes)[2]]
 taxes=data.frame(taxes)
 taxes$year= yr
 taxes <- taxes %>% select(year, everything())
 TAXES=rbind(TAXES, taxes)  
-}
-TAXES <- TAXES %>%
-  mutate(V2= recode(V2, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
 #These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP6. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 
-
 #State subsidies
-SUBSIDIES=c()
-for (yr in 2000:2007) {
 subsidies <- read.csv(paste("0-Raw_Data//Labor_shares//subsidies_state_", yr, ".csv", sep=""), header = FALSE, sep = ",", dec = ".")
 subsidies = subsidies[6:(dim(subsidies)[1]-6),1:dim(subsidies)[2]]
 subsidies=data.frame(subsidies)
 subsidies$year= yr
 subsidies <- subsidies %>% select(year, everything())
 SUBSIDIES=rbind(SUBSIDIES, subsidies)  
-}
-SUBSIDIES <- SUBSIDIES %>%
-  mutate(V2= recode(V2, "New Hampshire"="NewHampshire", "New Jersey"="NewJersey", "New Mexico"="NewMexico", "New York"="NewYork", "North Carolina"="NorthCarolina", "North Dakota"="NorthDakota", "Rhode Island"="RhodeIsland", "South Carolina"="SouthCarolina", "South Dakota"="SouthDakota", "West Virginia"="WestVirginia"))
 #These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP5. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
+}
 
+VA.US <- VA.US %>% filter(region=="USA")
+#taking out spaces between states' names: the option sub eliminates only the first space it finds 
+GDP$V2 <- sub(' ', '', GDP$V2)
+TAXES$V2 <- sub(' ', '', TAXES$V2)
+SUBSIDIES$V2 <- sub(' ', '', SUBSIDIES$V2)
 
-#WIOD
-wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-wiot.full=data.frame(wiot.full)
-wiot.full.inter <- wiot.full %>% 
-  filter(year>=2000, col_country!="LUX", col_country!="LVA", col_country!="MLT", row_country!="LUX", row_country!="LVA", row_country!="MLT") %>% 
-  mutate(row_country= ifelse(row_country=="ROM", "ROU", row_country)) %>%
-  mutate(col_country= ifelse(col_country=="ROM", "ROU", col_country)) %>%
-  mutate(row_item= recode(row_item, '1'=14L, '2'=4L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=0L, '38'=0L, '39'=0L, '40'=0L, '41'=0L, '42'=0L )) %>%
-  mutate(col_item= recode(col_item, '1'=14L, '2'=4L, '3'=1L, '4'=2L, '5'=2L, '6'=3L, '7'=3L, '8'=4L, '9'=5L, '10'=6L, '11'=7L, '12'=8L, '13'=9L, '14'=10L, '15'=11L, '16'=12L, '17'=0L, '18'=13L, '19'=13L, '20'=13L, '21'=13L, '22'=13L, '23'=13L, '24'=13L, '25'=13L, '26'=13L, '27'=13L, '28'=13L, '29'=13L, '30'=13L, '31'=0L, '32'=13L, '33'=13L, '34'=13L, '35'=0L, '36'=0L, '37'=0L, '38'=0L, '39'=0L, '40'=0L, '41'=0L, '42'=0L )) %>%
-  filter(col_item!=0 & row_item!=0) %>%
-  arrange(year, row_country, col_country, row_item, col_item) %>%
-  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
-  mutate(value1= sum(value)) %>%
-  ungroup() %>%
-  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
-  select(-value) %>%
-  dplyr::rename(value=value1)
 ```
 
 
 Gross output for each region, for each sector
 $Y_{i,k}= \sum_j X_{ij,k} \quad for \quad all \quad j$
 ```{r}
-Y=c()
-for (yr in 2000:2007) {
-output=c()
-for (k in 101:114) {
-  Base1 <- Base %>%
-    filter(year==yr, sector==k) %>%
-    select(-year, -importer, -sector)
-  out=matrix(colSums(Base1))
-  output=cbind(output,out)
-}
-output=data.frame(output)
-colnames(output) = c(101:114)
-output$year=yr
-output$region=names.all
-output <- output %>% select(year, region, everything())
-Y <- rbind(Y, output)
-}
-
-#output for US
-Y.US <- Y %>%
-  filter(region %in% names.state)
-Y.US <- melt(Y.US, id.vars=c("year", "region"), variable.name="sector", value.name = "value")
-Y.US <- Y.US %>%
-  group_by(year, sector) %>%
-  mutate(val= sum(value)) %>%
-  ungroup() %>%
-  distinct(year, sector, .keep_all = TRUE) %>%
-  mutate(region="USA") %>%
-  select(-value) 
-
-#output for countries
-Y.c <- Y %>%
-  filter(region %in% names.country)
-Y.c <- melt(Y.c, id.vars=c("year", "region"), variable.name="sector", value.name = "val")
-
-#output all countries (including USA)
-Y.c <- rbind(Y.c, Y.US)
-Y.c <- Y.c %>% arrange(year, sector, region)
+Base <- melt(Base, id.vars=c("year", "importer", "sector"), variable.name="exporter", value.name = "value")
+Base <-spread(Base, importer, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+Y <- data.frame(rowSums(Base[, 4:dim(Base)[2]]))
+Y <- cbind(Base[, 1:3], Y)
+colnames(Y) <- c("year", "sector", "region", "value")
+Y <- Y %>% filter(region %in% s.names)
+Y <- spread(Y, sector, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
 ```
 
@@ -183,22 +143,23 @@ value <- GDP
 value$tax=TAXES[, 6]
 value$sub=SUBSIDIES[, 6]
 colnames(value)=c("year", "id" ,"state", "line", "description", "gdp", "sector", "tax", "sub")
-value$id=as.numeric(as.character(value$id))
-value$sector=as.numeric(as.character(value$sector))
-value$gdp=as.numeric(as.character(value$gdp)) #some NA generated because base is not cleaned yet (cleaned in next steps)
-value$tax=as.numeric(as.character(value$tax))
-value$sub=as.numeric(as.character(value$sub))
+value$id=as.numeric(value$id)
+value$sector=as.numeric(value$sector)
+value$gdp=as.numeric(value$gdp) #some NA generated because base is not clean yet (cleaned in next steps)
+value$tax=as.numeric(value$tax)
+value$sub=as.numeric(value$sub)
 
 VA.s <- value %>%
   mutate(gdp= ifelse(is.na(gdp)==TRUE, 0, gdp)) %>%
   mutate(tax= ifelse(is.na(tax)==TRUE, 0, tax)) %>%
   mutate(sub= ifelse(is.na(sub)==TRUE, 0, sub)) %>%
-  mutate(sector= ifelse(sector>=13 & sector<=22, 13, sector)) %>%
-  mutate(sector= ifelse(sector==23 | sector==24, 14, sector)) %>%
   filter(sector!=0) %>%
+  filter(state!="Districtof Columbia" & state!="UnitedStates *") %>%
+  filter(id <=56000) %>% #id's of interest
+  left_join(id.sectors, by=c('sector'='WIOD_sector')) %>%
+  mutate(sector = final_sector) %>%
+  select(-final_sector) %>%
   mutate(sector= sector+100) %>%
-  filter(id <=56000) %>%
-  filter(state!="District of Columbia" & state!="United States *") %>%
   select(-id, -line, -description) %>%
   mutate(amount= (gdp)-(tax/1000)-(sub/1000)) %>%
   group_by(year, state, sector) %>%
@@ -211,71 +172,39 @@ VA.s <- value %>%
   dplyr::rename(region=state)
 
 
-#calculating value added for countries
-sum.s.X_jsk <- wiot.full.inter %>%
-  group_by(year, col_country, col_item) %>%
-  mutate(val= sum(value)) %>%
-  ungroup() %>%
-  distinct(year, col_country, col_item, .keep_all = TRUE) %>%
-  select(-row_country, -row_item, -value) %>%
-  dplyr::rename(region=col_country, sector=col_item) %>%
-  arrange(year, sector, region)
-VA.c <- Y.c$val - sum.s.X_jsk$val
-VA.c <- cbind(Y.c[1:3], VA.c)
-colnames(VA.c) <- c("year", "region", "sector", "value_added")
-
-VA.US <- VA.c %>%
-  filter(region=="USA")
-VA.c <- VA.c %>%
-  filter(region!="USA")
-
+VA.US <- melt(VA.US, id.vars=c("year", "region"), variable.name="sector", value.name = "value")
+VA.US <- VA.US %>% arrange(year)
 VA.US <-as.matrix(VA.US[, 4])
-VA.US.mat <- matrix( data=rep(VA.US, n.s), ncol=(n.s), byrow=FALSE );
 
 #proportionality for states' VA
 VA.s<-spread(VA.s, region, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 VA.s.1 <- VA.s[ , (3:dim(VA.s)[2])] /rowSums(VA.s[ , (3:dim(VA.s)[2])])
 # check <- rowSums(VA.s.1)
 # print(check)
-value1 <- VA.s.1*VA.US.mat
+value1 <- VA.s.1*VA.US
 # check1 <- VA.US - rowSums(value1)
 # print(check1)
 VA.s <- cbind(VA.s[, 1:2], value1)
 VA.s <- melt(VA.s, id.vars=c("year", "sector"), variable.name="region", value.name = "value_added")
-VA.s <- VA.s %>% select(year, region, sector, value_added)
 VA.s$region <- as.character(VA.s$region)
 
-VA = rbind(VA.s, VA.c)
-id.tot <- data.frame(unique(Base$importer))
-id.tot$id <- c(1:(n.s+n.c))
-colnames(id.tot) <- c("regions", "id")
+VA.s<-spread(VA.s, sector, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
-VA <- VA %>%
-  left_join(id.tot, by=c('region'='regions')) %>%
-  mutate(region=id) %>%
-  select(-id) %>%
-  arrange(year, sector, region) 
-
-VA<-spread(VA, sector, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-
+#some NA generated at the beginning of the chunk because base was not clean yet
 ```
 
 share of value added in gross output
 $Labor share = \frac{VA_{i,k}}{Y_{i,k}}$
 ```{r}
-labor_shares <- VA[, 3:dim(VA)[2]] / Y[, 3:dim(Y)[2]]
+labor_shares <- VA.s[, 3:dim(VA.s)[2]] / Y[, 3:dim(Y)[2]]
 labor_shares[labor_shares>1] <- 1
 labor_shares[labor_shares<(-1)] <- (-1)
-labor_shares <- cbind(VA[, 1:2], labor_shares)
-labor_shares <- labor_shares %>%
-  left_join(id.tot, by=c('region'='id')) %>%
-  mutate(region=regions) %>%
-  select(-regions)
+labor_shares <- cbind(VA.s[, 1:2], labor_shares)
 
 for (yr in 2000:2007) {
   final <- labor_shares %>%
     filter(year==yr)
-  write.table(final, file = paste("1-Intermediate_Processed_Data//labor_shares", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+  write.table(final, file = paste("1-Intermediate_Processed_Data//labor_shares_states", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
 
