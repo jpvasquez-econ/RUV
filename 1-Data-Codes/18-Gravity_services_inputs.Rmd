@@ -52,7 +52,11 @@ s.names <- s.names$region
 n.s <- length(s.names)
 n.c <- length(c.names)
 
-WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+WIOD.base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+  WIOD.base <- rbind(WIOD.base, wiot)
+}
 data_gravity_services.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
 
 sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
@@ -80,26 +84,26 @@ WIOD<-WIOD.base
 ## WIOD US
 us.us.wiod <- WIOD %>% 
   filter( year==yr, sector==n.sec+1 ) %>% 
-  filter( importer_country=='USA' ) %>% 
-  select( value_USA );
+  filter( importer=='USA' ) %>% 
+  select( USA );
 us.us.wiod <- as.numeric(us.us.wiod[1]);
 # US exports
 us.exports.wiod <- WIOD %>% 
   filter( year==yr, sector==n.sec+1 ) %>% 
-  filter( importer_country!='USA' ) %>% 
-  select( value_USA ); 
+  filter( importer!='USA' ) %>% 
+  select( USA ); 
 #us.exports.wiod <-sum(us.exports.wiod)
 # US imports
 us.imports.wiod <- WIOD %>% 
   filter( year==yr, sector==n.sec+1 ) %>% 
-  filter( importer_country=='USA' ) %>% 
-  select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
+  filter( importer=='USA' ) %>% 
+  select( -year, -USA, -sector, -importer) ;
 #us.imports.wiod <-sum(us.imports.wiod)
 ## WIOD
 WIOD <- WIOD.base %>% 
   filter( year==yr, sector==n.sec+1 ) %>% 
-  filter( importer_country!='USA' ) %>% 
-  select( -year, -value_USA, -sector, -importer_country, -importer  ) ;
+  filter( importer!='USA' ) %>% 
+  select( -year, -USA, -sector, -importer  ) ;
 ## Gravity data csv format with comma as the separator
 data_gravity_services <- data_gravity_services.base %>% 
   filter( year==yr ) %>% 
@@ -130,7 +134,7 @@ id.countries <- data_gravity_services %>%
   select( id, region );
 # Total
 id.total <- rbind( id.states, id.countries );
-t(id.total)
+#t(id.total)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 3. DISTANCES, PRODUCTION AND EXPENDITURE

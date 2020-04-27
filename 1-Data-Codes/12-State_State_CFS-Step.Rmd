@@ -42,7 +42,12 @@ To use CFS plus proportionality to calculate $X_{ij,k}^{year}$ for $i\in US\;  \
 #CFS
 CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
 #WIOD
-WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
+WIOD.base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+  WIOD.base <- rbind(WIOD.base, wiot)
+}
+
 
 #General parameters
 regions <- read_excel("0-Raw_Data/regions.xlsx")
@@ -138,13 +143,13 @@ xijkCFS = XijkCFS_1/denominator
 df_WIOD = data.frame(WIOD)
 
 # Ignore non-USA exporters (columns)
-df_WIOD = df_WIOD[,1:4]
+df_WIOD = df_WIOD %>% select(importer, sector, USA)
 
 #Filter out non-USA importers
-USA_exporter_indices = df_WIOD$importer_country == "USA"
+USA_exporter_indices = df_WIOD$importer == "USA"
 
 # Take into account only the first 12 sectors 
-X_USA_USA_k = df_WIOD$value_USA[USA_exporter_indices]
+X_USA_USA_k = df_WIOD$USA[USA_exporter_indices]
 X_USA_USA_k = X_USA_USA_k[1:n.sec]
 
 Xijk = c()

@@ -82,6 +82,9 @@ agriculture <- agriculture %>%
   select(year, importer, sector, everything())
 #country-country
 country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+country.country <- country.country %>%
+  filter(importer!="USA") %>%
+  select(-USA)
 #state-state
 state.state <- read.csv(paste('1-Intermediate_Processed_Data//state_cfs_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
 #state-country-state
@@ -209,8 +212,12 @@ The final goal is to check that the final trade matrices are consistent with WIO
 ```{r}
 
 #Final WIOD
-WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
-colnames(WIOD.base) <- c("year", "importer_country", "sector", "importer", "USA", c.names)
+#WIOD
+WIOD.base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+  WIOD.base <- rbind(WIOD.base, wiot)
+}
 
 CDP.base <- c()
 #Final matrices 
@@ -233,9 +240,9 @@ for (yr in 2000:2007) {
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #country-country  
-wiot <- melt(WIOD.base, id.vars=c("year", "importer_country", "sector", "importer"), variable.name="exporter", value.name = "value")
+wiot <- melt(WIOD.base, id.vars=c("year", "importer", "sector"), variable.name="exporter", value.name = "value")
 wiot.cc <- wiot %>%
-  filter(year==yr, importer_country %in% c.names, exporter %in% c.names) %>%
+  filter(year==yr, importer %in% c.names, exporter %in% c.names) %>%
   arrange(sector, exporter, importer)
 
 CDP <- melt(CDP.base, id.vars=c("year", "importer", "sector"), variable.name="exporter", value.name = "value")
@@ -251,7 +258,7 @@ if(abs(sum(CDP.cc$val)/sum(wiot.cc$value) -1)>epsilon)
 #state-to-country
 
 wiot.cs <- wiot %>%
-  filter(year==yr, importer_country %in% c.names, exporter %in% c("USA")) %>%
+  filter(year==yr, importer %in% c.names, exporter %in% c("USA")) %>%
   arrange(sector, exporter, importer)
 
 
@@ -271,7 +278,7 @@ if(abs(sum(CDP.cs$val)/sum(wiot.cs$value) -1)>epsilon)
 # country-to-state
 
 wiot.sc <- wiot %>%
-  filter(year==yr, importer_country %in% c("USA"), exporter %in% c.names) %>%
+  filter(year==yr, importer %in% c("USA"), exporter %in% c.names) %>%
   arrange(sector, exporter, importer)
 
 
@@ -291,7 +298,7 @@ if(abs(sum(CDP.sc$val)/sum(wiot.sc$value) -1)>epsilon)
 #state-state
 
 wiot.ss <- wiot %>%
-  filter(year==yr, importer_country %in% c("USA"), exporter %in% c("USA")) %>%
+  filter(year==yr, importer %in% c("USA"), exporter %in% c("USA")) %>%
   arrange(sector, exporter, importer)
 
 

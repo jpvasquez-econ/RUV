@@ -50,17 +50,23 @@ The final output is based mainly on input a), with some information of b) and c)
 ## Inputs
 ```{r include=FALSE}
 library(readxl)
-UN <- read_excel("0-Raw_Data\\Population_geography\\UN_coordinates.xls")
+UN <- read_excel("0-Raw_Data//Population_geography//UN_coordinates.xls")
 UN = data.frame(UN)
 UN <- UN %>%
   dplyr::rename(country=Country.or.area, city=Urban.Agglomeration)
 
-#WIOD
-WIOD <- read_dta("1-Intermediate_Processed_Data\\WIOD_countries.dta")
-WIOD=data.frame(WIOD)
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country", region!="USA")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names)
 
 #Full population
-Full_pop <- read_excel("0-Raw_Data\\Population_geography\\Full_population.xlsx")
+Full_pop <- read_excel("0-Raw_Data//Population_geography//Full_population.xlsx")
 Full_pop = data.frame(Full_pop)
 
 all_country_names=c("Aruba", "Afghanistan", "Angola", "Anguilla", "Aland Islands", "Albania", "Andorra", "United Arab Emirates", "Argentina", "Armenia", "American_Samoa", "Antarctica", "French Southern Territories", "Antigua and Barbuda", "Australia", "Austria", "Azerbaijan", "Burundi", "Belgium", "Benin", "Bonaire, Sint Eustatius and Saba", "Burkina_Faso", "Bangladesh", "Bulgaria", "Bahrain", "Bahamas", "Bosnia and Herzegovina", "Saint Barthelemy", "Belarus", "Belize", "Bermuda", "Bolivia", "Brazil", "Barbados", "Brunei Darussalam", "Bhutan", "Bouvet Island", "Botswana", "Central African Republic", "Canada", "Cocos Islands", "Switzerland", "Chile", "China", "Cote d Ivoire", "Cameroon", "Democratic Republic of the Congo", "Congo", "Cook Islands", "Colombia", "Comoros", "Cabo Verde", "Costa Rica", "Cuba", "Curacao", "Christmas Island", "Cayman Islands", "Cyprus", "Czechia", "Germany", "Djibouti", "Dominica", "Denmark", "Dominican Republic", "Algeria", "Ecuador", "Egypt", "Eritrea", "Western Sahara", "Spain", "Estonia", "Ethiopia", "Finland", "Fiji", "Falkland Islands", "France", "Faroe Islands", "Micronesia", "Gabon", "United Kingdom", "Georgia", "Guernsey", "Ghana", "Gibraltar", "Guinea", "Guadeloupe", "Gambia", "Guinea-Bissau", "Equatorial Guinea", "Greece", "Grenada", "Greenland", "Guatemala", "French Guiana", "Guam", "Guyana", "Hong Kong", "Heard Island and McDonald Islands", "Honduras", "Croatia", "Haiti", "Hungary", "Indonesia", "Isle of Man", "India", "British Indian Ocean Territory", "Ireland", "Iran", "Iraq", "Iceland", "Israel", "Italy", "Jamaica", "Jersey", "Jordan", "Japan", "Kazakhstan", "Kenya", "Kyrgyzstan", "Cambodia", "Kiribati", "Saint Kitts and Nevis", "South Korea", "Kuwait", "Laos", "Lebanon", "Liberia", "Libya", "Saint Lucia", "Liechtenstein", "Sri Lanka", "Lesotho", "Lithuania", "Luxembourg", "Latvia", "Macao", "Saint Martin", "Morocco", "Monaco", "Moldova", "Madagascar", "Maldives", "Mexico", "Marshall Islands", "North Macedonia", "Mali", "Malta", "Myanmar", "Montenegro", "Mongolia", "Northern Mariana Islands", "Mozambique", "Mauritania", "Montserrat", "Martinique", "Mauritius", "Malawi", "Malaysia", "Mayotte", "Namibia", "New Caledonia", "Niger", "Norfolk Island", "Nigeria", "Nicaragua", "Niue", "Netherlands", "Norway", "Nepal", "Nauru", "New Zealand", "Oman", "Pakistan", "Panama", "Pitcairn", "Peru", "Philippines", "Palau", "Papua New Guinea", "Poland", "Puerto Rico", "North Korea", "Portugal", "Paraguay", "Palestine", "French Polynesia", "Qatar", "Reunion", "Romania", "Russia", "Rwanda", "Saudi Arabia", "Sudan", "Senegal", "Singapore", "South Georgia and the South Sandwich Islands", "Saint Helena, Ascension and Tristan da Cunha", "Svalbard and Jan Mayen", "Solomon Islands", "Sierra Leone", "El Salvador", "San Marino", "Somalia", "Saint Pierre and Miquelon", "Serbia", "South Sudan", "Sao Tome and Principe", "Suriname", "Slovakia", "Slovenia", "Sweden", "Eswatini", "Sint Maarten", "Seychelles", "Syria", "Turks and Caicos Islands", "Chad", "Togo", "Thailand", "Tajikistan", "Tokelau", "Turkmenistan", "Timor-Leste", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Tuvalu", "Taiwan", "Tanzania", "Uganda", "Ukraine", "United States Minor Outlying Islands", "Uruguay", "United States of America", "Uzbekistan", "Holy See", "Saint Vincent and the Grenadines", "Venezuela", "British Virgin Islands", "American Virgin Islands", "Vietnam", "Vanuatu", "Wallis and Futuna", "Samoa", "Yemen", "South Africa", "Zambia", "Zimbabwe")
@@ -74,9 +80,6 @@ codes=cbind(all_country_names, all_country_codes)
 
 ## Verification of how many cities for each country
 ```{r }
-
-wiod <- WIOD %>% filter(importer_country!= "USA")
-countries=unique(wiod$importer_country)
 
 UN.0=UN
 UN.0$Country.name=UN.0$country
@@ -94,15 +97,15 @@ for (i in 1:dim(UN.0)[1]) {
   }
 }
 city.count=c()
-for (ctry in countries) {
+for (ctry in c.names) {
   UN.1 <- UN.0 %>%
     filter(country==ctry)
   count=dim(UN.1)[1]
   city.count=rbind(city.count, count)
 }
-rownames(city.count)=c(1:dim(matrix(countries)))
+rownames(city.count)=c(1:dim(matrix(c.names)))
 city.count=data.frame(city.count)
-city.count$country=countries
+city.count$country=c.names
 city.count <- city.count %>% select(country, everything())
 
 ```
@@ -147,7 +150,7 @@ UN.1 <- UN.1 %>% select(year, Country.code.num, Country.name, country.name.origi
 
 
 #Change other countries to Rest of the World (RoW)
-countries_states= c("USA", countries)
+countries_states= c("USA", c.names)
 for (i in 1:dim(UN.1)[1]) {
   if((is.element(UN.1$country[i], countries_states))==FALSE){
     UN.1$Country.name[i]="Rest of the World"
@@ -184,6 +187,6 @@ UN.1 <- UN.1 %>%
   select(-country.population) %>%
   dplyr::rename(country.population=trans)
 
-write.dta(UN.1, "1-Intermediate_Processed_Data\\country_coordinates.dta")
+write.dta(UN.1, "1-Intermediate_Processed_Data//country_coordinates.dta")
 
 ```

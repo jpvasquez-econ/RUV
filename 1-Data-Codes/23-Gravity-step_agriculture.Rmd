@@ -49,18 +49,38 @@ s.names <- s.names$region
 n.s <- length(s.names)
 n.c <- length(c.names)
 
-WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+WIOD.base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+  WIOD.base <- rbind(WIOD.base, wiot)
+}
 data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
 data_gravity_serv.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
 
 #state level imports and exports
 CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
 CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+id.sectors <- sector.file %>% 
+  select(final_sector, WIOD_sector) %>%
+  distinct(WIOD_sector, .keep_all = TRUE)
+
 wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-wiot.full<-data.frame(wiot.full);
 wiot.full <- wiot.full %>% 
-  filter(col_country %in% c(c.names, "USA"), row_country %in% c(c.names, "USA")) %>% #take out countries not of interest
-  filter(row_item!=17 & row_item!=31 & row_item!=35 & col_item!=17 & col_item!=31 & col_item!=35)
+  left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
+  mutate(row_item = final_sector) %>%
+  select(-final_sector) %>%
+  left_join(id.sectors, by=c('col_item'='WIOD_sector')) %>%
+  mutate(col_item = final_sector) %>%
+  select(-final_sector) %>%
+  arrange(year, row_country, col_country, row_item, col_item) %>%
+  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
+  mutate(value1= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
+  select(-value) %>%
+  dplyr::rename(value=value1)
 
 epsilon<-0.0001
 
@@ -155,14 +175,14 @@ expenditure.vector.serv.s <- expenditure.vector.serv.s %>% select(importer, sect
 # 3. share of US agriculture consumption to total US consumption (\gamma)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 wiot.full.0 <- wiot.full %>%
-  filter(year==yr, col_item>=37 & col_item<=42 & col_country=="USA")
+  filter(year==yr, col_item==0 & col_country=="USA")
 wiot.full.1 <- wiot.full.0 %>%
   group_by(year, col_country) %>%
   mutate(C.us= sum(value)) %>%
   ungroup() %>%
   distinct(year, col_country, .keep_all = TRUE)
 wiot.full.2 <- wiot.full.0 %>%
-  filter(row_item==1) %>%
+  filter(row_item==n.sec+2) %>%
   group_by(year, col_country) %>%
   mutate(C.us.agri= sum(value)) %>%
   ungroup() %>%
@@ -263,8 +283,8 @@ X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
 #check: sum(X_j)=WIOD
 check1 <- WIOD.base %>%
-  filter(year==yr, importer_country=="USA", sector==n.sec+2)
-c1=check1[5:dim(check1)[2]]
+  filter(year==yr, importer=="USA", sector==n.sec+2)
+c1=check1[4:dim(check1)[2]]
 c1=sum(c1)
 c2=sum(X_j)
 if(abs(c1/c2-1)>epsilon) 
@@ -409,9 +429,9 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_agr
 # df.WIOD = data.frame(WIOD.)
 # df.WIOD <- df.WIOD %>%
 #   filter(sector==14) %>%
-#   filter(importer_country=='USA')
+#   filter(importer=='USA')
 #   
-# df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country, -sector)
+# df.WIOD1 <- df.WIOD %>% select(-USA, -importer, -importer, -sector)
 # 
 # sum_country02=c()
 # relevant=c(1) #13 doesnt refer to sector 13 but sector 14 in position 13
@@ -436,8 +456,8 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_agr
 # df.WIOD = data.frame(WIOD.)
 # df.WIOD <- df.WIOD %>%
 #   filter(sector==14) %>%
-#   filter(importer_country=='USA')
-# df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country, -sector)
+#   filter(importer=='USA')
+# df.WIOD1 <- df.WIOD %>% select(-USA, -importer, -importer, -sector)
 # check.WIOD.e <- df.WIOD1
 # # X_i,US from census + proportionality
 #   check.imports.state.country.prop = imports.state.country.prop[3:dim(imports.state.country.prop)[2]]
@@ -488,8 +508,8 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_agr
 # # 8. CREATING X_J FOR STATES
 # # 
 # xj.us <- WIOD.base %>%
-#   filter(sector==14, year==yr, importer_country=="USA") %>%
-#   select(-importer, -importer_country, -sector, -year)
+#   filter(sector==14, year==yr, importer=="USA") %>%
+#   select(-importer, -importer, -sector, -year)
 # xj.us<-sum(xj.us)
 # 
 # imports.state.country.prop <- imports.state.country.prop %>%
@@ -534,17 +554,17 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_agr
 # ### RHS (WIOD_US,US , imports by country to US, X^WIOD_US)
 # #WIOD_US,US
 # RHS.1 <- WIOD.base %>%
-#   filter(year==yr, sector==14, importer_country=="USA")
-# RHS.1 <- RHS.1$value_USA[1];
+#   filter(year==yr, sector==14, importer=="USA")
+# RHS.1 <- RHS.1$USA[1];
 # #imports from countries
 # RHS.2 <- WIOD.base %>%
-#   filter(year==yr, sector==14, importer_country=="USA") %>%
-#   select(-year, -importer, -importer_country, -sector, - value_USA)
+#   filter(year==yr, sector==14, importer=="USA") %>%
+#   select(-year, -importer, -importer, -sector, - USA)
 # RHS.2 <-data.matrix(t(RHS.2));
 # #total expenditure US
 # RHS.3 <- WIOD.base %>%
-#   filter(sector==14, year==yr, importer_country=="USA") %>%
-#   select(-importer, -importer_country, -sector, -year)
+#   filter(sector==14, year==yr, importer=="USA") %>%
+#   select(-importer, -importer, -sector, -year)
 # RHS.3<-sum(RHS.3);
 # RHS.4<-t(imports.state.country.prop[5,])+0.1;
 # RHS<-rbind(RHS.1,RHS.2,RHS.3,RHS.4);
@@ -597,17 +617,17 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_agr
 #CHECK: US consumption from US =US consumption from US from WIOD
 value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
 value2 <- WIOD.base %>%
-  filter(sector==(n.sec+2), year==yr, importer_country=="USA") %>%
-  select(-importer, -importer_country, -sector, -year)
-value2=value2$value_USA;
+  filter(sector==(n.sec+2), year==yr, importer=="USA") %>%
+  select(-importer, -sector, -year)
+value2=value2$USA;
 #checking
 if(abs(value1/value2-1)>epsilon) 
   stop(paste(" US consumption from US != value from WIOD for", yr, " value=", sum(X_j.mod.s)/sum(xj.us)-1))
 
 # #CHECK: SUM OF X_j.mod.s FOR US STATES =US X_j from WIOD
 # xj.us <- WIOD.base %>%
-#   filter(sector==14, year==yr, importer_country=="USA") %>%
-#   select(-importer, -importer_country, -sector, -year)
+#   filter(sector==14, year==yr, importer=="USA") %>%
+#   select(-importer, -sector, -year)
 # #checking
 # if(sum(X_j.mod.s)/sum(xj.us)-1>epsilon) 
 #   stop(paste("SUM OF X_j.mod.s FOR US STATES !=US X_j from WIOD for", yr, " value=", sum(X_j.mod.s)/sum(xj.us)-1))
@@ -615,16 +635,16 @@ if(abs(value1/value2-1)>epsilon)
 # #Check: states' exports to countries add to WIOD US exports to countries (sector 14)
 # value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), (1:n.s)])
 # value2 <- WIOD.base %>%
-#   filter(year==yr, sector==14, importer_country!="USA")
-# value2 <- sum(value2$value_USA)
+#   filter(year==yr, sector==14, importer!="USA")
+# value2 <- sum(value2$USA)
 # if(abs(value1/value2-1)>epsilon) 
 #   stop(paste("states' exports to countries != WIOD US exports to countries for", yr, " value=", abs(value1/value2-1)))
 # 
 # #Check: countries' exports to countries add to WIOD countries' exports to countries (sector 14)
 # value1 <- sum(Xij.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))])
 # value2 <- WIOD.base %>%
-#   filter(year==yr, sector==14, importer_country!="USA") %>%
-#   select(-year, -importer, -importer_country, -sector, - value_USA)
+#   filter(year==yr, sector==14, importer!="USA") %>%
+#   select(-year, -importer, -sector, - USA)
 # value2 <- sum(value2)
 # if(abs(value1/value2-1)>epsilon) 
 #   stop(paste("countries' exports to countries != WIOD countries' exports to countries for", yr, " value=", abs(value1/value2-1)))
@@ -633,8 +653,8 @@ if(abs(value1/value2-1)>epsilon)
 # #Check: states' imports from countries add to WIOD US imports from countries (sector 14)
 # value1 <- sum(Xij.matrix[(1:n.s), ((n.s+1):(n.s+n.c))])
 # value2 <- WIOD.base %>%
-#   filter(year==yr, sector==14, importer_country=="USA") %>%
-#   select(-year, -importer, -importer_country, -sector, - value_USA)
+#   filter(year==yr, sector==14, importer=="USA") %>%
+#   select(-year, -importer, -sector, - USA)
 # value2 <- sum(value2)
 # if(abs(value1/value2-1)>epsilon) 
 #   stop(paste("states' imports from countries != WIOD US imports from countries for", yr, " value=", abs(value1/value2-1)))
@@ -643,8 +663,8 @@ if(abs(value1/value2-1)>epsilon)
 # #Check: states' exports to states add to WIOD US exports to US (sector 14)
 # value1 <- sum(Xij.matrix[(1:n.s), (1:n.s)])
 # value2 <- WIOD.base %>%
-#   filter(year==yr, sector==14, importer_country=="USA")
-# value2 <- value2$value_USA[1]
+#   filter(year==yr, sector==14, importer=="USA")
+# value2 <- value2$USA[1]
 # if(abs(value1/value2-1)>epsilon) 
 #   stop(paste("states' exports to states != WIOD US exports to US for", yr, " value=", abs(value1/value2-1)))
 

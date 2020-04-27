@@ -42,8 +42,51 @@ To use WIOD data to calculate $X_{ij,k}^{2000}$ for $i\notin US\;  \&\;  j \noti
 
 ## Importing datasets to R
 ```{r}
+regions <- read_excel("0-Raw_Data/regions.xlsx")
+c.names <- regions %>% filter(status=="country")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names) -1
+
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+id.sectors <- sector.file %>% 
+  select(final_sector, WIOD_sector) %>%
+  distinct(WIOD_sector, .keep_all = TRUE)
+
 #WIOD
-WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
+wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
+#converting wiod sectors to final sectors
+WIOD.base <- wiot.full %>%
+  left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
+  mutate(row_item = final_sector) %>%
+  select(-final_sector) %>%
+  left_join(id.sectors, by=c('col_item'='WIOD_sector')) %>%
+  mutate(col_item = final_sector) %>%
+  select(-final_sector) %>%
+  arrange(year, row_country, col_country, row_item, col_item) %>%
+  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
+  mutate(value1= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
+  select(-value) %>%
+  dplyr::rename(value=value1)
+#colapsing by origin sectors 
+WIOD.base <- WIOD.base %>%
+  group_by(year, row_country, col_country, row_item) %>%
+  mutate(val= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, .keep_all = TRUE) %>%
+  select(-value, -col_item) %>%
+  dplyr::rename(value= val)
+colnames(WIOD.base) <- c("year", "exporter", "importer", "sector", "value")  
+WIOD.base <-spread(WIOD.base, exporter, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+WIOD.base <- WIOD.base %>% arrange(year, sector, importer)
+WIOD.base <- data.frame(WIOD.base)
 ```
 
 ## Country-Country Step
@@ -54,22 +97,11 @@ The matrix we care about is $X_{ij,k}^{Step1}=X_{ij,k}^{WIOD} \quad \forall i\no
 ```{r}
 
 for (yr in 2000:2007) {
-  WIOD <- subset(WIOD.base, year==yr)
-  WIOD <- subset(WIOD, select = -year )
-  
-  X_ijk_step1 <- data.frame(WIOD)
-    
-  Step1 <- X_ijk_step1 %>%
-    select(-value_USA, -importer) %>%
-    dplyr::rename(importer=importer_country) %>%
-    filter(importer!= 'USA') %>%
-    mutate(year=yr) %>%
+  Step1 <- WIOD.base %>%
+    filter(year==yr) %>%
     select(year, importer, sector, everything())
-  
-  colnames(Step1)[4:(dim(Step1)[2])]= matrix(WIOD$importer_country[2:38])
-
   #Exporting
-write.table(Step1, file = paste("1-Intermediate_Processed_Data//country_country_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)
+  write.table(Step1, file = paste("1-Intermediate_Processed_Data//country_country_step_", yr,".txt", sep=""), sep = ",", row.names = FALSE)
 }
 ```
 

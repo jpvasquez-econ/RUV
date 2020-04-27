@@ -68,18 +68,38 @@ s.names <- s.names$region
 n.s <- length(s.names)
 n.c <- length(c.names)
 
-WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+WIOD.base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+  WIOD.base <- rbind(WIOD.base, wiot)
+}
 data_gravity_agriculture.base <- read.csv( file="1-Intermediate_Processed_Data//data_agriculture.csv", header=TRUE, sep="," )
 data_gravity_serv.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," ) 
 
 #state level imports and exports
 CENSUS.exp <- read.csv("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv")
 CENSUS.imp <- read.csv("1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv")
+
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+id.sectors <- sector.file %>% 
+  select(final_sector, WIOD_sector) %>%
+  distinct(WIOD_sector, .keep_all = TRUE)
+
 wiot.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-wiot.full<-data.frame(wiot.full);
 wiot.full <- wiot.full %>% 
-  filter(col_country %in% c(c.names, "USA"), row_country %in% c(c.names, "USA")) %>% #take out countries not of interest
-  filter(row_item!=17 & row_item!=31 & row_item!=35 & col_item!=17 & col_item!=31 & col_item!=35)
+  left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
+  mutate(row_item = final_sector) %>%
+  select(-final_sector) %>%
+  left_join(id.sectors, by=c('col_item'='WIOD_sector')) %>%
+  mutate(col_item = final_sector) %>%
+  select(-final_sector) %>%
+  arrange(year, row_country, col_country, row_item, col_item) %>%
+  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
+  mutate(value1= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
+  select(-value) %>%
+  dplyr::rename(value=value1)
 
 epsilon<-0.0001
 
@@ -205,14 +225,14 @@ expenditure.vector.serv.s <- expenditure.vector.serv.s %>% select(importer, sect
 # 3. share of US agriculture consumption to total US consumption (\gamma)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 wiot.full.0 <- wiot.full %>%
-  filter(year==yr, col_item>=37 & col_item<=42 & col_country=="USA")
+  filter(year==yr, col_item==0 & col_country=="USA")
 wiot.full.1 <- wiot.full.0 %>%
   group_by(year, col_country) %>%
   mutate(C.us= sum(value)) %>%
   ungroup() %>%
   distinct(year, col_country, .keep_all = TRUE)
 wiot.full.2 <- wiot.full.0 %>%
-  filter(row_item==1) %>%
+  filter(row_item==n.sec+2) %>%
   group_by(year, col_country) %>%
   mutate(C.us.agri= sum(value)) %>%
   ungroup() %>%
@@ -313,8 +333,8 @@ X_j <- sum.14 + (frac.gamma*sum.not.14.vector)
 
 #check: sum(X_j)=WIOD
 check1 <- WIOD.base %>%
-  filter(year==yr, importer_country=="USA", sector==(n.sec+2))
-c1=check1[5:dim(check1)[2]]
+  filter(year==yr, importer=="USA", sector==(n.sec+2))
+c1=check1[4:dim(check1)[2]]
 c1=sum(c1)
 c2=sum(X_j)
 if(abs(c1/c2-1)>epsilon) 

@@ -47,13 +47,32 @@ s.names <- s.names$region
 n.s <- length(s.names)
 n.c <- length(c.names)
 
+sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+id.sectors <- sector.file %>% 
+  select(final_sector, WIOD_sector) %>%
+  distinct(WIOD_sector, .keep_all = TRUE)
+
 #WIOD
-WIOD.base <- read.dta13( file="1-Intermediate_Processed_Data//WIOD_countries.dta" )
+WIOD.base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+  WIOD.base <- rbind(WIOD.base, wiot)
+}
 WIOD.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
-WIOD.full=data.frame(WIOD.full)
 WIOD.full <- WIOD.full %>% 
-  filter(col_country %in% c(c.names, "USA"), row_country %in% c(c.names, "USA")) %>% #take out countries not of interest
-  filter(row_item!=17 & row_item!=31 & row_item!=35 & col_item!=17 & col_item!=31 & col_item!=35)
+  left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
+  mutate(row_item = final_sector) %>%
+  select(-final_sector) %>%
+  left_join(id.sectors, by=c('col_item'='WIOD_sector')) %>%
+  mutate(col_item = final_sector) %>%
+  select(-final_sector) %>%
+  arrange(year, row_country, col_country, row_item, col_item) %>%
+  group_by(year, row_country, col_country, row_item, col_item) %>% #aggregating repeated r-c sequence
+  mutate(value1= sum(value)) %>%
+  ungroup() %>%
+  distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
+  select(-value) %>%
+  dplyr::rename(value=value1)
 
 #CENSUS
 CENSUS <- read.dta13("1-Intermediate_Processed_Data//state_imports_exports.dta")
@@ -124,15 +143,15 @@ yijkBase <- Base.y[, 3:dim(Base.y)[2]] / rowSums(Base.y[, 3:dim(Base.y)[2]])
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
   filter(sector==n.sec+2) %>%
-  filter(importer_country!='USA') 
+  filter(importer!='USA') 
 
-df.WIOD1 <- df.WIOD %>% select(importer_country, sector, value_USA)
+df.WIOD1 <- df.WIOD %>% select(importer, sector, USA)
 
-step3y <- yijkBase*df.WIOD1$value_USA
+step3y <- yijkBase*df.WIOD1$USA
 step3y <- cbind(df.WIOD1[, 1:2], step3y)
 
 #Check
-check= as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) - df.WIOD1$value_USA)
+check= as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) - df.WIOD1$USA)
 
 
 ##############################
@@ -147,19 +166,19 @@ m <- (rowSums(m[, 3:dim(m)[2]]) / sum(m[, 3:dim(m)[2]]))
 m= t(matrix(replicate(n.c, m), nrow = length(m), ncol = n.c))
 m.correct <- rbind(m.correct, m) 
 }
-m.correct <- m.correct*df.WIOD1$value_USA
+m.correct <- m.correct*df.WIOD1$USA
 
 for (r in 1:(dim(check)[1])) {
   if(is.na(check[r])==TRUE){step3y[r, 3:dim(step3y)[2]] = m.correct[r, ]}
 }
 
-if(abs(sum(rowSums(step3y[, 3:dim(step3y)[2]]) - df.WIOD1$value_USA))>epsilon) 
+if(abs(sum(rowSums(step3y[, 3:dim(step3y)[2]]) - df.WIOD1$USA))>epsilon) 
    stop(paste("states' exports to countries != WIOD US exports to countries for", yr, " value=", abs(sum(step3y[, 3:dim(step3y)[2]] - df.WIOD1$value))))
 ################
 
 step3y <- step3y %>%
   mutate(year=yr) %>%
-  select(year, importer_country, sector, everything()) %>%
+  select(year, importer, sector, everything()) %>%
   filter(sector==n.sec+2) %>%
   select(-sector)
 colnames(step3y) <- c("year", "importer", s.names)
@@ -189,7 +208,7 @@ for (yr in 2000:2007) {
 
 ##########Component ii of state production: export to US states
 WIOD.agri <- WIOD.full %>%
-  filter(row_country=="USA", col_country=="USA", row_item==1) %>%
+  filter(row_country=="USA", col_country=="USA", row_item==(n.sec+2)) %>%
   group_by(year) %>%
   mutate(production= sum(value)) %>%
   ungroup() %>%
@@ -239,7 +258,7 @@ data_agriculture <- data_agriculture %>%
 ```{r}
 #agricultural production for countries 
 WIOD.p <- WIOD.full %>%
-  filter(row_item==1) %>%
+  filter(row_item==n.sec+2) %>%
   group_by(year, row_country) %>%
   mutate(production= sum(value)) %>%
   ungroup() %>%
@@ -253,7 +272,7 @@ for (i in 1:dim(WIOD.p)[1]) {
 }
 #agricultural consumption for countries 
 WIOD.c <- WIOD.full %>%
-  filter(row_item==1) %>%
+  filter(row_item==n.sec+2) %>%
   group_by(year, col_country) %>%
   mutate(consumption= sum(value)) %>%
   ungroup() %>%
@@ -308,8 +327,8 @@ eijkBase <- eijkBase[, 3:dim(eijkBase)[2]] / rowSums(eijkBase[, 3:dim(eijkBase)[
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
   filter(sector==n.sec+2) %>%
-  filter(importer_country=='USA')
-df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country)
+  filter(importer=='USA')
+df.WIOD1 <- df.WIOD %>% select(-USA, -importer, -importer)
 colnames(df.WIOD1) <- c("sector", c.names)
 df.WIOD1 <- melt(df.WIOD1, id.vars=c("sector"), variable.name="origin", value.name = "value")
 df.WIOD1 <- df.WIOD1 %>% arrange(sector, origin)

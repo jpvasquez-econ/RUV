@@ -44,7 +44,12 @@ state_imp_exp.0 <- read_dta("1-Intermediate_Processed_Data//state_imports_export
 state_imp_exp.0 <- state_imp_exp.0 %>% filter(origin!="AllStates", destination!="AllStates")
 
 #WIOD
-WIOD.base <- read_dta("1-Intermediate_Processed_Data//WIOD_countries.dta")
+WIOD.base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
+  WIOD.base <- rbind(WIOD.base, wiot)
+}
+
 
 #General parameters
 regions <- read_excel("0-Raw_Data/regions.xlsx")
@@ -139,8 +144,8 @@ eijkBase <- eijkBase[, 3:dim(eijkBase)[2]] / rowSums(eijkBase[, 3:dim(eijkBase)[
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
   filter(sector<=n.sec | sector==(n.sec+2)) %>%
-  filter(importer_country=='USA')
-df.WIOD1 <- df.WIOD %>% select(-value_USA, -importer, -importer_country)
+  filter(importer=='USA')
+df.WIOD1 <- df.WIOD %>% select(-USA, -importer)
 colnames(df.WIOD1) <- c("sector", c.names)
 df.WIOD1 <- melt(df.WIOD1, id.vars=c("sector"), variable.name="origin", value.name = "value")
 df.WIOD1 <- df.WIOD1 %>% arrange(sector, origin)
@@ -168,7 +173,7 @@ for (r in 1:(dim(check)[1])) {
 }
 
 if(sum(abs(rowSums(step3e[, 3:dim(step3e)[2]])/df.WIOD1$value -1))>epsilon) 
-   stop(paste("states' imports from countries != WIOD US imports from countries for", yr, " value=", abs(sum(step3e[, 3:dim(step3e)[2]] - df.WIOD1$value))))
+   stop(paste("states' imports from countries != WIOD US imports from countries for", yr, " value=", sum(abs(rowSums(step3e[, 3:dim(step3e)[2]])/df.WIOD1$value -1))))
 ################
 
 step3e <- melt(step3e, id.vars=c("origin", "sector"), variable.name="importer", value.name = "value")
@@ -226,15 +231,15 @@ yijkBase <- Base.y[, 3:dim(Base.y)[2]] / rowSums(Base.y[, 3:dim(Base.y)[2]])
 df.WIOD = data.frame(WIOD)
 df.WIOD <- df.WIOD %>%
   filter(sector<=n.sec | sector==(n.sec+2)) %>%
-  filter(importer_country!='USA') 
+  filter(importer!='USA') 
 
-df.WIOD1 <- df.WIOD %>% select(importer_country, sector, value_USA)
+df.WIOD1 <- df.WIOD %>% select(importer, sector, USA)
 
-step3y <- yijkBase*df.WIOD1$value_USA
+step3y <- yijkBase*df.WIOD1$USA
 step3y <- cbind(df.WIOD1[, 1:2], step3y)
 
 #Check
-check= as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) - df.WIOD1$value_USA)
+check= as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) - df.WIOD1$USA)
 
 
 ##############################
@@ -249,19 +254,19 @@ m <- (rowSums(m[, 3:dim(m)[2]]) / sum(m[, 3:dim(m)[2]]))
 m= t(matrix(replicate(n.c, m), nrow = length(m), ncol = n.c))
 m.correct <- rbind(m.correct, m) 
 }
-m.correct <- m.correct*df.WIOD1$value_USA
+m.correct <- m.correct*df.WIOD1$USA
 
 for (r in 1:(dim(check)[1])) {
   if(is.na(check[r])==TRUE){step3y[r, 3:dim(step3y)[2]] = m.correct[r, ]}
 }
 
-if(sum(abs(rowSums(step3y[, 3:dim(step3y)[2]])/df.WIOD1$value_USA -1))>epsilon) 
-   stop(paste("states' exports to countries != WIOD US exports to countries for", yr, " value=", abs(sum(step3y[, 3:dim(step3y)[2]] - df.WIOD1$value))))
+if(sum(abs(rowSums(step3y[, 3:dim(step3y)[2]])/df.WIOD1$USA -1))>epsilon) 
+   stop(paste("states' exports to countries != WIOD US exports to countries for", yr, " value=", sum(abs(rowSums(step3y[, 3:dim(step3y)[2]])/df.WIOD1$USA -1))))
 ################
 
 step3y <- step3y %>%
   mutate(year=yr) %>%
-  select(year, importer_country, sector, everything())
+  select(year, importer, sector, everything())
 colnames(step3y) <- c("year", "importer", "sector", s.names)
 
 #Exporting data
