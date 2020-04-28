@@ -1,7 +1,8 @@
 ---
 title: "Agriculture data"
 output:
-  html_document:
+  html_notebook:
+    toc: yes
     df_print: paged
     number_sections: yes    
   pdf_document:
@@ -277,8 +278,9 @@ data_agriculture <- data_agriculture %>%
 
 ```
 
-#Production and consumption for countries
-```{r}
+## Production and expenditure for countries
+
+```{r prod-exp}
 #agricultural production for countries 
 WIOD.p <- WIOD.full %>%
   filter(row_item==n.sec+2) %>%
@@ -293,7 +295,7 @@ for (i in 1:dim(WIOD.p)[1]) {
   data_agriculture <- data_agriculture %>%
     mutate(Y_i= ifelse(year==yr & iso_o==country, num, Y_i))
 }
-#agricultural consumption for countries 
+#agricultural expenditure for countries 
 WIOD.c <- WIOD.full %>%
   filter(row_item==n.sec+2) %>%
   group_by(year, col_country) %>%
@@ -314,8 +316,8 @@ data_agriculture <- data_agriculture %>%
 write.table(data_agriculture, file = paste("1-Intermediate_Processed_Data//data_agriculture.csv", sep=""), sep = ",", row.names = FALSE)
 ```
 
-
 #### State imports from countries
+
 ```{r}
 ### Base year for imports (2008)
 state_imp_exp <- data.frame(state_imp_exp.0) %>% 

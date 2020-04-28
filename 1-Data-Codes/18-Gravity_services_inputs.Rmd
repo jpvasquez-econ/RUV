@@ -1,22 +1,99 @@
 ---
-title: "Gravity for Services: Inputs for the System"
-author: "JP"
-date: "September 9, 2019"
+title: "Inputs for gravity system in services"
 output:
-  html_document: default
-  pdf_document: default
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
 ---
+
+# General information
+
+This code generates the inputs of the gravity system (before solving the system).
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/country_country_step_`
+4. `1-Intermediate_Processed_Data/data_services.csv`
+5. Coefficients from `Country_Gravity_WIOD`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data/matrix_B_`
+2. `1-Intermediate_Processed_Data/vector_lambda_`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-##General description
+# Theory
 
-This file generates the inputs of the gravity system that we take to solve in matlab.
+Start with the standard gravity equation: 
 
-##Data and Libraries
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+$$X_{ij}=\left(\frac{w_{i}\tau_{ij}}{P_{j}}\right)^{-\varepsilon}X_{j},$$
+
+where $P_{j}^{-\varepsilon}=\sum_{i}\left(w_{i}\tau_{ij}\right)^{-\varepsilon}$. But $\sum_{j}X_{ij}=Y_{i}$ and hence $\sum_{j}\left(\frac{w_{i}\tau_{ij}}{P_{j}} \right)^{-\varepsilon}X_{j}=Y_{i}.$ This implies $w_{i}^{-\varepsilon} \Pi_{i}^{-\varepsilon}=Y_{i}$, where $\Pi_{i}^{-\varepsilon}= \sum_{j} \tau_{ij}^{ -\varepsilon}P_{j}^{\varepsilon}X_{j}$. Hence we have:
+
+$$X_{ij}=\frac{\tau_{ij}^{-\varepsilon}}{\left(\Pi_{i}P_{j}\right)^{-\varepsilon}}Y_{i}X_{j}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j},$$
+
+where $\tilde{P}_{j}\equiv P_{j}^{-\varepsilon}$ and $\tilde{\Pi}_{i}\equiv \Pi_{i}^{-\varepsilon}$, and $\tilde{\tau}_{ij}\equiv\tau_{ij}^{-\varepsilon}$. From WIOD we have $X_{ij}$ for some pairs. Define the set $S_{j}$ such that we know $X_{ij}$ whenever $i\in S_{j}$. Letting 
+$$X_{S_{j},j}\equiv\sum_{i\in S_{j}}X_{ij}, \quad\lambda_{j}\equiv1-X_{S_{j},j}/X_{j}, \quad X_{i,S_{i}^{*}}=\sum_{j\in S_{i}^{*}}X_{ij}, \quad\lambda_{i}^{*}\equiv1-X_{i,S_{i}^{*}}/Y_{i}, $$
+the full system becomes:
+
+$$
+\tilde{P}_{j}  =  \sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i}\quad j\in US 
+$$
+
+$$
+\tilde{\Pi}_{i}  = \sum_{j}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}\quad i\in US 
+$$
+
+$$
+\lambda_{j}\tilde{P}_{j} =  \sum_{i\notin S_{j}}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i}\quad j\notin US 
+$$
+
+$$
+\lambda_{i}^{*}\tilde{\Pi}_{i}  =  \sum_{j\notin S_{i}^{*}}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}\quad i\notin US
+$$
+
+Define $P_{s}=(\tilde{P}_{1},...,\tilde{P}_{50})'$ for the states,
+$P_{c}=(\tilde{P}_{51},...,\tilde{P}_{87})'$ for the countries. Similarly
+for $\Pi_{s}$, $\Pi_{c}$,$\lambda_{c}$, and $\lambda_{c}^{*}$.
+Define $\lambda=\left(1_{1\times50},\lambda_{c},1_{1\times50},\lambda_{c}^{*}\right)'$. Define $S=\left(P_{s},P_{c},\Pi_{s},\Pi_{c}\right)'$, and with
+some abuse of notation $S^{-1}=\left(P_{s}^{-1},P_{c}^{-1},\Pi_{s}^{-1},\Pi_{c}^{-1}\right)'$. Define $\left(\mathcal{T} Y\right)_{ss}$ as follows:
+
+$$ \boldsymbol{\left(\mathcal{T} Y\right)_{ss}}=\left(\begin{array}{ccc}
+\tilde{\tau}_{s_{1}s_{1}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{1}}Y_{s_{k}}\\
+\vdots & \ddots & \vdots\\
+\tilde{\tau}_{s_{1}s_{k}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{k}}Y_{s_{k}}
+\end{array}\right), $$
+
+and define , $\left(\mathcal{T} Y\right)_{sc} \,, \left(\mathcal{T} Y\right)_{cs}$,$\left(\mathcal{T} X\right)_{ss}$,
+$\left(\mathcal{T} X\right)_{sc}\,, \left(\left(\mathcal{T} X\right)_{cs}$ analogously. The full system can be written
+as:
+
+$$ \lambda\circ S=\left(\begin{array}{cccc}
+0 & 0 & \left(\mathcal{T} Y\right)_{ss} & \left(\mathcal{T} Y\right)_{sc}\\
+0 & 0 & \left(\mathcal{T} Y\right)_{cs} & 0\\
+\left(\mathcal{T} X\right)_{ss} & \left(\mathcal{T} X\right)_{sc} & 0 & 0\\
+\left(\mathcal{T} X\right)_{cs} & 0 & 0 & 0
+\end{array}\right)\cdot S^{-1}, $$
+
+or as:
+$$ \lambda\circ S=B\cdot S^{-1}, $$
+
+where $\circ$ is the element-by-element product and $B$ is the big matrix. Given $\left\{ X_{j}\right\}$  and $\left\{ Y_{i}\right\}$  and $\left\{ \tilde{\tau}_{ij}\right\}$ (more on the computation of $\tilde{\tau}_{ij}$ below) ,  we can get $\left\{ \tilde{P}_{j}\right\}$  and $\left\{ \tilde{\Pi}_{i}\right\}$. The solution for $\left\{ \tilde{P}_{j}, \tilde{\Pi}_{i} \right\}$ is unique up to a constant. This indeterminacy requires a normalization. We thus impose $\tilde{P}_{1}=100$. Then we compute $\left\{ X_{ij}\right\}$  from $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}.$$
+
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # OPTIONS AND LIBRARIES
 options( scipen=100 );
 # libraries
@@ -33,9 +110,12 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-##Data
+# Importing data to R
 
-```{r warning=FALSE}
+```{r data, warning=FALSE}
+#COEFFIENTS FROM REGRESSIONS
+own_dummy<- 2.50
+dist_coeff<- -1.08
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #example vs real
@@ -72,9 +152,9 @@ n.sec <- length(unique(sector.file$final_sector)) -3
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 
-##Loop for years
+# Creating vector $\lambda$ and matrix $B$ for services
 
-```{r warning=FALSE}
+```{r inputs, warning=FALSE}
 for (yr in 2000:2007) {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 1. LOAD DATA
@@ -153,12 +233,11 @@ dist.matrix <- data_gravity_services %>%
   spread( key=id_d, value=dist );
 dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
 
-#Phis
+#Phis (taus)
 #we use the coefficients from Country_Gravity_WIOD.
-#own dummy=7.3, Distance elasticity=-0.4
-phi<-diag(x = 7.3, n.c+n.s, n.c+n.s);
+phi<-diag(x = own_dummy, n.c+n.s, n.c+n.s);
 phi<-exp(phi);
-phi<-phi/dist.matrix^0.4;
+phi<-phi*dist.matrix^dist_coeff;
 dist.matrix<-phi
 
 ##

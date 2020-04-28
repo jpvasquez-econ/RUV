@@ -1,19 +1,41 @@
 ---
-title: "Gravity for Agriculture: Inputs for the System"
-author: "JP"
-date: "April 2, 2020"
+title: "Inputs for gravity system in agriculture"
 output:
-  html_document: default
-  pdf_document: default
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
 ---
+
+# General information
+
+This code generates the inputs of the gravity system in agriculture (before solving the system).
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/country_country_step_`
+4. `1-Intermediate_Processed_Data/data_agriculture.csv`
+5. Coefficients from `Country_Gravity_WIOD`
+
+## Output files
+ 
+1. `1-Intermediate_Processed_Data/agric_mat_B_`
+2. `1-Intermediate_Processed_Data/agric_vec_lambda_`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-##General description
-
-This file generates the inputs of the gravity system for agriculture.
+# Theory
 
 Start with the standard gravity equation,
 $$
@@ -34,8 +56,7 @@ X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}
 $$
 We don't know $\{X_{j}\}_{j\in US}$. But we know: 1) $\{X_{ij}\}\quad\forall i,j\notin US$ (from WIOD), 2) $\{X_{ij}\}\quad\forall i\notin US\;or\:j\notin US$ (from CENSUS). 
 
-##Libraries
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 remove(list = ls())
 options( scipen=100, stringsAsFactors=FALSE );
@@ -49,8 +70,15 @@ for( i in length(libs)){
 # Carga de bibliotecas
 lapply( libs, require, character.only=TRUE );
 ```
-##Data
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+
+
+# Importing data to R
+
+```{r data, warning=FALSE}
+#COEFFIENTS FROM REGRESSIONS
+own_dummy<- 2.57
+dist_coeff<- -1.03
+
 # OPTIONS AND LIBRARIES
 options( scipen=100 );
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,6 +168,7 @@ n.sec <- length(unique(sector.file$final_sector)) -3
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 
+# Creating vector $\lambda$ and matrix $B$ for agriculture
 
 ```{r warning=FALSE}
 
@@ -355,11 +384,10 @@ dist.matrix <- data_gravity_agriculture %>%
   arrange( id_o, id_d ) %>% 
   spread( key=id_d, value=dist );
 dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
-#we use the coefficients from 4-4-Country_Gravity_WIOD.
-#own dummy=4.1, Distance elasticity=-1.8
-phi<-diag(x = 4.1, n.c+n.s, n.c+n.s);
+#we use the coefficients from Country_Gravity_WIOD.
+phi<-diag(x = own_dummy, n.c+n.s, n.c+n.s);
 phi<-exp(phi);
-phi<-phi/dist.matrix^1.8; 
+phi<-phi*dist.matrix^dist_coeff; 
 dist.matrix<-phi
 
 #

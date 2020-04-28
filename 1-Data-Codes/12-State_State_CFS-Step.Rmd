@@ -1,8 +1,10 @@
 ---
 title: "CFS trade flows between US states"
 output:
-  html_document:
+  html_notebook:
+    toc: yes
     df_print: paged
+    number_sections: yes    
   pdf_document:
     number_sections: yes
 header-includes:
