@@ -5,6 +5,7 @@ output:
     df_print: paged
   pdf_document:
     number_sections: yes
+  word_document: default
 header-includes:
 - \usepackage{amsmath}
 - \usepackage{amssymb}
@@ -35,7 +36,7 @@ remove(list = ls())
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'read_excel', 'readxl');
 # Install libraries in case they are not installed
 for( i in length(libs)){ 
 if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 

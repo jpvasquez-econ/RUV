@@ -3,15 +3,14 @@ title: "Country Coordinates"
 output:
   html_document:
     df_print: paged
-    number_sections: yes    
   pdf_document:
     number_sections: yes
+  word_document: default
 header-includes:
 - \usepackage{amsmath}
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
 
 ```{r setup, include=FALSE}
@@ -22,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # libraries
 remove(list = ls())
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'reshape', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'reshape', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'read_excel', 'readxl');
 #Installing libraries in case they are not installed
 for( i in length(libs)){ 
 if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 

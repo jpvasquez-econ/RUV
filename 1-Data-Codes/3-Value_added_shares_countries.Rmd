@@ -129,7 +129,7 @@ Calculating the share of value added in gross output:
 
 $$\alpha_{i,k} = \frac{VA_{i,k}}{R_{i,k}}$$
 ```{r value-added-share, warning=FALSE}
-labor_shares <- VA[, 3:dim(VA)[2]] / Y[, 3:dim(Y)[2]]
+labor_shares <- VA[, 3:dim(VA)[2]] / R[, 3:dim(R)[2]]
 labor_shares[labor_shares>1] <- 1
 labor_shares[labor_shares<(-1)] <- (-1)
 labor_shares <- cbind(VA[, 1:2], labor_shares)
