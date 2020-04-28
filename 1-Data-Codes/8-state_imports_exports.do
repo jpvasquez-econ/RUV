@@ -4,8 +4,6 @@ clear all
 set more off
 set linesize 150
 
-log using 3-Log_Files\2-2-state_imports_exports.log, replace
-
 /*
 ***********************************************************************************************************************************************
 ***  	THIS DO FILE DOES THE FOLLOWING:

@@ -3,7 +3,6 @@ capture log close
 clear all
 set more off
 set linesize 150
-log using 3-Log_Files\1-wiod.log, replace
 
 /*
 ***********************************************************************************************************************************************

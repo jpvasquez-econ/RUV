@@ -3,7 +3,6 @@ capture log close
 clear all
 set more off
 set linesize 150
-log using 3-Log_Files\3-1-CFS-to-Sectors-Cross.log, replace
 
 /*
 ***********************************************************************************************************************************************
