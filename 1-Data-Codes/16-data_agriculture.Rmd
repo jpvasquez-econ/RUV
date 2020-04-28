@@ -247,10 +247,12 @@ data_agri <- data_agri %>%
 
 # agricultural production for states (values add to WIOD US-US production)
 # 2000-2004 use Agriculture Census 2002
+data_agri$iso_o <- lapply(data_agri$iso_o, as.character)
 agri.2002 <- data_agri %>% filter(year==2002)
+
 for (i in 1:n.s) {
   num <- agri.2002$rel[i]
-  data_agriculture <- data_agriculture %>%
+    data_agriculture <- data_agriculture %>%
     mutate(Y_i.2= ifelse(year<=2004 & iso_o==agri.2002$iso_o[i], num, Y_i.2))
 }
 # 2005-2007 use Agriculture Census 2007
