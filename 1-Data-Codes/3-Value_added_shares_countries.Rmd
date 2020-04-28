@@ -118,16 +118,16 @@ sum.s.X_jsk <- wiot.full.inter %>%
   dplyr::rename(region=col_country, sector=col_item) %>%
   arrange(year, sector, region)
 VA <- R$val - sum.s.X_jsk$val
-VA <- cbind(Y[1:3], VA)
+VA <- cbind(R[1:3], VA)
 colnames(VA) <- c("year", "region", "sector", "value_added")
 
 VA<-spread(VA, sector, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-Y <-spread(Y, sector, val, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+R <-spread(R, sector, val, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 ```
 
 Calculating the share of value added in gross output:
 
-$$\alpha_{i,k} = \frac{VA_{i,k}}{Y_{i,k}}$$
+$$\alpha_{i,k} = \frac{VA_{i,k}}{R_{i,k}}$$
 ```{r value-added-share, warning=FALSE}
 labor_shares <- VA[, 3:dim(VA)[2]] / Y[, 3:dim(Y)[2]]
 labor_shares[labor_shares>1] <- 1
