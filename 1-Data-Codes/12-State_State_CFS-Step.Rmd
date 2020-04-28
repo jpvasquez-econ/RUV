@@ -1,5 +1,5 @@
 ---
-title: "State-State bilateral trade with CFS"
+title: "CFS trade flows between US states"
 output:
   html_document:
     df_print: paged
@@ -10,8 +10,22 @@ header-includes:
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
+
+# General information
+
+This code uses CFS plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;   j \in US$, for all manufacturing sectors (all sectors except services and agriculture).
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/CFS_Xijk.dta`
+4. `1-Intermediate_Processed_Data/country_country_step_`
+
+## Output files
+
+One txt files per year. The root of each file is: `1-Intermediate_Processed_Data/state_cfs_step_`
 
 
 ```{r setup, include=FALSE}
@@ -19,7 +33,7 @@ knitr::opts_chunk$set(echo = TRUE)
 remove(list = ls())
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
@@ -32,13 +46,20 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
+# Manufacturing bilateral trade between US states
 
-## General Instructions
+## Intermediate variables
 
-To use CFS plus proportionality to calculate $X_{ij,k}^{year}$ for $i\in US\;  \&\;   j \in US$,  $\forall k=1,...,12$.  I call the output of this part $X_{ij,k}^{Step2}$.
+Using CFS data we construct: $$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}},$$ where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS.
+
+
+##Main variable 
+
+The object of interest is: $$X_{ij,k}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD},$$ where $X_{US,US,k}^{WIOD}$ is the consumption of the US in sector $k$ that is produced in the US, according to WIOD. Note that proportionality implies that $$\sum_{i} \sum_{j} X_{ij,k}=X_{US,US,k}^{WIOD}$$ for each manufacturing sector. 
 
 ## Importing datasets to R
-```{r}
+
+```{r data}
 #CFS
 CFS.base <- read_dta("1-Intermediate_Processed_Data//CFS_Xijk.dta")
 #WIOD
@@ -47,7 +68,6 @@ for (yr in 2000:2007) {
   wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.txt', sep= ""), header = TRUE, sep = ",", dec = ".")
   WIOD.base <- rbind(WIOD.base, wiot)
 }
-
 
 #General parameters
 regions <- read_excel("0-Raw_Data/regions.xlsx")
@@ -61,22 +81,9 @@ n.sec <- length(unique(sector.file$final_sector)) -3
 epsilon <- 0.0001
 ```
 
-##Step 2 
+## Calculations
 
-The dataset "CFS" has elements $X_{ij,k}^{CFS}$, with the three usual dimensions. The matrix of data "CFS" (excluding the column of names and sectors) is of dimension $50 \cdot 14 \times 50$. In this step we also use $X_{US,US,k}^{WIOD} \quad \forall k$.
-
-##Construction of intermediate variables
-First construct: $$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}}.$$
-
-
-##Main variable 
-Define: $$X_{ij,k}^{Step2}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD}.$$
-
-##Check that the following condition holds:
-We should have that: $$\sum_{i} \sum_{j} X_{ij,k}^{Step3}=X_{US,US,k}^{WIOD} \quad \forall k=1,...,12.$$
-
-
-```{r}
+```{r calculations}
 #x_ijk
 
 for (yr in 2000:2007) {

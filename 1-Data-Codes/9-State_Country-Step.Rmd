@@ -1,5 +1,5 @@
 ---
-title: "State-Country Bilateral Trade"
+title: "Census trade flows between US states and other countries"
 output:
   html_document:
     df_print: paged
@@ -10,8 +10,25 @@ header-includes:
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
+
+# General information
+
+This code calculates the sector-country bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/state_imports_exports.dta`
+4. `1-Intermediate_Processed_Data/country_country_step_`
+
+## Output files
+
+Two txt files per year. The first one has exports of states to countries and the second one imports of states from countries. The roots of the files are: 
+
+1. `Intermediate_Processed_Data//state_country_step_y_`
+2. `Intermediate_Processed_Data//state_country_step_e_`
 
 
 ```{r setup, include=FALSE}
@@ -19,7 +36,7 @@ knitr::opts_chunk$set(echo = TRUE)
 remove(list = ls())
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
@@ -32,13 +49,42 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-## General Instructions
+# Exports and imports of US states
 
-To use $X_{ij,k}^{Base}$ and $X_{ij,k}^{WIOD}$ plus proportionality to calculate $X_{ij,k}^{year}$ for $i\in US\;  \&\;  j \notin US$ (exports from each State to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each State), and $\forall k=1,...,12$.  I call the output of this part $X_{ij,k}^{Step3}$. $Base=2002$ for exports and $Base=2008$ for imports. 
+We use $X_{ij,k}^{Census}$ and $X_{ij,k}^{WIOD}$ plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;  j \notin US$ (exports from each State to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each State), and $\forall k$ (except services). We do the same procedure each year. Census data on exports and imports starts in 2002 and 2008 respectively. For the years before the starting Census year we assume that the share of sector-level imports (exports) of each state from (to) each country in the total imports (exports) of the state in each year remains constant at the level of the starting Census year.
 
+## Intermediate variables 
+
+Define the share of exports of US State $i$ in sector $k$, going to country $j$ as: $$y_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{h\in US}X_{hj,k}^{Census}} \; \forall i\in US \, , \, j\notin US.$$ 
+
+Similarly, only for $j \in US$ define the share of imports of State $j$ in sector $k$, coming from country $i$ as
+$$e_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{l\in US}X_{il,k}^{Census}}. \; \forall i\notin US \, , \, j\in US.$$ 
+
+**Note**: There are some very few cases that required corrections. For instance, say country j (i) did not import (export) from (to) the US in a given sector $k$ according to CENSUS data but it did it according to WIOD data. Then we would calculate $e_{ij,k}$ ($y_{ij,k}$) by splitting WIOD imports (exports) between the states according to the share of imports (exports) of that state in the total US imports (exports) of that sector $k$. This means:
+
+$$
+y_{i\;j,k}^{census}\equiv\dfrac{\sum_{j\notin US}X_{ij,k}^{census}}{\sum_{h\in US}\sum_{l\notin US}X_{hl,k}^{census}}, \; i\in US \, , \, j\notin US
+$$
+
+$$
+e_{i\;j,k}^{census}\equiv\dfrac{\sum_{i\notin US}X_{ij,k}^{census}}{\sum_{h\notin US}\sum_{l\in US}X_{hl,k}^{census}}, \; i\notin US \, , \, j\in US
+$$
+
+## Main variable
+
+Define $\forall k$: 
+
+$$X_{ij,k}=
+\begin{cases}
+e_{ij,k}^{Census}X_{i\,US,k}^{WIOD} \quad \forall i\notin US, \; \forall j\in US\\
+y_{ij,k}^{Census}X_{US\,j,k}^{WIOD} \quad \forall i\in US, \; \forall j\notin US
+\end{cases} $$
+
+# Calculations 
 
 ## Importing datasets to R
-```{r}
+
+```{r data}
 #state level imports and exports
 state_imp_exp.0 <- read_dta("1-Intermediate_Processed_Data//state_imports_exports.dta")
 state_imp_exp.0 <- state_imp_exp.0 %>% filter(origin!="AllStates", destination!="AllStates")
@@ -69,47 +115,9 @@ epsilon<-0.0001;
 
 ```
 
+## Imports and Exports
 
-## Step 3
-
-### Construction of intermediate variables
-Define the share of exports of US State $i$ in sector $k$, going to country $j$ as: $$y_{ij,k}^{Base}\equiv\dfrac{X_{ij,k}^{Base}}{\sum_{h\in US}X_{hj,k}^{Base}} \; \forall i\in US \, , \, j\notin US.$$ For example, for the case of $i=$California y $j=$ China, $y_{ij,k}^{Base}$  is the share of exports that go from California to China relative to all the exports that go from the US to China.
-
-Similarly, only for $j \in US$ define the share of imports of State $j$ in sector $k$, coming from country $i$ as
-$$e_{ij,k}^{Base}\equiv\dfrac{X_{ij,k}^{Base}}{\sum_{l\in US}X_{il,k}^{Base}}. \; \forall i\notin US \, , \, j\in US.$$ For example, for the case of $i=$China y $j=$California, $e_{ij,k}^{Base}$  is the share of imports that come from China to California relative to all the imports that go from China to the US. 
-
-Note that despite this subtask being similar to the one in the "bilat_creation_MM" file, it is unlikely that the code could be recycled since the file containing $X_{ij,k}^{Base}$ has a totally different format. 
-
-
-### Main variable
-Define $\forall k$: $$
-X_{ij,k}^{step3}=
-\begin{cases}
-e_{ij,k}^{Base}X_{i\,US,k}^{WIOD} \quad \forall i\notin US, \; \forall j\in US\\
-y_{ij,k}^{Base}X_{US\,j,k}^{WIOD} \quad \forall i\in US, \; \forall j\notin US
-\end{cases} $$
-
-### check that the following conditions hold
-\begin{enumerate}
-\item For $j\neq US$ we should $\sum_{i\in US}X_{ij,k}^{step3}=X_{US\,j,k}^{WIOD} \; \forall j, k=1,...,12$
-\item For $i\notin US$ we should $\sum_{j\in US}X_{ij,k}^{step3}=X_{i\,US,k}^{WIOD} \; \forall i,k=1,...,12$
-\end{enumerate}
-
-#### Correcting: US import from j, sector k (WIOD registers imports, but st-imp-exp doesn't)
-
-Then, for $i=SVN$, $j \in US$, y $k=4$:
-$$
-e_{SVN\;j,4}^{census}\equiv\dfrac{\sum_{i\notin US}X_{ij,4}^{census}}{\sum_{h\notin US}\sum_{l\in US}X_{hl,4}^{census}}. \nonumber
-$$
-
-#### Correcting: US export from i, sector k (WIOD registers exports, but st-imp-exp doesn't)
-
-Then, for $i=SVN$, $j \in US$, y $k=4$:
-$$
-y_{i\;SVN,4}^{census}\equiv\dfrac{\sum_{j\notin US}X_{ij,4}^{census}}{\sum_{h\in US}\sum_{l\notin US}X_{hl,4}^{census}}. \nonumber
-$$
-
-#### Imports
+### Imports
 ```{r}
 ### Base year for imports (2008)
 state_imp_exp <- data.frame(state_imp_exp.0) %>% 
@@ -190,7 +198,8 @@ write.table(step3e, file = paste("1-Intermediate_Processed_Data//state_country_s
 ```
 
 
-#### Exports
+### Exports
+
 ```{r}
 
 for (yr in 2000:2007) {

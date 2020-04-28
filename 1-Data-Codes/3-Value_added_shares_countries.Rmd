@@ -1,5 +1,5 @@
 ---
-title: "6-2-Value_added_shares_countries"
+title: "Country-level value-added share"
 output:
   html_document:
     df_print: paged
@@ -11,16 +11,28 @@ header-includes:
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
 
+# General information
+
+This code calculates the share of value-added (mapped in the model to the labor share) for each country, each sector, and each year using data from WIOD. 
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/wiot_full.dta`
+
+## Output files
+
+One CSV file per year with root: `1-Intermediate_Processed_Data/labor_shares_countries`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 remove(list = ls())
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 ## vector of libraries to be used
@@ -33,21 +45,11 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-# General Instructions
 
-This code calculates the share of value added in gross output for each US state and each country, for each sector.
-
-### Constructing Value-Added for countries ("Labor Shares")
-
-We need to compute the share of value added in gross output the 50 for US states.  We can obtain data on sectoral and regional value added for the US from the Bureau of Economic Analysis (BEA). The final output would a matrix 50 $\times$ 13 with the shares of value added in gross output for each state, for each sector. Let's focus on the year 2000.
-
-- Value added for each of the 50 U.S. states and 13 sectors can be obtained from the Bureau of Economic Analysis (BEA) by subtracting taxes and subsidies from GDP data 
-- Gross outputs for each region $i$ is just $Y_{i,k}= \sum_j X_{ij,k}$ 
-- In a few cases, gross output might be smaller than value added (probably due to some small discrepancies between trade and production data, etc). In such cases, just constrain value added to be equal to gross output. 
-
+# Constructing Value-Added for countries ("Labor Shares")
 
 ## Importing datasets to R
-```{r}
+```{r data, warning=FALSE}
 regions <- read_excel("0-Raw_Data/regions.xlsx")
 c.names <- regions %>% filter(status=="country")
 c.names <- c.names$region
@@ -84,11 +86,14 @@ wiot.full.inter <- wiot.full %>%
   filter(row_item!=0, col_item!=0) #NOT CONSUMPTION
 ```
 
+## Calculations
 
 Gross output for each region, for each sector
-$Y_{i,k}= \sum_j X_{ij,k} \quad for \quad all \quad j$
-```{r}
-Y <- wiot.full %>%
+
+$$R_{i,k}= \sum_j X_{ij,k} \quad \forall j$$
+
+```{r gross-output, warning=FALSE}
+R <- wiot.full %>%
   group_by(year, row_country, row_item) %>%
   mutate(val= sum(value)) %>%
   ungroup() %>%
@@ -99,9 +104,10 @@ Y <- wiot.full %>%
 
 ```
 
+Calculating value added:
 
-Calculating value added
-```{r}
+$$VA_{i,k}= R_{i,k}- \sum_s X_{j,sk} $$
+```{r value-added, warning=FALSE}
 #calculating value added for countries
 sum.s.X_jsk <- wiot.full.inter %>%
   group_by(year, col_country, col_item) %>%
@@ -111,19 +117,18 @@ sum.s.X_jsk <- wiot.full.inter %>%
   select(-row_country, -row_item, -value) %>%
   dplyr::rename(region=col_country, sector=col_item) %>%
   arrange(year, sector, region)
-VA <- Y$val - sum.s.X_jsk$val
+VA <- R$val - sum.s.X_jsk$val
 VA <- cbind(Y[1:3], VA)
 colnames(VA) <- c("year", "region", "sector", "value_added")
 
 VA<-spread(VA, sector, value_added, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 Y <-spread(Y, sector, val, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-
-
 ```
 
-share of value added in gross output
-$Labor share = \frac{VA_{i,k}}{Y_{i,k}}$
-```{r}
+Calculating the share of value added in gross output:
+
+$$\alpha_{i,k} = \frac{VA_{i,k}}{Y_{i,k}}$$
+```{r value-added-share, warning=FALSE}
 labor_shares <- VA[, 3:dim(VA)[2]] / Y[, 3:dim(Y)[2]]
 labor_shares[labor_shares>1] <- 1
 labor_shares[labor_shares<(-1)] <- (-1)

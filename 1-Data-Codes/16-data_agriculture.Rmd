@@ -1,5 +1,5 @@
 ---
-title: "data_agriculture"
+title: "Agriculture data"
 output:
   html_document:
     df_print: paged
@@ -11,14 +11,31 @@ header-includes:
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
+
+# General information
+
+This code creates a file that contains information about distances between regions, agricultural production for all regions and agricultural consumption for countries. In doing so, the code also applies the usual proportionality rule so that aggregate expenditure and production matches WIOD. 
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/state_imports_exports.dta`
+4. `1-Intermediate_Processed_Data/country_country_step_`
+5. `0-Raw_Data//Agriculture_Census//data_agriculture.csv`
+6. `1-Intermediate_Processed_Data//data_services.csv`
+
+## Output files
+
+`1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv`
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 remove(list = ls())
 # vector of libraries to be used
@@ -31,10 +48,7 @@ libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdat
 lapply( libs, require, character.only=TRUE );
 ```
 
-## Final Objective
-To create the file data_agriculture.csv that will contain information about distances between regions, agricultural production for all regions and agricultural consumption for countries.
-
-#importing bases
+## Importing data to R
 ```{r}
 #General parameters
 regions <- read_excel("0-Raw_Data/regions.xlsx")
@@ -94,14 +108,14 @@ n.sec <- length(unique(sector.file$final_sector)) -3
 
 ```
 
-
 #State production 
-```{r}
-#Each state agricultural production is defined as the sum of: i) total exports to other countries (we apply proportionality to Census so that the total US export to country c according to WIOD equals the sum of exports of each state to that country) and ii) the total exports to US states (the sum of these exports across states equals US to US exports in WIOD; this last value is divided between states to obtain ii, according to the Agriculture Census relative state production). 
+
+Each state agricultural production is defined as the sum of: i) total exports to other countries (we apply proportionality to Census so that the total US export to country c according to WIOD equals the sum of exports of each state to that country) and ii) the total exports to US states (the sum of these exports across states equals US to US exports in WIOD; this last value is divided between states to obtain ii, according to the Agriculture Census relative state production). 
+
 #Initially, state production (total export) was defined as a fraction of US total export from WIOD, depending on state Agri Census relative production. But, this definition generated some problems, for example, when comparing Alaska's and Illionois's total export to countries with their total export; specifically, the first term was 26 times bigger than the second, when theoretically, the first is a part of the second. This problem may be due to subestimations in their calculation of those states' productions. 
 #One way to solve this is to apply the definition used at the beginning, which assumes that the distribution of US total export by state applies as well to US total export to states. One way is to apply this solution only to the states that generate issues, but this would require to apply proportionality again and verify that new problems of the same nature don't arise. Therefore, and for now, the solution will be applied to all states, guaranteeing, by definition, that the issue doesn't occur again. 
 
-
+```{r}
 ##########Component i of state production: export to countries
 
 step3y.1 <- c()

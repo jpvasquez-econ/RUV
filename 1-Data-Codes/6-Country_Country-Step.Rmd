@@ -1,5 +1,5 @@
 ---
-title: "Bilateral Flows Between Countries"
+title: "WIOD trade flows between countries"
 output:
   html_document:
     df_print: paged
@@ -10,16 +10,28 @@ header-includes:
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
 
+# General information
+
+This code calculates the sector-country bilateral trade flows $X_{ij,k}$ between countries using data from WIOD. 
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/wiot_full.dta`
+
+## Output files
+
+One CSV file per year with root: `1-Intermediate_Processed_Data/country_country_step_`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 remove(list = ls())
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
@@ -32,16 +44,12 @@ if( !(libs[i] %in% installed.packages()) ) install.packages( libs )
 lapply( libs, require, character.only=TRUE );
 ```
 
-##Notation
-The dataset "final_matrix_2008" has elements $X_{ij,k}^{Base}$. There are three dimensions: $i$ is the exporter region (in the columns), $j$ is the importer region (in the rows, under the variable "importer"), and $k=1,...,14$ represents the sector. Each region are either US States or Countries (countries are written using 3 letters only. States have their full names).
-
-## General Instructions
-
-To use WIOD data to calculate $X_{ij,k}^{2000}$ for $i\notin US\;  \&\;  j \notin US$, and $\forall k=1,...,14$. I call the output of this part $X_{ij,k}^{Step1}$.
+# Bilateral trade matrix
 
 
 ## Importing datasets to R
-```{r}
+
+```{r data}
 regions <- read_excel("0-Raw_Data/regions.xlsx")
 c.names <- regions %>% filter(status=="country")
 c.names <- c.names$region
@@ -89,13 +97,9 @@ WIOD.base <- WIOD.base %>% arrange(year, sector, importer)
 WIOD.base <- data.frame(WIOD.base)
 ```
 
-## Country-Country Step
+## Trade flows between countries
 
-For the dataset "WIOD", the elements are defined as $X_{ij,k}^{WIOD}$. As usual, there are three dimensions: $i$ is the exporter country (in the columns), $j$ is the importer country (in the rows, under the variable "importer"), and $k=1,...,14$ represents the sector. 
-
-The matrix we care about is $X_{ij,k}^{Step1}=X_{ij,k}^{WIOD} \quad \forall i\notin US\; \& \; j\notin US$. This means that I only need to take out the first row and the variable "value_USA".
 ```{r}
-
 for (yr in 2000:2007) {
   Step1 <- WIOD.base %>%
     filter(year==yr) %>%

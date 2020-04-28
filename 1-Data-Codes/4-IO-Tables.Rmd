@@ -1,5 +1,5 @@
 ---
-title: "6-3-IO-Tables"
+title: "Input-Output tables"
 output:
   html_document:
     df_print: paged
@@ -11,8 +11,21 @@ header-includes:
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
+
+# General information
+
+This code calculates the input output matrix shares for each sector, country and year using data from WIOD. Each entry is the share of expenditure of each buying sector. For each country-year, the sum across rows of each column sums up to one. 
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data//wiot_full.dta`
+
+## Output files
+
+One CSV file per year with root: `1-Intermediate_Processed_Data/io_shares`. The final output of this code is a (sectors*countries)$\times$(2+sectors) matrix, where the first two columns indicate the year and country, and the rest the sectors associated with the input-output shares of the country.  
 
 
 ```{r setup, include=FALSE}
@@ -20,7 +33,7 @@ knitr::opts_chunk$set(echo = TRUE)
 remove(list = ls())
 ```
 
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
@@ -33,18 +46,17 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-# General Instructions
+# Constructing Input-Output matrices for countries
 
-This code calculates the input output trade shares for each sector, country and year. The final output of this code, for each year separately, is a (sectors*countries)$\times$(2+sectors) matrix, where the first two columns indicate the year and country, and the rest the sectors associated with the shares of the country.    
-
-Define $\alpha_{j,ks}$ for region j as the share of purchases of sector s that come from sector k in the total purchases of sector s (this is the input output coefficient). We have that:
+Define $\alpha_{j,ks}$ for region $j$ as the share of purchases of sector $s$ that come from sector $k$ in the total purchases of sector $s$ (this is the input output coefficient). We have that:
 
 $$\alpha_{j,ks}=\dfrac{\sum_{i}X_{ij,ks}}{\sum_{r}\sum_{i}X_{ij,rs}}=\dfrac{X_{j,ks}}{\sum_{r}X_{j,rs}}$$
 
 Note that $\sum_{k}\alpha_{j,ks}=1\quad\forall j$. 
 
 ## Importing datasets to R
-```{r}
+
+```{r data}
 
 regions <- read_excel("0-Raw_Data/regions.xlsx")
 c.names <- regions %>% filter(status=="country")
@@ -83,7 +95,8 @@ wiot.full.inter <- wiot.full.inter %>%
 
 ```
 
-#Calculating input-output matrices
+## Calculating shares
+
 ```{r}
 num <- wiot.full.inter %>%
   group_by(year, col_country, col_item, row_item) %>%

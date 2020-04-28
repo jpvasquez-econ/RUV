@@ -31,7 +31,7 @@ if( !(libs[i] %in% installed.packages()) ) install.packages( libs )
 lapply( libs, require, character.only=TRUE );
 ```
 
-# General Description
+# General information
 
 The code in this document produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population; the previous information is available for the period 1950-2017 for almost all countries except: Austria, Cyprus, Denmark, Estonia, Hungary, Ireland, Lithuania, Slovakia and Slovenia. The missing information is only for the variable, "city population", for certain years. 
 
@@ -47,8 +47,21 @@ The final output is based mainly on input a), with some information of b) and c)
 
 ***Note that for the case of Cyprus, a more precise statistic for the cities' population can be given through municipalities' population instead of districts (province), but only for 2011.  
 
-## Inputs
-```{r include=FALSE}
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data//Population_geography//UN_coordinates.xls`
+3. `0-Raw_Data//Population_geography//Full_population.xlsx`
+
+## Output files
+
+`1-Intermediate_Processed_Data//country_coordinates.dta`
+
+
+## Importing data 
+
+```{r data}
 library(readxl)
 UN <- read_excel("0-Raw_Data//Population_geography//UN_coordinates.xls")
 UN = data.frame(UN)
@@ -79,7 +92,8 @@ codes=cbind(all_country_names, all_country_codes)
 
 
 ## Verification of how many cities for each country
-```{r }
+
+```{r cities}
 
 UN.0=UN
 UN.0$Country.name=UN.0$country
@@ -110,8 +124,9 @@ city.count <- city.count %>% select(country, everything())
 
 ```
 
-## Output
-```{r }
+## Coordinates
+
+```{r main-variables}
 
 UN.1 <- UN.0 %>%
   select(-Index, -Note, -City.Code)
