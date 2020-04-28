@@ -41,9 +41,9 @@ remove(list = ls())
 # vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'reshape', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl');
 #Installing libraries in case they are not installed
-#for( i in length(libs)){ 
-  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
-#};
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
 #Loading libraries
 lapply( libs, require, character.only=TRUE );
 ```
@@ -108,16 +108,18 @@ n.sec <- length(unique(sector.file$final_sector)) -3
 
 ```
 
-#State production 
+# State's agriculture production 
 
-Each state agricultural production is defined as the sum of: i) total exports to other countries (we apply proportionality to Census so that the total US export to country c according to WIOD equals the sum of exports of each state to that country) and ii) the total exports to US states (the sum of these exports across states equals US to US exports in WIOD; this last value is divided between states to obtain ii, according to the Agriculture Census relative state production). 
+Each state production in agriculture is defined as the sum of: i) total exports to other countries (after applying proportionality to match WIOD) and ii) the total value of production coming from the Agriculture Census (after applying proportionality to match exports of US to US exports in WIOD).
 
-#Initially, state production (total export) was defined as a fraction of US total export from WIOD, depending on state Agri Census relative production. But, this definition generated some problems, for example, when comparing Alaska's and Illionois's total export to countries with their total export; specifically, the first term was 26 times bigger than the second, when theoretically, the first is a part of the second. This problem may be due to subestimations in their calculation of those states' productions. 
-#One way to solve this is to apply the definition used at the beginning, which assumes that the distribution of US total export by state applies as well to US total export to states. One way is to apply this solution only to the states that generate issues, but this would require to apply proportionality again and verify that new problems of the same nature don't arise. Therefore, and for now, the solution will be applied to all states, guaranteeing, by definition, that the issue doesn't occur again. 
+Initially, total production was defined only using the relative production in the agriculture CENSUS and aplying proportionality to match US production from WIOD. But this generated an issue: some few shares (e.g., the one of Alaska) in total production were small enough that made total production smaller than total exports to other countries. This is an inconsistency since the exports to other countries should be a subset of total production.  
 
-```{r}
-##########Component i of state production: export to countries
+Our solution described above makes sure by construction that total production total production is larger than total exports. However, it assumes that the relative importance of each state in trade with other states is the same as the relative importance of each state in their total production. We apply this assumptions for all states.
 
+Another way to go is to only make corrections to the states generating issues. This correction would require to apply proportionality again and to verify that new problems of the same nature don't arise.  
+
+```{r component-1}
+##########Component (i) of state production: export to countries
 step3y.1 <- c()
 for (yr in 2000:2007) {
 
@@ -165,8 +167,9 @@ step3y <- yijkBase*df.WIOD1$USA
 step3y <- cbind(df.WIOD1[, 1:2], step3y)
 
 #Check
-check= as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) - df.WIOD1$USA)
-
+check= as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) / df.WIOD1$USA-1)
+if(sum(abs(check))>epsilon) 
+   stop(paste("check not satisfied in", yr, " value=", abs(check)))
 
 ##############################
 #Correcting if needed
@@ -200,7 +203,9 @@ colnames(step3y) <- c("year", "importer", s.names)
 step3y.1 <- rbind(step3y.1, step3y)
 }
 
+```
 
+```{r appending-years}
 CENSUS.exp <- melt(step3y.1, id.var=c("year", "importer"), variable.name = "origin")
 CENSUS.exp$origin <- as.character(CENSUS.exp$origin)
 write.table(CENSUS.exp, file = paste("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv", sep=""), sep = ",", row.names = FALSE)
@@ -219,7 +224,9 @@ for (yr in 2000:2007) {
       mutate(Y_i.1 = ifelse(year==yr & iso_o==s.names[i], value, Y_i.1))
   }
 }
+```
 
+```{r component-2}
 ##########Component ii of state production: export to US states
 WIOD.agri <- WIOD.full %>%
   filter(row_country=="USA", col_country=="USA", row_item==(n.sec+2)) %>%
