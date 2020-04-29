@@ -1,10 +1,17 @@
 ---
-title: "Creating bilateral trade in agriculture with Gravity solution"
-author: "JP"
-date: "April 6, 2020"
+title: "Creating bilateral trade in agriculture with gravity solution"
 output:
-  html_document: default
-  pdf_document: default
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
 ---
 
 ```{r setup, include=FALSE}
@@ -32,6 +39,10 @@ lapply( libs, require, character.only=TRUE );
 ```
 
 ```{r warning=FALSE}
+#COEFFIENTS FROM REGRESSIONS
+own_dummy<- 4.143
+dist_coeff<- -1.745
+
 # OPTIONS AND LIBRARIES
 options( scipen=100 );
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,11 +316,10 @@ dist.matrix <- data_gravity_agriculture %>%
   arrange( id_o, id_d ) %>% 
   spread( key=id_d, value=dist );
 dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
-#we use the coefficients from 4-4-Country_Gravity_WIOD.
-#own dummy=4.1, Distance elasticity=-1.8
-phi<-diag(x = 4.1, n.c+n.s, n.c+n.s);
+#we use the coefficients from Country_Gravity_WIOD.
+phi<-diag(x = own_dummy, n.c+n.s, n.c+n.s);
 phi<-exp(phi);
-phi<-phi/dist.matrix^1.8; 
+phi<-phi*dist.matrix^dist_coeff; 
 dist.matrix<-phi
 
 #

@@ -1,11 +1,44 @@
 ---
-title: "Creating bilateral trade in services with Gravity solution"
-author: "JP"
-date: "September 9, 2019"
+title: "Creating bilateral trade in services with gravity solution"
 output:
-  html_document: default
-  pdf_document: default
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
 ---
+
+# General information
+
+This takes the solution of the gravity system and computes the bilateral trade in services among states and between states and other countries. 
+
+Given $\{X_{j}\}$ and $\{Y_{i}\}$ and $\{\tilde{\tau}_{ij}\}$, and the solutions for $\{\tilde{P}_{j}\}$ and $\{\tilde{\Pi}_{i}\}$ we get $\{X_{ij}\}$ from:
+
+$$
+X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}
+$$
+
+## Input files
+
+1. `0-Raw_Data/regions.xlsx`
+2. `0-Raw_Data/sectors.xlsx`
+3. `1-Intermediate_Processed_Data/country_country_step_`
+4. `1-Intermediate_Processed_Data/data_agriculture.csv`
+5. `1-Intermediate_Processed_Data//data_services.csv`
+6. Coefficients from `Country_Gravity_WIOD`
+7. `1-Intermediate_Processed_Data/io_shares`
+8. `1-Intermediate_Processed_Data/labor_shares_countries`
+
+## Output files
+ 
+1. `1-Intermediate_Processed_Data//Xij_matrix_services_`
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -37,6 +70,10 @@ lapply( libs, require, character.only=TRUE );
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#COEFFIENTS FROM REGRESSIONS
+own_dummy<- 7.357
+dist_coeff<- -0.376
+
 # number of countries (n.c) and number of states (n.s)
 regions <- read_excel("0-Raw_Data/regions.xlsx")
 c.names <- regions %>% filter(status=="country", region!="USA")
@@ -143,11 +180,10 @@ dist.matrix <- data_gravity_services %>%
 dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] );
 
 #Phis
-#we use the coefficients from 4-4-Country_Gravity_Services_WIOD.
-#own dummy=6.5, Distance elasticity=0.7
-phi<-diag(x = 7.3, n.c+n.s, n.c+n.s);
+#we use the coefficients from Country_Gravity_WIOD.
+phi<-diag(x = own_dummy, n.c+n.s, n.c+n.s);
 phi<-exp(phi);
-phi<-phi/dist.matrix^0.4;
+phi<-phi*dist.matrix^dist_coeff;
 dist.matrix<-phi
 
 # 3.2. GDP VECTOR
@@ -232,6 +268,12 @@ BIG.MAT <- rbind( cbind(zeros.big, block.10),
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SOL <- read_xls(paste('1-Intermediate_Processed_Data//vector_solution_',yr, '.xls', sep=""),col_names=FALSE)
 SOL <- as.matrix(SOL)
+lambda_before <- as.matrix(read.csv(paste('1-Intermediate_Processed_Data//vector_lambda_',yr, '.csv', sep="")))
+B_before <-as.matrix(read.csv(paste('1-Intermediate_Processed_Data//matrix_B_',yr, '.csv', sep="")))
+checking_sol <- lambda_before*SOL / B_before %*% SOL^{-1}-1;
+if(norm(checking_sol, "2")>epsilon) 
+  stop(paste("Solution from Matlab does not seem to work for year", yr))
+
 #checking
 #checking
 value <-  lambda_vector*SOL / BIG.MAT %*% SOL^{-1}-1;
