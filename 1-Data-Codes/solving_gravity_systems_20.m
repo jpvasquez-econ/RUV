@@ -64,7 +64,7 @@ veclambda= sprintf('1-Intermediate_Processed_Data/vector_lambda_%s.csv',num2str(
 % Import data
 matrixB        = table2array(readtable(matB));
 vectorlambda   = table2array(readtable(veclambda));
-init           = ones(2*(ncountries+nstates),1);
+init           = 100*ones(2*(ncountries+nstates),1);
 if k>2000
 init=solution;
 end
