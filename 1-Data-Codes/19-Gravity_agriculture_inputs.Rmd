@@ -79,8 +79,8 @@ lapply( libs, require, character.only=TRUE );
 
 ```{r data, warning=FALSE}
 #COEFFIENTS FROM REGRESSIONS
-own_dummy<- 2.57
-dist_coeff<- -1.03
+own_dummy<- 4.143
+dist_coeff<- -1.745
 
 # OPTIONS AND LIBRARIES
 options( scipen=100 );

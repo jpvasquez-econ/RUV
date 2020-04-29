@@ -114,8 +114,8 @@ lapply( libs, require, character.only=TRUE );
 
 ```{r data, warning=FALSE}
 #COEFFIENTS FROM REGRESSIONS
-own_dummy<- 2.50
-dist_coeff<- -1.08
+own_dummy<- 7.357
+dist_coeff<- -0.376
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #example vs real
