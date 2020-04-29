@@ -24,12 +24,14 @@ This code creates a file that contains information about distances between regio
 2. `0-Raw_Data/sectors.xlsx`
 3. `1-Intermediate_Processed_Data/state_imports_exports.dta`
 4. `1-Intermediate_Processed_Data/country_country_step_`
-5. `0-Raw_Data//Agriculture_Census//data_agriculture.csv`
-6. `1-Intermediate_Processed_Data//data_services.csv`
+5. `0-Raw_Data//Agriculture_Census/data_agriculture.csv`
+6. `1-Intermediate_Processed_Data/data_services.csv`
 
 ## Output files
 
-`1-Intermediate_Processed_Data//census.imp.agri.proportionality.csv`
+1. `1-Intermediate_Processed_Data/census.exp.agri.proportionality.csv`
+2. `1-Intermediate_Processed_Data/census.imp.agri.proportionality.csv`
+3. `1-Intermediate_Processed_Data/data_agriculture.csv`
 
 
 ```{r setup, include=FALSE}
@@ -207,7 +209,7 @@ step3y.1 <- rbind(step3y.1, step3y)
 ```
 
 ```{r appending-years}
-CENSUS.exp <- melt(step3y.1, id.var=c("year", "importer"), variable.name = "origin")
+CENSUS.exp <- melt(step3y.1, id.var=c("year", "importer"), variable = "origin")
 CENSUS.exp$origin <- as.character(CENSUS.exp$origin)
 write.table(CENSUS.exp, file = paste("1-Intermediate_Processed_Data//census.exp.agri.proportionality.csv", sep=""), sep = ",", row.names = FALSE)
 state.exports.to.countries <- CENSUS.exp %>%
@@ -234,17 +236,15 @@ WIOD.agri <- WIOD.full %>%
   group_by(year) %>%
   mutate(production= sum(value)) %>%
   ungroup() %>%
-  distinct(year, .keep_all = TRUE)
+  distinct(year, .keep_all = TRUE) %>%
+  select(-value, -col_item)
 
 #calculating relative state productions
 data_agri <- data_agri %>%
-  mutate(Y_i= Y_i/1000) %>%
   group_by(year) %>%
   mutate(tot.produ= sum(Y_i)) %>%
   ungroup() %>%
   mutate(rel= Y_i/tot.produ) 
-#checking 
-#h=sum(data_agri$rel)
 
 # agricultural production for states (values add to WIOD US-US production)
 # 2000-2004 use Agriculture Census 2002
@@ -275,7 +275,27 @@ for (yr in 2000:2007) {
 data_agriculture <- data_agriculture %>%
   mutate(Y_i = ifelse( (iso_o %in% s.names), Y_i.1 + Y_i.2, Y_i)) %>%
   select(-Y_i.1, -Y_i.2)
-
+#Check: total production of US states = total US in WIOD
+data_agriculture$iso_o<-as.character(data_agriculture$iso_o)
+check_1 <- data_agriculture %>%
+           distinct(year, iso_o, .keep_all = TRUE) %>%
+           filter(nchar(iso_o)>3, year<=2007) %>%
+           group_by(year) %>%
+           mutate(total= sum(Y_i)) %>%
+           ungroup() %>% 
+           select(total, year) %>%
+           distinct(year, total) 
+check_2 <- WIOD.full %>%
+           filter(row_country=="USA", row_item==(n.sec+2)) %>%
+           filter(year<=2007) %>%
+           group_by(year) %>%
+           mutate(production= sum(value)) %>%
+           ungroup() %>%
+           distinct(year, .keep_all = TRUE) %>%
+           select(production, year)
+#check
+if(abs(sum(check_2$production / check_1$total-1)>epsilon)) 
+   stop(paste("states' production does not add to WIOD for", yr)) 
 ```
 
 ## Production and expenditure for countries
