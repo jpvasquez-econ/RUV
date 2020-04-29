@@ -78,7 +78,7 @@ $$ \boldsymbol{\left(\mathcal{T} Y\right)_{ss}}=\left(\begin{array}{ccc}
 \end{array}\right), $$
 
 and define , $\left(\mathcal{T} Y\right)_{sc} \,, \left(\mathcal{T} Y\right)_{cs}$,$\left(\mathcal{T} X\right)_{ss}$,
-$\left(\mathcal{T} X\right)_{sc}\,, \left(\left(\mathcal{T} X\right)_{cs}$ analogously. The full system can be written
+$\left(\mathcal{T} X\right)_{sc} \,, \left(\mathcal{T} X\right)_{cs}$ analogously. The full system can be written
 as:
 
 $$ \lambda\circ S=\left(\begin{array}{cccc}

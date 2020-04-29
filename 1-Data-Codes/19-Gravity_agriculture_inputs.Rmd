@@ -24,7 +24,10 @@ This code generates the inputs of the gravity system in agriculture (before solv
 2. `0-Raw_Data/sectors.xlsx`
 3. `1-Intermediate_Processed_Data/country_country_step_`
 4. `1-Intermediate_Processed_Data/data_agriculture.csv`
-5. Coefficients from `Country_Gravity_WIOD`
+5. `1-Intermediate_Processed_Data//data_services.csv`
+6. Coefficients from `Country_Gravity_WIOD`
+7. `1-Intermediate_Processed_Data/io_shares`
+8. `1-Intermediate_Processed_Data/labor_shares_countries`
 
 ## Output files
  
