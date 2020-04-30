@@ -81,7 +81,7 @@ m <- m %>% select(year, everything())
 Base=rbind(Base, m)
 
 #Value added USA
-m1 <- read.csv(paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
+m1 <- read.csv(paste("1-Intermediate_Processed_Data//value_added_countries", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 VA.US=rbind(VA.US, m1)
 
 #State GDP
