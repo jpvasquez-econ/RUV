@@ -63,9 +63,15 @@ export excel using "2-Final_Data\io_allyears.xlsx" ///
 ***********************************************************
 * EXPORTING ALL VA SHARES IN A UNIQUE SHEET
 ***********************************************************
+tempfile va
 forvalue i=2000/2007{
 
-import delimited "1-Intermediate_Processed_Data\labor_shares`i'.csv", clear
+import delimited "1-Intermediate_Processed_Data\labor_shares_countries`i'.csv", clear
+drop if region=="USA"
+save `va', replace
+
+import delimited "1-Intermediate_Processed_Data\labor_shares_states`i'.csv", clear
+append using `va'
 ds year region, not
 local vari `r(varlist)'
 local y=101
