@@ -100,6 +100,7 @@ state_imp_exp.0 <- CENSUS %>%
 data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
 
 #Trade distances
+#temporarily using data_services to get the structure of the output and the distances
 data_agriculture <- read.csv("1-Intermediate_Processed_Data//data_services.csv")
 data_agriculture <- data_agriculture %>%
   mutate(Y_i=NA, X_j=NA, Y_i.1=NA, Y_i.2=NA)
@@ -107,6 +108,7 @@ data_agriculture <- data_agriculture %>%
 epsilon <- 0.0001
 
 sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
+#non-gravity sectors
 n.sec <- length(unique(sector.file$final_sector)) -3
 
 ```
@@ -145,15 +147,15 @@ state_imp_exp$sector <- as.numeric(state_imp_exp$sector)
 
 Base.y <- state_imp_exp %>% 
   arrange(sector, destination) %>%
-  filter(sector==(n.sec+2))
+  filter(sector==(n.sec+2)) #agric always sector n.sec+2
 colnames(Base.y)= c("importer", "sector", s.names)
 Base.y[is.na(Base.y)] <- 0
 Base.y <- cbind(Base.y[, 1:2], mapply(Base.y[, 3:dim(Base.y)[2]], FUN=as.numeric))
 
 
-##################################################
-
-##################################################
+########################################################
+# proportions of trade of states to countries in agricu 
+#######################################################
 
 yijkBase <- Base.y[, 3:dim(Base.y)[2]] / rowSums(Base.y[, 3:dim(Base.y)[2]]) 
 
