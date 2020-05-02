@@ -1,8 +1,10 @@
 ---
-title: "6-1-Deficits"
+title: "Deficits"
 output:
-  html_document:
+  html_notebook:
+    toc: yes
     df_print: paged
+    number_sections: yes    
   pdf_document:
     number_sections: yes
 header-includes:
@@ -10,7 +12,6 @@ header-includes:
 - \usepackage{amssymb}
 - \usepackage{pifont}
 - \usepackage{mathpazo}
-- \newcommand{\xmark}{\ding{55}}
 ---
 
 

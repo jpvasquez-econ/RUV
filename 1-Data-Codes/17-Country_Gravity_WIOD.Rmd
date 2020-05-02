@@ -3,6 +3,8 @@ title: "Trade resistance in WIOD services and agriculture"
 output:
   html_notebook:
     toc: yes
+    df_print: paged
+    number_sections: yes    
   pdf_document:
     number_sections: yes
 header-includes:

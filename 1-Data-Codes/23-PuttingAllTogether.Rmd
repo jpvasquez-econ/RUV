@@ -100,7 +100,8 @@ agriculture.all <- rbind(agriculture.all, agriculture)
 }
 ```
 
-##Incorporating services (sector 13) and agriculture (sector 14)
+# Including services and agriculture sectors
+
 ```{r}
 #services state-state
 serv_state <- services.all%>%
@@ -204,11 +205,12 @@ write.table(final_matrix, file = paste("1-Intermediate_Processed_Data//final_mat
 ```
 
 
-# General Instructions
+# Final checks
 
 The final goal is to check that the final trade matrices are consistent with WIOD database.
 
 ## Importing datasets to R
+
 ```{r}
 
 #Final WIOD
@@ -234,7 +236,8 @@ CDP.base <- rbind(CDP.base, matrix)
 epsilon <- 0.0001
 ```
 
-#Checks
+## Checks
+
 ```{r}
 for (yr in 2000:2007) {
 

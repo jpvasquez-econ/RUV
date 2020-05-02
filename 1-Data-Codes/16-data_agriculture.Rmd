@@ -123,14 +123,6 @@ n.sec <- length(unique(sector.file$final_sector)) -3
 
 # State's agriculture production 
 
-Each state production in agriculture is defined as the sum of: i) total exports to other countries (after applying proportionality to match WIOD) and ii) the total value of production coming from the Agriculture Census (after applying proportionality to match exports of US to US exports in WIOD).
-
-Initially, total production was defined only using the relative production in the agriculture CENSUS and aplying proportionality to match US production from WIOD. But this generated an issue: some few shares (e.g., the one of Alaska) in total production were small enough that made total production smaller than total exports to other countries. This is an inconsistency since the exports to other countries should be a subset of total production.  
-
-Our solution described above makes sure by construction that total production total production is larger than total exports. However, it assumes that the relative importance of each state in trade with other states is the same as the relative importance of each state in their total production. We apply this assumptions for all states.
-
-Another way to go is to only make corrections to the states generating issues. This correction would require to apply proportionality again and to verify that new problems of the same nature don't arise.  
-
 ## Production of agriculture of US states according to census of agriculture
 
 ```{r agric-census}

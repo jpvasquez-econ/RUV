@@ -44,12 +44,9 @@ $$
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-##General description
+# Importing data
 
-This file generates the inputs of the gravity system that we take to solve in matlab.
-
-##Data and Libraries
-```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
 remove(list = ls())
 options( scipen=100, stringsAsFactors=FALSE );
@@ -64,9 +61,7 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-##Data 
-
-```{r}
+```{r data}
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Data
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,7 +95,7 @@ sector.file <- read_excel("0-Raw_Data/sectors.xlsx")
 n.sec <- length(unique(sector.file$final_sector)) -3
 ```
 
-##Loop for years
+# Loop for years
 
 ```{r warning=FALSE, message=FALSE}
 # OPTIONS AND LIBRARIES
