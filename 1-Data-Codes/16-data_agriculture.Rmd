@@ -154,7 +154,7 @@ states_full <- states_full %>%
 agri <- c() 
 # We use Agriculture Census of 2002 for years 2000-2004 
 # and Agriculture Census of 2007 for years 2005-2007
-agri_2002 <- states_full %>% filter(year==2002)
+agri.2002 <- states_full %>% filter(year==2002)
 agri.2007 <- states_full %>% filter(year==2007)
 for (yr in 2000:2007) {
   if (yr<2005) {
