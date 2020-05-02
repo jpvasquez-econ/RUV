@@ -78,10 +78,9 @@ id.sectors <- sector.file %>%
   distinct(WIOD_sector, .keep_all = TRUE)
 
 #WIOD
-WIOD <- read_dta("1-Intermediate_Processed_Data//wiot_full.dta")
-WIOD=data.frame(WIOD)
-WIOD <- WIOD %>% 
-  filter(year>=2000) %>% #since distances are available from that year on  
+#WIOD
+WIOD.full <- read.dta13("1-Intermediate_Processed_Data//wiot_full.dta")
+WIOD <- WIOD.full %>% 
   left_join(id.sectors, by=c('row_item'='WIOD_sector')) %>%
   mutate(row_item = final_sector) %>%
   select(-final_sector) %>%
