@@ -53,10 +53,11 @@ local y=101
 replace sector=sector+100
 foreach v of local vari{
 rename `v' io`y'
+format io`y' %25.24f
 local y=`y'+1
 }
 order year country sector io*, first
-
+ 
 export excel using "2-Final_Data\io_allyears.xlsx" ///
 	, sheet("year`i'") firstrow(variables) sheetmodify
 }	
