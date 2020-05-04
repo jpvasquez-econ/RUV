@@ -3,7 +3,6 @@ capture log close
 clear all
 set more off
 set linesize 150
-log using 3-Log_Files\1-exposures.log, replace
 cd ..
 /*
 ***********************************************************************************************************************************************
@@ -135,4 +134,3 @@ collapse (sum) ADH_EXP*  , by(region)
 reg ADH_EXP ADH_EXP_others, r
 predict ADH_EXP_predicted_adh, xb
 save $exposures, replace
-log close

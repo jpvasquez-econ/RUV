@@ -3,7 +3,6 @@ capture log close
 clear all
 set more off
 set linesize 150
-log using 3-Log_Files\0-instrument.log, replace
 
 /*
 ***********************************************************************************************************************************************
@@ -115,4 +114,4 @@ corr delta_M_i delta_M_others
 reg delta_M_i delta_M_others , r
 predict hat_delta_M_i , xb
 save $instrument, replace
-log close
+
