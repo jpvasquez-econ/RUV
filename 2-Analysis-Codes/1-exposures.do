@@ -26,7 +26,7 @@ global va_shares ""1-Data-Codes\2-Final_Data\va_shares_allyears.xlsx""
 global bilat_trade ""1-Data-Codes\2-Final_Data\bilat_matrix_allyears.xlsx""
 global instrument ""2-Analysis-Codes\1-Intermediate_Processed_Data\0-instrument.dta""
 local reference "USA"
-global emp_shares ""2-Analysis-Codes/1-Intermediate_Processed_Data/state_emp_2000.dta""
+global emp_shares ""2-Analysis-Codes/1-Intermediate_Processed_Data/state_emp_share_2000.dta""
 ***********************************************************************************************************************************************
 ***********************************************************************************************************************************************
 ***  	1. VALUE ADDED EXPOSURE (ANALOGOUS TO ADH EXPOSURE) AND THE NET EXPORT (NX) EXPOSURE.
@@ -130,11 +130,17 @@ gen ADH_EXP_predicted= weight_VA* hat_delta_M_i/Y_tot_j
 gen ADH_EXP_others= weight_VA* delta_M_others/Y_tot_j
 
 merge 1:1 region sector using $emp_shares
-hola
-replace share_emp=0 if _m!=3 & state!="alaska" & state!="hawaii"
+assert _m==3
+gen ADH_EXP_predicted_adh= share_adh* hat_delta_M_i/Y_tot_j
+gen ADH_EXP_predicted_bls= share_bls* hat_delta_M_i/Y_tot_j
 
-collapse (sum) ADH_EXP*  , by(region) 
-
-reg ADH_EXP ADH_EXP_others, r
-predict ADH_EXP_predicted_adh, xb
+collapse (sum) ADH_EXP_predict*  , by(region) 
+*reg ADH_EXP ADH_EXP_others, r
+*predict ADH_EXP_predicted_adh, xb
+*COMPARING 
+corr ADH*
+scatter ADH_EXP_predicted ADH_EXP_predicted_adh
+scatter ADH_EXP_predicted ADH_EXP_predicted_bls
+*the ADH weights could be weird because the sectors are sic4. Need to correct
+drop ADH_EXP_predicted_adh
 save $exposures, replace
