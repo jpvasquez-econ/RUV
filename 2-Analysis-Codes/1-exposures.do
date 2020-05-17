@@ -26,7 +26,7 @@ global va_shares ""1-Data-Codes\2-Final_Data\va_shares_allyears.xlsx""
 global bilat_trade ""1-Data-Codes\2-Final_Data\bilat_matrix_allyears.xlsx""
 global instrument ""2-Analysis-Codes\1-Intermediate_Processed_Data\0-instrument.dta""
 local reference "USA"
-
+global emp_shares ""2-Analysis-Codes/1-Intermediate_Processed_Data/state_emp_2000.dta""
 ***********************************************************************************************************************************************
 ***********************************************************************************************************************************************
 ***  	1. VALUE ADDED EXPOSURE (ANALOGOUS TO ADH EXPOSURE) AND THE NET EXPORT (NX) EXPOSURE.
@@ -128,6 +128,10 @@ gen ADH_EXP= weight_VA* delta_M_i/Y_tot_j
 * ADH EXPOSURE (OTHERS)
 gen ADH_EXP_predicted= weight_VA* hat_delta_M_i/Y_tot_j
 gen ADH_EXP_others= weight_VA* delta_M_others/Y_tot_j
+
+merge 1:1 region sector using $emp_shares
+hola
+replace share_emp=0 if _m!=3 & state!="alaska" & state!="hawaii"
 
 collapse (sum) ADH_EXP*  , by(region) 
 
