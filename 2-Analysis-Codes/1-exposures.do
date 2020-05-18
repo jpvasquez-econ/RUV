@@ -100,11 +100,6 @@ append using `state_`i''
 merge 1:1 sector region state using `va_sh'
 asser _m==3
 drop _m
-keep if sector<=12
-* IMPORT EXPOSURE (adh)
-merge m:1 sector using ${instrument}
-asser _m==3
-drop _m
 ***
 *** NEW VARIABLES
 ***
@@ -114,12 +109,21 @@ bys region: egen Y_i=total(Y)
 gen weight_VA=VA_ij/VA_i
 *tot sales per sector
 bys sector: egen Y_tot_j=total(Y)
-preserve
-collapse Y_tot_j , by(sector)
-rename Y_tot Y_tot_US_s
-tempfile Y_US_`j'
-save `Y_US_`j'', replace
-restore
+keep if sector<=12
+
+* IMPORT EXPOSURE (adh)
+merge m:1 sector using ${instrument}
+asser _m==3
+drop _m
+***
+*** NEW VARIABLES new
+***
+gen VA_ij_man=va_sh*Y
+bys region: egen VA_i_man=total(VA_ij)
+bys region: egen Y_i_man=total(Y)
+gen weight_VA_man=VA_ij_man/VA_i_man
+*tot sales per sector
+bys sector: egen Y_tot_j_man=total(Y)
 ***********************************************************************************************************************************************
 ***  	EXPOSURES
 ***********************************************************************************************************************************************
@@ -127,10 +131,14 @@ restore
 gen ADH_EXP= weight_VA* delta_M_i/Y_tot_j
 * ADH EXPOSURE (OTHERS)
 gen ADH_EXP_predicted= weight_VA* hat_delta_M_i/Y_tot_j
+gen ADH_EXP_predicted_man= weight_VA_man* hat_delta_M_i/Y_tot_j_man
+
 gen ADH_EXP_others= weight_VA* delta_M_others/Y_tot_j
 
 merge 1:1 region sector using $emp_shares
 assert _m==3
+
+
 gen ADH_EXP_predicted_adh= share_adh* hat_delta_M_i/Y_tot_j
 gen ADH_EXP_predicted_bls= share_bls* hat_delta_M_i/Y_tot_j
 
@@ -142,5 +150,5 @@ corr ADH*
 scatter ADH_EXP_predicted ADH_EXP_predicted_adh
 scatter ADH_EXP_predicted ADH_EXP_predicted_bls
 *the ADH weights could be weird because the sectors are sic4. Need to correct
-drop ADH_EXP_predicted_adh
+drop ADH_EXP_predicted_adh ADH_EXP_predicted_man
 save $exposures, replace
