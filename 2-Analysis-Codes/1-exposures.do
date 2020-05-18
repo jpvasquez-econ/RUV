@@ -130,25 +130,26 @@ bys sector: egen Y_tot_j_man=total(Y)
 * ADH EXPOSURE (before summing across sectors)
 gen ADH_EXP= weight_VA* delta_M_i/Y_tot_j
 * ADH EXPOSURE (OTHERS)
-gen ADH_EXP_predicted= weight_VA* hat_delta_M_i/Y_tot_j
-gen ADH_EXP_predicted_man= weight_VA_man* hat_delta_M_i/Y_tot_j_man
 
-gen ADH_EXP_others= weight_VA* delta_M_others/Y_tot_j
+gen ADH_EXP_pred_nocons= weight_VA* hat_delta_M_i_nocons/Y_tot_j
+gen ADH_EXP_pred= weight_VA* hat_delta_M_i/Y_tot_j
+*gen ADH_EXP_predicted_man= weight_VA_man* hat_delta_M_i/Y_tot_j_man
+*gen ADH_EXP_others= weight_VA* delta_M_others/Y_tot_j
 
 merge 1:1 region sector using $emp_shares
 assert _m==3
 
 
-gen ADH_EXP_predicted_adh= share_adh* hat_delta_M_i/Y_tot_j
-gen ADH_EXP_predicted_bls= share_bls* hat_delta_M_i/Y_tot_j
+*gen ADH_EXP_predicted_adh= share_adh* hat_delta_M_i/Y_tot_j
+gen ADH_EXP_pred_bls_nocons= share_bls* hat_delta_M_i_nocons/Y_tot_j
+gen ADH_EXP_pred_bls= share_bls* hat_delta_M_i/Y_tot_j
 
-collapse (sum) ADH_EXP_predict*  , by(region) 
+collapse (sum) ADH_EXP_pred*  , by(region) 
 *reg ADH_EXP ADH_EXP_others, r
 *predict ADH_EXP_predicted_adh, xb
 *COMPARING 
 corr ADH*
-scatter ADH_EXP_predicted ADH_EXP_predicted_adh
-scatter ADH_EXP_predicted ADH_EXP_predicted_bls
 *the ADH weights could be weird because the sectors are sic4. Need to correct
-drop ADH_EXP_predicted_adh ADH_EXP_predicted_man
+*drop ADH_EXP_predicted_adh ADH_EXP_predicted_man
+order region ADH_EXP_pred_nocons ADH_EXP_pred ADH_EXP_pred_bls_nocons ADH_EXP_pred_bls
 save $exposures, replace

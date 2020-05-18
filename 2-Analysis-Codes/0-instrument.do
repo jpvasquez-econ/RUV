@@ -40,6 +40,7 @@ global wiod ""1-Data-Codes\1-Intermediate_Processed_Data\WIOD_countries.dta""
 ***********************************************************************************************************************************************
 ** IN THE ROWS WE HAVE THE SELLERS. IN THE COLUMNS THE BUYERS
 use $wiod, clear
+
 keep if year==2000 | year==2007
 keep year importer* sector value_CHN
 
@@ -111,7 +112,10 @@ label var delta_M_i "$\Delta M$ i"
 keep importer* sector delta_M* M_2000*
 keep if sector<=12
 corr delta_M_i delta_M_others 
-reg delta_M_i delta_M_others , r
+reg delta_M_i delta_M_others , r nocons
+predict hat_delta_M_i_nocons , xb
+reg delta_M_i delta_M_others , r 
 predict hat_delta_M_i , xb
+
 save $instrument, replace
 
