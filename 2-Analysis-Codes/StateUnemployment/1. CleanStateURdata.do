@@ -31,10 +31,6 @@ jointUR.dta */
 
 clear all
 
-* Call the directory
-
-cd "C:\Dropbox\NK trade\StateUnemployment"
-
 * Import data on state unemployment
 
 import excel DataStateUR.xlsx, firstrow sheet(Monthly) clear
@@ -188,6 +184,22 @@ replace statelong = subinstr(statelong," ","",.)
 gen UP=U/Population*100
 drop FIPS Population LFP E ER U
 
+********************************************************************************
+*** QUESTION: is UR the same as URdata in the dataUR.dta file?
+********************************************************************************
+preserve
+
+merge 1:1 statelong Year using dataUR.dta
+keep if _m==3
+gen diff=abs(UR/URdata-1)
+summ diff
+*ANSWER: THERE ARE SOME VERY SMALL DIFFERENCES BETWEEN THE TWO UR
+
+restore
+********************************************************************************
+********************************************************************************
+********************************************************************************
+
 * Save
 
 save dataMore.dta, replace
@@ -253,6 +265,9 @@ drop _merge
 merge 1:1 statelong Year using dataMore
 drop if _merge==1
 drop _merge
+********************************************************************************
+*** QUESTION: why dropping URdata constructed in dataUR.dta? 
+********************************************************************************
 drop URdata
 
 * Merge with exposure

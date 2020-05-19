@@ -22,10 +22,6 @@ tempX.dta */
 
 clear all
 
-* Set the directory
-
-cd "C:\Dropbox\NK trade\StateUnemployment"
-
 * Call dataset
 
 use jointUR.dta, clear
@@ -39,6 +35,9 @@ foreach var of varlist U* L* {
 	bysort State: gen `var'1=`var' if Year==2000
 	by State: egen `var'first=total(`var'1)
 	gen `var'diff=`var'-`var'first
+********************************************************************************
+*** QUESTION: why 10/7 for all years? it is weird except for 2007
+********************************************************************************	
 	gen `var'dc=`var'diff*10/7
 }
 
@@ -51,7 +50,6 @@ xtset statecode Year
 * Run some rolling regressions to obtain coefficient on exposure
 
 * First run them on the data
-
 preserve
 rolling2 _b _se, window(3) clear onepanel: regress UPdc Exposure
 gen Year=(start+end)/2
@@ -60,6 +58,19 @@ rename _se_Exposure SEData
 keep Year BetaData SEData
 save temp1.dta,replace
 restore
+
+********************************************************************************
+*** QUESTION: I'm not sure if I understand the rolling thing... let me check
+********************************************************************************
+*OK, it does the same as the lines below but it saves the coeffs and SE
+forvalue i=2002/2011{
+local start=`i'-2
+local end=`i'
+regress UPdc Exposure if Year>=`start' & Year<=`end'
+}
+********************************************************************************
+********************************************************************************
+********************************************************************************
 
 * Then run them on the model
 
