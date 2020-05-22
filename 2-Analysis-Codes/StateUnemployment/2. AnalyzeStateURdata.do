@@ -96,11 +96,10 @@ gen BetaData_up=BetaData+1.65*SEData
 gen BetaData_lo=BetaData-1.65*SEData
 
 * Plot
+hola
 
 twoway (line BetaData Year, lcolor(blue) lpattern(solid)) ///
-	   (rarea BetaData_up BetaData_lo Year, color(blue%10)) ///
-       (line BetaModel Year, lcolor(red) lpattern(solid)) ///
-	   (rarea BetaModel_up BetaModel_lo Year, color(red%10)), ///
+	   (line BetaModel Year, lcolor(red) lpattern(solid)) , ///
 xtitle("Year") xlabel(2001(1)2010) ///
 ytitle("Coefficient on Exposure") ///
 title("Coefficient on Exposure for Unemployment") ///
@@ -174,9 +173,7 @@ gen BetaData_lo=BetaData-1.65*SEData
 * Plot
 
 twoway (line BetaData Year, lcolor(blue) lpattern(solid)) ///
-	   (rarea BetaData_up BetaData_lo Year, color(blue%10)) ///
-       (line BetaModel Year, lcolor(red) lpattern(solid)) ///
-	   (rarea BetaModel_up BetaModel_lo Year, color(red%10)), ///
+       (line BetaModel Year, lcolor(red) lpattern(solid)), ///
 xtitle("Year") xlabel(2001(1)2010) ///
 ytitle("Coefficient on Exposure") ///
 title("Coefficient on Exposure for LFP") ///
