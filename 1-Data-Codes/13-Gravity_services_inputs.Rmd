@@ -1,0 +1,339 @@
+---
+title: "Inputs for gravity system in services"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+This code generates the inputs of the gravity system (before solving the system).
+
+## Input files
+
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `1-Intermediate_Processed_Data/country_country_step_.csv`
+4. `1-Intermediate_Processed_Data/data_services.csv`
+5. Coefficients from `Country_Gravity_WIOD`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data/matrix_B_.csv`
+2. `1-Intermediate_Processed_Data/vector_lambda_.csv`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Theory
+
+Start with the standard gravity equation: 
+
+$$X_{ij}=\left(\frac{w_{i}\tau_{ij}}{P_{j}}\right)^{-\varepsilon}X_{j},$$
+
+where $P_{j}^{-\varepsilon}=\sum_{i}\left(w_{i}\tau_{ij}\right)^{-\varepsilon}$. But $\sum_{j}X_{ij}=Y_{i}$ and hence $\sum_{j}\left(\frac{w_{i}\tau_{ij}}{P_{j}} \right)^{-\varepsilon}X_{j}=Y_{i}.$ This implies $w_{i}^{-\varepsilon} \Pi_{i}^{-\varepsilon}=Y_{i}$, where $\Pi_{i}^{-\varepsilon}= \sum_{j} \tau_{ij}^{ -\varepsilon}P_{j}^{\varepsilon}X_{j}$. Hence we have:
+
+$$X_{ij}=\frac{\tau_{ij}^{-\varepsilon}}{\left(\Pi_{i}P_{j}\right)^{-\varepsilon}}Y_{i}X_{j}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j},$$
+
+where $\tilde{P}_{j}\equiv P_{j}^{-\varepsilon}$ and $\tilde{\Pi}_{i}\equiv \Pi_{i}^{-\varepsilon}$, and $\tilde{\tau}_{ij}\equiv\tau_{ij}^{-\varepsilon}$. From WIOD we have $X_{ij}$ for some pairs. Define the set $S_{j}$ such that we know $X_{ij}$ whenever $i\in S_{j}$. Letting 
+$$X_{S_{j},j}\equiv\sum_{i\in S_{j}}X_{ij}, \quad\lambda_{j}\equiv1-X_{S_{j},j}/X_{j}, \quad X_{i,S_{i}^{*}}=\sum_{j\in S_{i}^{*}}X_{ij}, \quad\lambda_{i}^{*}\equiv1-X_{i,S_{i}^{*}}/Y_{i}, $$
+the full system becomes:
+
+$$
+\tilde{P}_{j}  =  \sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i}\quad j\in US 
+$$
+
+$$
+\tilde{\Pi}_{i}  = \sum_{j}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}\quad i\in US 
+$$
+
+$$
+\lambda_{j}\tilde{P}_{j} =  \sum_{i\notin S_{j}}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i}\quad j\notin US 
+$$
+
+$$
+\lambda_{i}^{*}\tilde{\Pi}_{i}  =  \sum_{j\notin S_{i}^{*}}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}\quad i\notin US
+$$
+
+Define $P_{s}=(\tilde{P}_{1},...,\tilde{P}_{50})'$ for the states,
+$P_{c}=(\tilde{P}_{51},...,\tilde{P}_{87})'$ for the countries. Similarly
+for $\Pi_{s}$, $\Pi_{c}$,$\lambda_{c}$, and $\lambda_{c}^{*}$.
+Define $\lambda=\left(1_{1\times50},\lambda_{c},1_{1\times50},\lambda_{c}^{*}\right)'$. Define $S=\left(P_{s},P_{c},\Pi_{s},\Pi_{c}\right)'$, and with
+some abuse of notation $S^{-1}=\left(P_{s}^{-1},P_{c}^{-1},\Pi_{s}^{-1},\Pi_{c}^{-1}\right)'$. Define $\left(\mathcal{T} Y\right)_{ss}$ as follows:
+
+$$ \boldsymbol{\left(\mathcal{T} Y\right)_{ss}}=\left(\begin{array}{ccc}
+\tilde{\tau}_{s_{1}s_{1}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{1}}Y_{s_{k}}\\
+\vdots & \ddots & \vdots\\
+\tilde{\tau}_{s_{1}s_{k}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{k}}Y_{s_{k}}
+\end{array}\right), $$
+
+and define , $\left(\mathcal{T} Y\right)_{sc} \,, \left(\mathcal{T} Y\right)_{cs}$,$\left(\mathcal{T} X\right)_{ss}$,
+$\left(\mathcal{T} X\right)_{sc} \,, \left(\mathcal{T} X\right)_{cs}$ analogously. The full system can be written
+as:
+
+$$ \lambda\circ S=\left(\begin{array}{cccc}
+0 & 0 & \left(\mathcal{T} Y\right)_{ss} & \left(\mathcal{T} Y\right)_{sc}\\
+0 & 0 & \left(\mathcal{T} Y\right)_{cs} & 0\\
+\left(\mathcal{T} X\right)_{ss} & \left(\mathcal{T} X\right)_{sc} & 0 & 0\\
+\left(\mathcal{T} X\right)_{cs} & 0 & 0 & 0
+\end{array}\right)\cdot S^{-1}, $$
+
+or as:
+$$ \lambda\circ S=B\cdot S^{-1}, $$
+
+where $\circ$ is the element-by-element product and $B$ is the big matrix. Given $\left\{ X_{j}\right\}$  and $\left\{ Y_{i}\right\}$  and $\left\{ \tilde{\tau}_{ij}\right\}$ (more on the computation of $\tilde{\tau}_{ij}$ below) ,  we can get $\left\{ \tilde{P}_{j}\right\}$  and $\left\{ \tilde{\Pi}_{i}\right\}$. The solution for $\left\{ \tilde{P}_{j}, \tilde{\Pi}_{i} \right\}$ is unique up to a constant. This indeterminacy requires a normalization. We thus impose $\tilde{P}_{1}=100$. Then we compute $\left\{ X_{ij}\right\}$  from $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}.$$
+
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# OPTIONS AND LIBRARIES
+options( scipen=100 );
+# libraries
+remove(list = ls())
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'readstata13', 'nleqslv', 'haven', 'tidyverse', 'optimx', 'optimization',
+           'optimx', 'tidyr', 'readxl', 'Rcpp', 'DEoptim', 'parallel');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+# Importing data to R
+
+```{r data, warning=FALSE}
+#COEFFIENTS FROM REGRESSIONS
+own_dummy <- 7.357
+dist_coeff <- -0.376
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#example vs real
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+## real
+# number of countries (n.c) and number of states (n.s)
+regions <- read.csv("0-Raw_Data/regions.csv")
+regions$region <- as.character(regions$region)
+c.names <- regions %>% filter(status=="country", region!="USA")
+c.names <- c.names$region
+
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+
+n.s <- length(s.names)
+n.c <- length(c.names)
+
+wiod_base <- c()
+for (yr in 2000:2007) {
+  wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
+  wiod_base <- rbind(wiod_base, wiot)
+}
+data_gravity_services.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
+
+reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
+n.sec <- length(unique(reclass_sectors$final_sector)) -3
+
+###example
+#WIOD <- read_excel( path='ejemplo.xlsx', sheet='WIOD' )
+#data_gravity_services <- read_excel( path='ejemplo.xlsx', sheet='data_services' )
+## number of countries (n.c) and number of states (n.s)
+#n.c <- 2; 
+#n.s <- 2; 
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+```
+
+# Creating vector $\lambda$ and matrix $B$ for services
+
+```{r inputs, warning=FALSE}
+for (yr in 2000:2007) {
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 1. LOAD DATA
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+wiod <- wiod_base
+## path
+## WIOD US
+us.us.wiod <- wiod %>% 
+  filter( year == yr, sector == n.sec + 1 ) %>% 
+  filter( importer == 'USA' ) %>% 
+  select( USA );
+us.us.wiod <- as.numeric(us.us.wiod[1])
+# US exports
+us.exports.wiod <- wiod %>% 
+  filter( year == yr, sector == n.sec + 1 ) %>% 
+  filter( importer != 'USA' ) %>% 
+  select( USA ); 
+#us.exports.wiod <-sum(us.exports.wiod)
+# US imports
+us.imports.wiod <- wiod %>% 
+  filter( year == yr, sector == n.sec + 1 ) %>% 
+  filter( importer == 'USA' ) %>% 
+  select( -year, -USA, -sector, -importer) 
+#us.imports.wiod <-sum(us.imports.wiod)
+## WIOD
+wiod <- wiod_base %>% 
+  filter( year == yr, sector == n.sec + 1 ) %>% 
+  filter( importer != 'USA' ) %>% 
+  select( -year, -USA, -sector, -importer  ) 
+## Gravity data csv format with comma as the separator
+data_gravity_services <- data_gravity_services.base %>% 
+  filter( year == yr ) %>% 
+  select( -year ) %>% 
+  mutate( iso_o = as.character(iso_o), iso_d = as.character(iso_d) ) %>% 
+  mutate( len_o = ifelse(nchar(iso_o)<4, 'COUNTRY', 'STATE'), 
+          len_d = ifelse(nchar(iso_d)<4, 'COUNTRY', 'STATE') )
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 2. ID for STATES AND COUNTRIES
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# States
+id.states <- data_gravity_services %>% 
+  filter( len_o == 'STATE' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id = row_number() ) %>% 
+  rename( region=iso_o ) %>% 
+  select( id, region )
+# Countries
+id.countries <- data_gravity_services %>% 
+  filter( len_o == 'COUNTRY' ) %>% 
+  select( iso_o ) %>% 
+  distinct( iso_o ) %>% 
+  arrange( iso_o ) %>% 
+  mutate( id = n.s + row_number() ) %>% 
+  rename( region = iso_o ) %>% 
+  select( id, region )
+# Total
+id.total <- rbind( id.states, id.countries )
+#t(id.total)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 3. DISTANCES, PRODUCTION AND EXPENDITURE
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+##
+## 3.1. DISTANCE MATRIX
+##
+dist.matrix <- data_gravity_services %>% 
+  select( iso_o, iso_d, dist ) %>% 
+  left_join( y = id.total, by=c('iso_o'='region') ) %>% 
+  rename( id_o = id ) %>% 
+  left_join( y = id.total, by=c('iso_d'='region') ) %>% 
+  rename( id_d = id ) %>% 
+  select( id_o, id_d, dist ) %>% 
+  arrange( id_o, id_d ) %>% 
+  spread( key = id_d, value = dist )
+dist.matrix <- as.matrix( dist.matrix[,2:(n.c+n.s+1)] )
+
+#Phis (taus)
+#we use the coefficients from Country_Gravity_WIOD.
+phi <- diag(x = own_dummy, n.c+n.s, n.c+n.s)
+phi <- exp(phi)
+phi <- phi*dist.matrix^dist_coeff
+dist.matrix <- phi
+
+##
+## 3.2. GDP VECTOR
+##
+gdp.vector <- data_gravity_services %>% 
+  select( iso_o, R_i ) %>% 
+  distinct( iso_o, .keep_all=TRUE ) %>% 
+  left_join( y = id.total, by=c('iso_o'='region') ) %>% 
+  select( id, R_i ) %>% 
+  arrange( id );
+gdp.vector <- as.vector( gdp.vector$R_i )
+##
+## 3.3. EXPENDITURE VECTOR
+##
+exp.vector <- data_gravity_services %>% 
+  select( iso_d, E_j ) %>% 
+  distinct( iso_d, .keep_all=TRUE ) %>% 
+  left_join( y = id.total, by=c('iso_d'='region') ) %>% 
+  select( id, E_j ) %>% 
+  arrange( id )
+exp.vector <- as.vector( exp.vector$E_j )
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 4. VECTOR LAMBDA AND MATRIX B
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+##
+## 4.1 Matrices E and R (repeat gdp and expenditure vectors in ns+nc rows)
+##
+
+mat.Y <- matrix( data=rep(gdp.vector, (n.s + n.c)), nrow=(n.s + n.c), byrow=TRUE )
+mat.X <- matrix( data=rep(exp.vector, (n.s + n.c)), nrow=(n.s + n.c), byrow=TRUE )
+
+##
+## 4.2 Submatrices
+##
+
+##phi*Y submatrices
+phi.Y.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.Y[(1:n.s), (1:n.s)]
+phi.Y.sc <- dist.matrix[(1:n.s), ((n.s+1):(n.s+n.c))] * mat.Y[(1:n.s), ((n.s+1):(n.s+n.c))]
+phi.Y.cs <- dist.matrix[((n.s+1):(n.s+n.c)), (1:n.s)] * mat.Y[((n.s+1):(n.s+n.c)), (1:n.s)]
+phi.Y.cc <- dist.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))] * 
+  mat.Y[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))]
+## phi*X submatrices
+phi.X.ss <- dist.matrix[(1:n.s), (1:n.s)] * mat.X[(1:n.s), (1:n.s)]
+phi.X.sc <- dist.matrix[(1:n.s), ((n.s+1):(n.s+n.c))] * mat.X[(1:n.s), ((n.s+1):(n.s+n.c))]
+phi.X.cs <- dist.matrix[((n.s+1):(n.s+n.c)), (1:n.s)] * mat.X[((n.s+1):(n.s+n.c)), (1:n.s)]
+phi.X.cc <- dist.matrix[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))] * 
+  mat.X[((n.s+1):(n.s+n.c)), ((n.s+1):(n.s+n.c))]
+
+##
+## 4.3 WIOD matrix (d,o)
+##
+wiod.matrix <- as.matrix( wiod )
+
+##
+## 4.4 lambda vector
+##
+
+## imports and exports
+imports.from.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=1, FUN=sum) )
+exports.to.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=2, FUN=sum) )
+## shares of imports and exports of countries
+X_c <- as.matrix( exp.vector[(n.s + 1):(n.s + n.c)] )
+Y_c <- as.matrix( gdp.vector[(n.s + 1):(n.s + n.c)] )
+## lambdas
+lambda.p <- (X_c-imports.from.countries) / X_c
+lambda.pi <- (Y_c- exports.to.countries) / Y_c
+## lambda vector
+ones.ns <- matrix( data=rep(1, n.s), nrow = n.s, ncol = 1 )
+lambda_vector <- rbind( ones.ns, lambda.p, ones.ns, lambda.pi )
+
+##
+## 4.5 Big zeros matrices
+##
+zeros.nc.nc <- matrix( data = rep(0, n.c*n.c), nrow = n.c, ncol = n.c )
+zeros.big <- matrix( data = rep(0, (n.s + n.c)*(n.s + n.c)), nrow = (n.s + n.c), ncol = (n.s + n.c) )
+
+##
+## 4.6 MATRIX B
+##
+
+## Block for system 10
+block.10 <- rbind( cbind(phi.Y.ss, phi.Y.sc),
+                   cbind(phi.Y.cs, zeros.nc.nc) )
+## Block for system 11
+block.11 <- rbind( cbind(phi.X.ss, phi.X.sc),
+                   cbind(phi.X.cs, zeros.nc.nc) )
+## Relevant matrix
+BIG.MAT <- rbind( cbind(zeros.big, block.10),
+                  cbind(block.11, zeros.big) )
+
+## Saving input matrices for the matlab code
+write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//matrix_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//vector_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
+}
+```
