@@ -1,0 +1,200 @@
+---
+title: "CFS trade flows between US states"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+This code uses CFS plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;   j \in US$, for all manufacturing sectors (all sectors except services and agriculture).
+
+## Input files
+
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `1-Intermediate_Processed_Data/CFS_Xijk.csv`
+4. `1-Intermediate_Processed_Data/country_country_step_.csv`
+
+## Output files
+
+One txt files per year. The root of each file is: `1-Intermediate_Processed_Data/state_cfs_step_.csv`
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'reshape2', 'read_excel', 'readxl');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+# Manufacturing bilateral trade between US states
+
+## Intermediate variables
+
+Using CFS data we construct: $$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}},$$ where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS.
+
+
+##Main variable 
+
+The object of interest is: $$X_{ij,k}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD},$$ where $X_{US,US,k}^{WIOD}$ is the consumption of the US in sector $k$ that is produced in the US, according to WIOD. Note that proportionality implies that $$\sum_{i} \sum_{j} X_{ij,k}=X_{US,US,k}^{WIOD}$$ for each manufacturing sector. 
+
+## Importing datasets to R
+
+```{r data}
+#CFS
+cfs_base <- read.csv("1-Intermediate_Processed_Data//CFS_Xijk.csv")
+#WIOD
+wiod_base <- c()
+for (yr in 2000:2007) {
+  wiod <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
+  wiod_base <- rbind(wiod_base, wiod)
+}
+
+#General parameters
+regions <- read.csv("0-Raw_Data/regions.csv")
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+n.s <- length(s.names)
+
+reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
+n.sec <- length(unique(reclass_sectors$final_sector)) - 3
+
+epsilon <- 0.0001
+```
+
+
+## Calculations
+
+```{r calculations}
+#x_ijk
+
+for (yr in 2000:2007) {
+
+#################################Bases  
+#Aproximation
+c=c(2002, 2007, 2012)
+ap=1000
+for (i in 1:3) {
+  p=yr-c[i]
+  if(abs(p)<ap) {
+    aprox = p
+    ap = abs(p)
+  }
+}
+yr. <- yr-aprox
+
+#CFS
+CFS <- subset(cfs_base, year == yr.)
+CFS <- subset(CFS, select = -year )
+
+
+#WIOD
+wiod <- subset(wiod_base, year == yr)
+wiod <- subset(wiod, select = -year)  
+  
+  
+##########################Construction of intermediate variables    
+# Create data frame
+df <- data.frame(CFS)
+
+# Dimensions of data frame
+n_rows <- dim(df)[1]
+n_columns <- dim(df)[2]
+
+# Sectors
+n_sectors <- length(unique(df$sector))
+
+# Unique sectors
+unique_sectors <- unique(df$sector)
+
+# Create XijkCFS and xijkCFS
+XijkCFS <- df[,3:n_columns]
+sum_hl_XhlkCFS <- numeric(n_sectors)
+for(k in 1:n_sectors) {
+  sum_hl_XhlkCFS[k] <- sum(XijkCFS[df$sector==k,])
+}
+
+
+XijkCFS_1 <- c()
+denominator <- c()
+for (i in 1:n.sec) {
+  denominator <- rbind(denominator,matrix(replicate(n.s*n.s,sum_hl_XhlkCFS[i]), 
+                                         nrow = n.s, ncol = n.s))
+  XijkCFS_1 <- rbind(XijkCFS_1,XijkCFS[df$sector==i,])
+}
+
+# Compute xijkCFS
+xijkCFS <- XijkCFS_1/denominator  
+
+##################################Main variable  
+#X_ijk  
+# Create data frame
+df_wiod <- data.frame(wiod)
+
+# Ignore non-USA exporters (columns)
+df_wiod <- df_wiod %>% select(importer, sector, USA)
+
+#Filter out non-USA importers
+USA_exporter_indices <- df_wiod$importer == "USA"
+
+# Take into account only the first 12 sectors 
+X_USA_USA_k <- df_wiod$USA[USA_exporter_indices]
+X_USA_USA_k <- X_USA_USA_k[1:n.sec]
+
+Xijk <- c()
+for(i in 1:n.sec) {
+  Xijk <- rbind(Xijk, xijkCFS[((i-1)*n.s + 1):(n.s*i),]*X_USA_USA_k[i])
+}
+
+###########################################Check that the following condition holds:
+  
+Xijk$sector <- df$sector[1:(n.sec*n.s)]
+Xijk$importer <- df$importer[1:(n.sec*n.s)]
+Xijk <- Xijk %>% select(importer, sector, everything())
+
+xijkCFS$sector <- df$sector[1:(n.sec*n.s)]
+xijkCFS$importer <- df$importer[1:(n.sec*n.s)]
+xijkCFS <- xijkCFS %>% select(importer, sector, everything())
+
+# Check for all  k
+for(k in 1:n.sec) {
+  if(abs(sum(Xijk[Xijk$sector==k,3:52])/X_USA_USA_k[k] -1)>epsilon) 
+    stop(paste("states' exports to states != US WIOD exports to US for year", yr))
+}
+
+Step2 <- Xijk 
+
+Step2 <- Step2 %>%
+  mutate(year = yr) %>%
+  select(year, importer, sector, everything())
+
+
+#Exporting 
+colnames(Step2)[4:dim(Step2)[2]] = cfs_base$importer[1:n.s]
+
+  #Exporting
+write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
+}
+```
+
