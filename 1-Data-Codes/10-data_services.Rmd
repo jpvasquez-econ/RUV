@@ -1,0 +1,430 @@
+---
+title: "14-data_services"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+  word_document: default
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+# General information
+Step 1
+1. Constructs the data of PRODUCTION OF SERVICES by state
+2. Constructs the data of EXPENDITURE IN SERVICES by state
+3. Merges GDP with Expenditure
+4. Proportionality with WIOD
+
+Step 2
+1. Imports coordinates by county and crosses each county with the others
+2. Calculates distance in km
+3. Renames variables
+4. Merging populations
+5. Applying formula
+
+## Input files
+
+1. `0-Raw_Data/Fips/state_codes.csv`
+2. `0-Raw_Data/Expenditure/SAEXP1_1997_2017_ALL_AREAS_.csv`
+3. `1-Intermediate_Processed_Data/WIOD_countries.csv`
+4. `0-Raw_Data/SAGDP/`
+5. `1-Intermediate_Processed_Data/state_exp_gdp_services.csv`
+6. `0-Raw_Data/Fips/us_states_coordinates_counties.csv`
+7. `1-Intermediate_Processed_Data/country_coordinates.csv`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data/state_exp_gdp_services.csv`
+2. `1-Intermediate_Processed_Data/data_services.csv`
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'read_excel', 'readxl', 'Matrix', 'reshape2', 'geodist');
+# Install libraries in case they are not installed
+#for( i in length(libs)){ 
+#if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+# load library
+lapply( libs, require, character.only=TRUE );
+```
+
+
+## Importing datasets to R
+
+```{r data, warning=FALSE}
+state_code <- read.csv(paste("0-Raw_Data/Fips/state_codes.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+bea_raw <- read.csv(paste("0-Raw_Data/Expenditure/SAEXP1_1997_2017_ALL_AREAS_.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+wiod_countries <- read.csv(paste("1-Intermediate_Processed_Data/WIOD_countries.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+coordinates_counties <- read_excel(paste("0-Raw_Data/Fips/us_states_coordinates_counties.xlsx", sep=""))
+country_coordinates <- read.csv(paste("1-Intermediate_Processed_Data/country_coordinates.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+```
+
+# Step 1
+
+```{r}
+# State codes   
+state_code$state <- gsub(" ", "", state_code$state, fixed = TRUE)
+#state_code1 <- as.vector(state_code$code)
+
+# WIOD
+wiod_countries <- wiod_countries %>% filter(sector==13)
+
+# EXPORTS OF US
+wiod_us_all_exp <- wiod_countries %>%
+  select(year, importer_country, value_USA) %>%
+  group_by(year) %>%
+  mutate(val_ = sum(value_USA)) %>% 
+  ungroup() %>%
+  filter(importer_country == "USA") %>%
+  select(year, val_)
+
+# IMPORTS OF US
+wiod_all_us_imp <- wiod_countries %>%
+  filter(importer_country == "USA")
+wiod_all_us_imp$val_ <- rowSums(wiod_all_us_imp[, 5:dim(wiod_all_us_imp)[2]])  
+wiod_all_us_imp <- wiod_all_us_imp %>% select(year, val_)
+
+#	1. Constructs the data of GDP by state
+
+#  LOOPING OVER STATES   *** 
+#state_code
+all_states <- c()
+for (i in state_code$code) {
+state <- read.csv(paste("0-Raw_Data/SAGDP/SAGDP2N_",i,"_1997_2018.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+state <- state %>% 
+  select(-TableName, -ComponentName, -Unit, -X2018) %>%
+  filter(is.na(Region) == FALSE) %>%
+  mutate(code = i)
+all_states <- rbind(all_states, state)
+}
+colnames(all_states) <- c("GeoFIPS", "GeoName", "Region", "IndustryId", "IndustryClassification", "Description", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "code")  
+
+#  SERVICE SECTORS   ***  
+#  	SECTORS USED AND THEIR MAPPING TO WIOD (indexed by ci)
+
+# 13.	(NAICS XX) Construction (c18); 
+# 14.	(NAICS 42-45) Wholesale and Retail Trade (c19ñc21); 
+# 15.	(NAICS 481-488) Transport Services (c23ñc26);
+# 16.	(NAICS 511ñ518) Information Services (c27); 
+# 17.	(NAICS 521ñ525) Finance and Insurance (c28); 
+# 18.	(NAICS 531-533)  Real Estate (c29ñc30); 
+# 19.	(NAICS 61) Education (c32); 
+# 20.	(NAICS 621ñ624) Health Care (c33); 
+# 21.	(NAICS 721ñ722) Accommodation and Food Services (c22); 
+# 22.	(NAICS 493, 541, 55, 561, 562, 711ñ713, 811-814) Other Services (c34).
+
+all_states <- all_states %>%
+  dplyr::rename(state = GeoName, naics = IndustryClassification) %>%
+  mutate(sector = NA) %>%
+  mutate(sector = ifelse(naics == "23", 13, sector)) %>%
+  mutate(sector = ifelse(naics == "42" | naics == "43" | naics == "44-45", 14, sector)) %>%
+  mutate(sector = ifelse(naics == "481" | naics == "482" | naics == "483" | naics == "484" | naics == "485" | naics == "486" | naics == "487-488, 492", 15, sector)) %>%
+  mutate(sector = ifelse(naics == "511" | naics == "512" | naics == "515, 517" | naics == "518, 519", 16, sector)) %>%
+  mutate(sector = ifelse(naics == "521-522" | naics == "523" | naics == "524" | naics == "525", 17, sector)) %>%
+  mutate(sector = ifelse(naics == "531" | naics == "532-533", 18, sector)) %>%
+  mutate(sector = ifelse(naics == "61", 19, sector)) %>%
+  mutate(sector = ifelse(naics == "621" | naics == "622" | naics == "623" | naics == "624", 20, sector)) %>%
+  mutate(sector = ifelse(naics == "721" | naics == "722", 21, sector)) %>%
+  mutate(sector = ifelse(naics == "493" | naics == "54" | naics == "55" | naics == "561" | naics == "562" | naics == "711-712" | naics == "713" | naics == "81", 22, sector)) %>%
+  filter(is.na(sector) == FALSE) %>%
+  mutate(sector = as.numeric(sector))
+
+#  SETTING FINAL DATA   ***  
+# only sending sector
+all_states <- melt(all_states, id.vars=c("GeoFIPS", "state", "Region", "IndustryId", "naics", "Description", "code", "sector"), variable.name="year", value.name = "revenue")
+
+all_states <- all_states %>%
+  mutate(revenue = as.numeric(revenue)) %>%
+  mutate(revenue = ifelse(is.na(revenue) == TRUE, 0, revenue)) %>%
+  filter(sector >= 13) %>%
+  group_by(state, code, year) %>%
+  mutate(revenue = sum(revenue)) %>%
+  ungroup() %>%
+  distinct(state, code, year, .keep_all = TRUE) %>%
+  select(state, code, year, revenue) %>%
+  arrange(state, code)
+all_states$state <- gsub(" ", "", all_states$state, fixed = TRUE)
+
+
+#	2. Constructs the data of EXPEDITURE by state
+
+# IMPORTING BEA DATA
+# KEEPING AND RENAMING RELEVANT VARIABLES
+# keeping only states
+# making it a number instead of string
+bea_raw$GeoFIPS <- as.numeric(bea_raw$GeoFIPS)
+# dropping regions (leaving only states)
+# dropping DC
+# keeping relevant variables
+bea_raw <- bea_raw %>%
+  filter(GeoFIPS <= 90000 & GeoFIPS != 0) %>%
+  filter(GeoName != "District of Columbia") %>%
+  select(-GeoFIPS, -Region, -TableName, -ComponentName, -Unit, -IndustryClassification) %>%
+  dplyr::rename(state = GeoName)
+colnames(bea_raw) <- c("state", "line", "description", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017")
+
+# KEEPING RELEVANT LINES
+# keeping only services
+bea_raw <- bea_raw %>%
+  filter(line == 13) %>%
+  select(-line, -description) %>%
+  arrange(state)
+bea_raw$state <- gsub(" ", "", bea_raw$state, fixed = TRUE)
+bea_raw <- melt(bea_raw, id.vars=c("state"), variable.name="year", value.name = "expen")
+
+
+#	3. Merging Expenditure with GDP
+bea_raw <- bea_raw %>%
+  left_join(all_states, by=c('year'='year', 'state'='state')) %>%
+  arrange(state, code, year, expen, revenue) %>%
+  select(state, code, year, expen, revenue)
+
+#	4. Proportionality with WIOD
+bea_raw <- bea_raw %>%
+  mutate(year = as.numeric(as.character(year))) %>%
+  filter(year >= 2000 & year <= 2007) %>%
+  group_by(year) %>%
+  mutate(tot_expen = sum(expen)) %>%
+  mutate(tot_revenue = sum(revenue)) %>%
+  ungroup() %>%
+  mutate(sh_expen = expen/tot_expen) %>%
+  mutate(sh_revenue = revenue/tot_revenue) %>%
+  left_join(wiod_all_us_imp, by=c('year'='year')) %>%
+  mutate(expen = sh_expen*val_) %>%
+  select(-val_) %>%
+  left_join(wiod_us_all_exp, by=c('year'='year')) %>%
+  mutate(revenue = sh_revenue*val_) %>%
+  select(-val_) %>%
+  select(state, year, revenue, expen) %>%
+  arrange(year, state)
+  
+#check 
+check <- bea_raw %>%
+  group_by(year) %>%
+  mutate(tot_expen = sum(expen)) %>%
+  mutate(tot_revenue = sum(revenue)) %>%
+  ungroup() %>%
+  distinct(year, .keep_all = TRUE) %>%
+  select(year, tot_expen, tot_revenue)
+round(sum(check$tot_expen - wiod_all_us_imp$val_), 5) == 0
+round(sum(check$tot_revenue - wiod_us_all_exp$val_), 5) == 0
+
+write.table(bea_raw, file = paste("1-Intermediate_Processed_Data/state_exp_gdp_services.csv", sep=""), sep = ",", row.names = FALSE)
+
+```
+
+# Step 2
+
+FORMULA 
+$d_{ij} = (\sum_{r \in i} \sum_{s \in j} (\dfrac{pop_r}{pop_i}) (\dfrac{pop_s}{pop_j}) d_{rs}^\theta)^{1/ \theta}$
+
+```{r}
+state_exp_gdp_services <- read.csv(paste("1-Intermediate_Processed_Data/state_exp_gdp_services.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+#  EXPENDITURE AND GDP AT THE COUNTRY LEVEL   ***  
+# Services consumption
+expen <- wiod_countries %>%
+  filter(importer_country != "USA") %>%
+  dplyr::rename(country = importer_country)
+expen$expen <- rowSums(expen[, 5:dim(expen)[2]])
+expen <- expen %>% select(country, year, expen)
+
+# Services production
+country_gdp_exp_services <- melt(wiod_countries, id.vars=c("year", "importer_country", "sector", "importer"), variable.name="country", value.name = "revenue")
+
+country_gdp_exp_services <- country_gdp_exp_services %>%
+  mutate(country = substr(x=country, start=7, stop=9)) %>%
+  filter(country != "USA") %>%
+  group_by(year, country) %>%
+  mutate(revenue = sum(revenue)) %>%
+  ungroup() %>%
+  distinct(year, country, .keep_all = TRUE) %>%
+  select(country, year, revenue) %>%
+  left_join(expen, by=c('year'='year', 'country'='country'))
+
+#  EXPENDITURE AND GDP   ***  
+# STATES
+revenue1 <- state_exp_gdp_services %>% 
+  filter(year >= 2000) %>%
+  dplyr::rename(iso_o = state, R_i = revenue) %>%
+  select(iso_o, R_i, year)
+expen1 <- state_exp_gdp_services %>% 
+  filter(year >= 2000) %>%
+  dplyr::rename(iso_d = state, E_j = expen) %>%
+  select(iso_d, E_j, year)
+# COUNTRIES
+revenue2 <- country_gdp_exp_services %>% 
+  dplyr::rename(iso_o = country, R_i = revenue) %>%
+  select(iso_o, R_i, year)
+expen2 <- country_gdp_exp_services %>% 
+  dplyr::rename(iso_d = country, E_j = expen) %>%
+  select(iso_d, E_j, year)
+
+revenue <- rbind(revenue1, revenue2)
+expen <- rbind(expen1, expen2)
+
+#	1. Imports coordinates by county and crosses each county with the others
+# States   *** 
+state_0 <- coordinates_counties %>%
+  filter(State != "DC") %>%
+  mutate(code = State) %>%
+  left_join(state_code, by=('code'='code')) %>%
+  mutate(State = state) %>%
+  mutate(state = as.integer(factor(State))) %>%
+  rename(fips = FIPS)
+
+# ISO AND REGION NUMBER
+# COUNTRIES
+country_number <- country_gdp_exp_services %>%
+  distinct(country) %>%
+  dplyr::rename(iso_o = country)
+country_number$state_i <- as.numeric(row.names(country_number)) + 50
+
+# STATES
+state_i <- state_0 %>%
+  distinct(State) %>%
+  dplyr::rename(iso_o = State)
+state_i$state_i <- as.numeric(row.names(state_i))
+# APPENDING COUNTRIES
+state_i <- rbind(state_i, country_number)
+state_j <- state_i %>%
+  dplyr::rename(state_j = state_i, iso_d = iso_o)
+
+# POPULATIONS
+# COUNTRIES
+country_coor <- country_coordinates %>%
+  filter(country.name.original != "United States of America", year == 2010) %>%
+  mutate(city.population = ifelse(country == "IRL" & city == "Cork", 124.391, city.population)) %>%  # missing value
+  mutate(state = as.integer(factor(country)) + 50) %>% ##ojo RoW y RUS
+  mutate(city = ifelse(country == "RoW", paste(country.name.original,city, sep="_"), city)) %>%
+  mutate(city = ifelse(city == "Xinyi" & round(Latitude)==22, "Xinyi2", city)) %>%
+  mutate(country_city = paste(country,city, sep="_")) %>%
+  mutate(fips = as.integer(factor(country_city))) %>%
+  dplyr::rename(pop = city.population) %>%
+  mutate(fips = fips*1000000) %>%
+  mutate(pop = pop/country.population)
+country_pop <- country_coor %>%
+  select(state, fips, pop)
+country_coor <- country_coor %>%
+  select(state, fips,  Latitude, Longitude) %>%
+  dplyr::rename(lat = Latitude, lon = Longitude)
+
+# STATES
+pops_i <- state_0 %>%
+  select(state, fips, Population_2010) %>%
+  dplyr::rename(pop = Population_2010) %>%
+  group_by(state) %>%
+  mutate(tot_pop = sum(pop)) %>%
+  ungroup() %>%
+  mutate(pop = pop/tot_pop) %>%
+  select(-tot_pop)
+# appending countries
+pops_i <- rbind(pops_i, country_pop)
+pops_i <- pops_i %>%
+  dplyr::rename(state_i = state, fips_r_in_i = fips, pop_r_i = pop)
+pops_j <- pops_i %>%
+  dplyr::rename(state_j = state_i, fips_s_in_j = fips_r_in_i, pop_s_j = pop_r_i)
+pops_i <- data.frame(pops_i)
+pops_j <- data.frame(pops_j)
+
+#  COORDINATES   ***   
+cities <- state_0 %>%
+  select(state, fips, Latitude, Longitude, State, County) %>%
+  dplyr::rename(lat = Latitude, lon = Longitude) %>%
+  mutate(lon = as.numeric(substr(x=lon, start=2, stop=10))) %>% 
+  mutate(lon = -lon) %>%
+  #mutate(lon = ifelse( State == "Alaska" & County == "Aleutians West[4]", 178.33881299999999, lon)) %>%	
+  select(-State, -County)
+cities <- rbind(cities, country_coor) 
+colnames(cities) <- c("state_s", "fips_s", "lat_s", "lon_s")
+
+cities_lat_lon <- as.matrix(cities %>% select(lat_s, lon_s))
+cities_no_s <- data.frame(cities)
+colnames(cities_no_s) <- c("state", "fips", "lat", "lon")
+
+#	2. Calculates distance in km
+# generate distances in km between cities
+dist <- geodist (cities_lat_lon, measure = "geodesic")
+dist <- data.frame(dist)
+colnames(dist) <- paste(cities$state_s,cities$fips_s, sep="_")
+dist <- cbind(cities, dist)
+
+dist <- melt(dist, id.vars=c("state_s", "fips_s", "lat_s", "lon_s"), variable.name="state_fips", value.name = "d_rs")
+
+dist <- dist %>%
+  mutate(state = substr(x=state_fips, start=1, stop=2)) %>%
+  mutate(fips = substr(x=state_fips, start=3, stop=15))
+dist$state <- gsub("_", "", dist$state, fixed = TRUE)
+dist$fips <- gsub("_", "", dist$fips, fixed = TRUE)
+dist <- dist %>%
+  mutate(state = as.numeric(state), fips = as.numeric(fips)) %>%
+  arrange(state, state_s, fips, fips_s) %>%
+  select(state, state_s, fips, fips_s, d_rs) 
+
+#	3. Renames variables
+dist <- dist %>%
+  dplyr::rename(state_i = state, state_j = state_s, fips_r_in_i = fips, fips_s_in_j = fips_s)
+
+#	4. Merging populations
+dist <- dist %>%
+  left_join(pops_i, by=c('state_i'='state_i', 'fips_r_in_i'='fips_r_in_i')) %>%
+  left_join(pops_j, by=c('state_j'='state_j', 'fips_s_in_j'='fips_s_in_j'))
+
+#	5. Applying formula
+dist <- dist %>%
+  mutate(theta = -1) %>%
+  mutate(dist = (pop_r_i*pop_s_j*(d_rs^(theta)))) %>%
+  mutate(dist = ifelse(d_rs == 0, 0, dist)) %>%
+  group_by(state_i, state_j) %>%
+  mutate(dist = sum(dist)) %>%
+  ungroup() %>%
+  distinct(state_i, state_j, .keep_all = TRUE) %>%
+  mutate(dist = (dist^(1/theta))) %>%
+  mutate(dist = dist/1000)
+
+# Merging back states
+dist <- dist %>%
+  left_join(state_i, by=c('state_i'='state_i')) %>%
+  left_join(state_j, by=c('state_j'='state_j')) %>%
+  select(iso_o, iso_d, dist) %>%
+  arrange(iso_o, iso_d)
+
+final <- c()
+for (yr in 2000:2007){
+dist$year <- yr  
+final <- rbind(final, dist)  
+}
+
+# Merging EXPENDITURE AND GDP
+final <- final %>%
+  left_join(revenue, by=c('year'='year', 'iso_o'='iso_o')) %>%
+  left_join(expen, by=c('year'='year', 'iso_d'='iso_d')) %>%
+  arrange(year, iso_o, iso_d) %>%
+  select(year, iso_o, iso_d, dist, R_i, E_j) %>%
+  mutate(iso_o =  gsub(" ", "", iso_o, fixed = TRUE)) %>%
+  mutate(iso_d =  gsub(" ", "", iso_d, fixed = TRUE))
+
+
+write.table(final, file = paste("1-Intermediate_Processed_Data/data_services.csv", sep=""), sep = ",", row.names = FALSE)
+
+
+
+
+```
