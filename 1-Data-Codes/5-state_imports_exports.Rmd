@@ -1,0 +1,207 @@
+---
+title: "US state-country trade database construction"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+  word_document: default
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+Takes imports and exports data from census and changes the sectors to final 1-14
+
+## Input files
+
+1. `0-Raw_Data/sectors.csv`
+2. `0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-i.csv`
+3. `0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-i.csv`
+4. `1-Intermediate_Processed_Data//census_exports.csv`
+5. `1-Intermediate_Processed_Data//census_imports.csv`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data//census_exports.csv`
+2. `1-Intermediate_Processed_Data//census_imports.csv`
+3. `1-Intermediate_Processed_Data\state_imports_exports.csv`
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+#Libraries
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+
+# libraries
+#options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'readxl', 'writexl', 'rjson', 'foreign');
+# Install libraries in case they are not installed
+#for( i in length(libs)){ 
+  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+
+## Importing datasets to R
+
+```{r data, warning=FALSE}
+reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+reclass_sectors <- reclass_sectors %>% 
+  filter(is.na(naics) == FALSE) %>%
+  select(final_sector, naics)
+
+#Export data
+base1_e <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-1.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base2_e <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-2.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base3_e <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-3.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base4_e <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-4.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base5_e <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-5.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+
+#Import data
+base1_i <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-1.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base2_i <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-2.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base3_i <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-3.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base4_i <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-4.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base5_i <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-5.csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+
+```
+
+# Unifying .csv files
+
+```{r}
+
+#Unifying data
+base_e <- rbind(base1_e, base2_e, base3_e, base4_e, base5_e)
+base_i <- rbind(base1_i, base2_i, base3_i, base4_i, base5_i)
+
+colnames(base_e) <- c("state", "naics3", "country", "year", "exports")
+colnames(base_i) <- c("state", "naics3", "country", "year", "imports")
+
+base_e <- base_e %>%
+  arrange(year, state) %>%
+  select(year, state, naics3, country, everything())
+base_e$exports <- as.numeric(gsub(",","",base_e$exports))
+base_i <- base_i %>%
+  arrange(year, state) %>%
+  select(year, state, naics3, country, everything())
+base_i$imports <- as.numeric(gsub(",","",base_i$imports))
+
+
+#exporting to .csv
+write.table(base_e, file = paste("1-Intermediate_Processed_Data//census_exports.csv", sep=""), sep = ",", row.names = FALSE)
+write.table(base_i, file = paste("1-Intermediate_Processed_Data//census_imports.csv", sep=""), sep = ",", row.names = FALSE)
+
+```
+
+# Changing sectors
+
+```{r}
+list_countries <- c("Australia", "Austria", "Belgium", "Brazil", "Bulgaria", "Canada", "China", "Cyprus", "Czech Republic", "Denmark", "Estonia", "Finland", "France", "United Kingdom", "Germany", "Greece", "Hungary", "India", "Indonesia", "Ireland", "Italy", "Japan", "Korea, South", "Lithuania", "Mexico", "Netherlands", "Poland", "Portugal", "Romania", "Russia", "Slovakia", "Slovenia", "Spain", "Sweden", "Taiwan", "Turkey", "Rest of world")
+list_codes <- c("AUS" , "AUT" , "BEL" , "BRA", "BGR", "CAN" , "CHN", "CYP", "CZE", "DNK", "EST", "FIN", "FRA", "GBR", "DEU", "GRC", "HUN", "IND", "IDN", "IRL", "ITA", "JPN", "KOR", "LTU", "MEX", "NLD", "POL", "PRT", "ROU", "RUS", "SVK", "SVN", "ESP", "SWE", "TWN", "TUR", "RoW")
+list <- data.frame(cbind(list_countries, list_codes))
+list$list_countries <- as.character(list$list_countries)
+list$list_codes <- as.character(list$list_codes)
+final <- c()
+
+for (type in c("exports", "imports")){
+base <- read.csv(paste("1-Intermediate_Processed_Data//census_", type, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")  
+colnames(base) <- c("year", "state", "naics3", "country", "value") 
+base <- base %>%
+  filter(state!="Dist of Columbia" & state!="Puerto Rico" & state!="US Virgin Islands" & state!="Unknown") %>%
+  filter(country!="APEC - Asia Pacific Economic Co-operation" & country!="ASEAN - Association of Southeast Asian Nations" & country!="Asia" & country!="Australia and Oceania" & country!="Central American Common Market" & country!="Euro Area" & country!="Europe" & country!="European Union" & country!="LAFTA - Latin American Free Trade Association" & country!="NATO (North Atlantic Treaty Organization) Allies" & country!="NICS - Newly Industrialized Countries" & country!="OECD - Organization for Economic Co-operation and Development" & country!="OPEC - Organization of Petroleum Exporting Countries" & country!="North America" & country!="Pacific Rim Countries" & country!="South/Central America" & country!="Twenty Latin American Republics" & country!="US Trade Agreements Partners" & country!="Western Sahara") %>%
+  mutate(country = as.character(country)) %>%
+  mutate(country = ifelse(country %in% list_countries, as.character(country), "Rest of world")) %>%
+  left_join(list, by=c('country'='list_countries')) %>% 
+  dplyr::rename(region = list_codes) %>%
+  select(-country) %>%
+  group_by(year, state, naics3, region) %>%
+  mutate(value = sum(value)) %>%
+  ungroup() %>%
+  distinct(year, state, naics3, region, .keep_all = TRUE)
+if (type == "exports"){
+base <- base %>%
+    dplyr::rename(origin = state) %>%
+    dplyr::rename(destination = region)
+} 
+if (type == "imports"){
+base <- base %>%
+    dplyr::rename(destination = state) %>%
+    dplyr::rename(origin = region)
+}  
+
+#Changing sectors Naics to final: only sending sector
+base <- base %>%
+    filter(naics3 != "All Commodities") %>%
+    mutate(sec_naics = as.numeric(substr(x=naics3, start=1, stop=3))) %>%
+    left_join(reclass_sectors, by=c('sec_naics'='naics')) %>% 
+    dplyr::rename(sector = final_sector) %>%
+    select(-naics3, -sec_naics) %>%
+    filter(is.na(sector) == FALSE) %>%
+    group_by(year, sector, destination, origin) %>%
+    mutate(value = sum(value)) %>%
+    ungroup() %>%
+    distinct(year, sector, destination, origin, .keep_all = TRUE)
+
+if (type == "exports"){
+base <- base %>%
+    mutate(file="i in US, j not in US")
+} 
+if (type =="imports"){
+base <- base %>%
+    mutate(file = "i not in US, j in US")
+}  
+base <- base %>% arrange(file, year, sector, destination)
+base <- base %>% select(origin, year, destination, sector, value, file)
+base$origin <- gsub(" ", "", base$origin, fixed = TRUE)
+base$destination <- gsub(" ", "", base$destination, fixed = TRUE)
+final <- rbind(final, base)  
+}
+
+write.table(final, file = paste("1-Intermediate_Processed_Data/state_imports_exports.csv", sep=""), sep = ",", row.names = FALSE)
+
+#*******************************************************************************************************************
+# 	 SECTORS USED AND THEIR MAPPING TO WIOD (indexed by ci)
+#*******************************************************************************************************************
+# 1.	(NAICS 311ñ312) Food Products, Beverage, and Tobacco Products (c3);
+# 2.	(NAICS 313ñ316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4ñc5);
+# 3.	(NAICS 321ñ323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6ñc7); 
+# 4.	(NAICS 324 , 211-213) Petroleum and Coal Products and mining (c2, c8);
+# 5.	(NAICS 325) Chemical (c9); 
+# 6.	(NAICS 326) Plastics and Rubber Products (c10); 
+# 7.	(NAICS 327) Nonmetallic Mineral Products (c11); 
+# 8.	(NAICS 331ñ332) Primary Metal and Fabricated Metal Products (c12); 
+# 9.	(NAICS 333); Machinery (c13); 
+# 10.	(NAICS 334ñ335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
+# 11.	(NAICS 336) Transportation Equipment (c15); 
+# 12.	(NAICS 337ñ 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
+# 13.	((NAICS XX) Construction (c18); 
+# 14.	(NAICS 42-45) Wholesale and Retail Trade (c19ñc21); 
+# 15.	(NAICS 481-488) Transport Services (c23ñc26);
+# 16.	(NAICS 511ñ518) Information Services (c27); 
+# 17.	(NAICS 521ñ525) Finance and Insurance (c28); 
+# 18.	(NAICS 531-533)  Real Estate (c29ñc30); 
+# 19.	(NAICS 61) Education (c32); 
+# 20.	(NAICS 621ñ624) Health Care (c33); 
+# 21.	(NAICS 721ñ722) Accommodation and Food Services (c22); 
+# 22.	(NAICS 493, 541, 55, 561, 562, 711ñ713, 811-814) Other Services (c34).
+# 23.	(NAICS 111-115) Agriculture (c1).
+
+```
+
+
+
+
