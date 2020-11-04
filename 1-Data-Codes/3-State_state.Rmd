@@ -1,0 +1,462 @@
+---
+title: "3-State_state"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+  word_document: default
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+1) This code creates the CFS base, which contains the state to state trade flow.
+2) This code uses CFS plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;   j \in US$, for all manufacturing sectors (all sectors except services and agriculture).
+
+## Input files
+
+1. `0-Raw_Data/CFS/NAICS to CFS Crosswalk.xlsx`
+2. `0-Raw_Data/CFS/CFS_2012_00A18_with_ann.csv`
+3. `1-Intermediate_Processed_Data/CFSapportionment.csv`
+4. `0-Raw_Data/CFS/CFS2007.xlsx`
+5. `0-Raw_Data/CFS/CFS2002mine.xlsx`
+6. `0-Raw_Data/CFS/CF1200A24.dat`
+7. `0-Raw_Data/Fips/statefips.csv`
+8. `0-Raw_Data/regions.csv`
+9. `0-Raw_Data/sectors.csv`
+10. `1-Intermediate_Processed_Data/CFS_Xijk.csv`
+11. `1-Intermediate_Processed_Data/country_country_step_.csv`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data/CFSapportionment.csv`
+2. `1-Intermediate_Processed_Data/CFS_Xijk.csv`
+3. `1-Intermediate_Processed_Data/state_cfs_step_.csv`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
+# Install libraries in case they are not installed
+#for( i in length(libs)){ 
+#if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+# load library
+lapply( libs, require, character.only=TRUE );
+```
+
+# Task 1
+
+## Importing datasets to R
+
+```{r data, warning=FALSE}
+statefips <- read.csv(paste("0-Raw_Data/Fips/statefips.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+```
+
+The following code associates each commodity code with a NAICS code and then transforms the latter in the 14 desired sector categories.
+It is important to note that each commodity can be associated with more than one NAICS, depending on the industry that that
+commodity was produced in. 
+The code takes CFS 2007 and 2012 for the US, and calculates the proportion of the amount of commodity c associated with
+NAICS n, with respect to the total amount of commodity c. This gives a matrix of (#commodities)x14 for each year. 
+In general, this do file gives a matrix that shows how to redistribute the amount of each commodity into 14 sectors for the US
+for 2002, 2007 and 2012; the matrix for 2002 is the same as the one for 2007. 
+```{r}
+final <- c()
+for (yr in c(2007, 2012)){
+if (yr == 2007){
+# Import CFS data with both NAICS and CFS codes
+base <- read_excel(paste("0-Raw_Data/CFS/NAICS to CFS Crosswalk.xlsx", sep=""))
+# Recode manufacturing as NAICS 3 and destring NAICS code
+base <- base %>%
+  filter(GEOTYPE == 1) %>%
+  dplyr::rename(NAICS2007 = NAICS2002) %>%
+  dplyr::rename(NAICS2007_MEANING = NAICS2002_MEANING) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 == "31-33", "3",NAICS2007)) %>%
+  mutate(NAICS2007 = as.numeric(NAICS2007)) %>%
+  select(NAICS2007, NAICS2007_MEANING, COMM, COMM_MEANING, VAL)
+}
+if (yr == 2012){
+# Import CFS data with both NAICS and CFS codes
+base <- read.csv(paste("0-Raw_Data/CFS//CFS_2012_00A18_with_ann.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+base <- base[(2:dim(base)[1]), ]
+# Recode manufacturing as NAICS 3 and destring NAICS code
+base <- base %>%
+  dplyr::rename(NAICS2012=NAICS.id) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == "31-33", "3",NAICS2012)) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == "4931(CF1)", "4931",NAICS2012)) %>%
+  mutate(NAICS2012 = as.numeric(NAICS2012))
+# Keep just relevant variables, NAICS code, SCTG code and value shipped
+base <- base %>%
+  dplyr::rename(NAICS2012_MEANING = NAICS.display.label) %>%
+  dplyr::rename(COMM = COMM.id) %>%
+  dplyr::rename(COMM_MEANING = COMM.display.label) %>%
+  mutate(VAL = as.numeric(VAL)) %>%
+  select(NAICS2012, NAICS2012_MEANING, COMM, COMM_MEANING, VAL)
+}
+
+# Drop all commodities category and unknown commodity category
+# Also drop superflous NAICS and turn them all into 3 digit numbers
+base <- base %>%
+  mutate(COMM = as.character(COMM)) %>%
+  mutate(COMM = ifelse(COMM == "07-R", "07", COMM)) %>%
+  mutate(COMM = ifelse(COMM == "08-R", "08", COMM)) %>%
+  mutate(COMM = ifelse(COMM == "17-R", "17", COMM)) %>%
+  mutate(COMM = ifelse(COMM == "18-R", "18", COMM)) %>%
+  mutate(COMM = as.numeric(COMM)) %>%
+  filter(COMM != 0 & COMM != 99)
+
+if (yr == 2007){
+base <- base %>%
+  filter(NAICS2007 != 3 & NAICS2007 != 423 & NAICS2007 != 424) %>%
+  filter(NAICS2007 <= 4230 | NAICS2007 >= 4250) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 == 42, 421, NAICS2007)) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 == 4541, 454, NAICS2007)) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 == 45431, 455, NAICS2007)) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 == 4931, 493, NAICS2007)) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 == 5111, 511, NAICS2007)) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 == 551114, 551, NAICS2007)) %>%
+  mutate(NAICS2007 = as.numeric(recode(NAICS2007, '551'="600", '311'="1", '312'="1", '313'="2", '314'="2", '315'="2", '316'="2", '321'="3", '322'="3", '323'="3", '324'="4", '325'="5", '326'="6", '327'="7", '331'="8", '332'="8", '333'="9", '334'="10", '335'="10", '336'="11", '337'="12", '339'="12", '421'="14", '454'="14", '455'="14", '493'="22", '511'="16", '551'="22"))) %>%
+  filter(is.na(NAICS2007)==FALSE) %>%
+  mutate(NAICS2007 = ifelse(NAICS2007 >=13 & NAICS2007 <= 22, 13, NAICS2007)) %>%
+  dplyr::rename(cdp = NAICS2007) 
+}
+
+if (yr == 2012){
+base <- base %>%
+  filter(NAICS2012 != 3 & NAICS2012 != 423 & NAICS2012 != 424) %>%
+  filter(NAICS2012 <= 4230 | NAICS2012 >= 4250) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == 42, 421, NAICS2012)) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == 4541, 454, NAICS2012)) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == 45431, 455, NAICS2012)) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == 4931, 493, NAICS2012)) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == 5111, 511, NAICS2012)) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 == 551114, 551, NAICS2012)) %>%
+  mutate(NAICS2012 = as.numeric(recode(NAICS2012, '551'="600", '311'="1", '312'="1", '313'="2", '314'="2", '315'="2", '316'="2", '321'="3", '322'="3", '323'="3", '324'="4", '325'="5", '326'="6", '327'="7", '331'="8", '332'="8", '333'="9", '334'="10", '335'="10", '336'="11", '337'="12", '339'="12", '421'="14", '454'="14", '455'="14", '493'="22", '511'="16", '551'="22"))) %>%
+  filter(is.na(NAICS2012)==FALSE) %>%
+  mutate(NAICS2012 = ifelse(NAICS2012 >=13 & NAICS2012 <= 22, 13, NAICS2012)) %>%
+  dplyr::rename(cdp = NAICS2012) 
+}
+
+base$cdp <- paste("portion", base$cdp, sep="")  
+base <- base %>%
+  group_by(cdp, COMM) %>% 
+  mutate(VAL = ifelse(is.na(VAL)==TRUE, 0, VAL)) %>%
+  mutate(VAL = sum(VAL)) %>%
+  ungroup() %>%
+  distinct(cdp, COMM, .keep_all = TRUE) %>%
+  select(COMM, cdp, VAL) %>%
+  arrange(COMM, cdp, VAL) %>%
+  group_by(COMM) %>%
+  mutate(totalsent = sum(VAL)) %>%
+  ungroup() %>%
+  mutate(portion = VAL/totalsent) %>%
+  mutate(portion = ifelse(is.na(portion)==TRUE, 0, portion)) %>%
+  select(-VAL, -totalsent)
+
+base <- spread(base, cdp, portion, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+base$year <- yr
+base[is.na(base)==TRUE] <- 0
+
+# APPENDING YEARS
+if (yr==2007){
+base1 <- base   
+base1$year <- 2002
+final <- rbind(final, base1, base)
+}
+if (yr==2012){final <- rbind(final, base)}
+}
+
+final <- final %>% 
+  select(COMM, portion1, portion2, portion3, portion4, portion5, portion6, portion7, portion8, portion9, portion10, portion11, portion12, portion13, year) %>%
+  arrange(year, COMM)
+write.table(final, file = paste("1-Intermediate_Processed_Data/CFSapportionment.csv", sep=""), sep = ",", row.names = FALSE)
+
+
+# * The 22 sectors in CDP are:
+# 
+# * 01) Food, Beverage, and Tobacco Products (NAICS 311-312); 
+# * 02) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (NAICS 313-316);
+# * 03) Wood Products, Paper, Printing, and Related Support Activities (NAICS 321-323); 
+# * 04) Petroleum and Coal Products (NAICS 324); 
+# * 05) Chemical (NAICS 325); 
+# * 06) Plastics and Rubber Products (NAICS 326); 
+# * 07) Nonmetallic Mineral Products (NAICS 327);
+# * 08) Primary Metal and Fabricated Metal Products (NAICS 331-332); 
+# * 09) Machinery (NAICS 333);
+# * 10) Computer and Electronic Products, and Electrical Equipment and Appliance (NAICS 334-335); 
+# * 11) Transportation Equipment (NAICS 336); 
+# * 12) Furniture and Related Products, and Miscellaneous Manufacturing (NAICS 337-339); 
+# * 14) Trade (NAICS 42-45);
+# * 13) Construction (NAICS 23);
+# * 15) Transport Services (NAICS 481-488); 
+# * 16) Information Services (NAICS 511-518);
+# * 17) Finance and Insurance (NAICS 521-525); 
+# * 18) Real Estate (NAICS 531-533); 
+# * 19) Education (NAICS 61); 
+# * 20) Health Care (NAICS 621-624); 
+# * 21) Accommodation and Food Services (NAICS 721-722); 
+# * 22) Other Services (NAICS 493, 541, 55, 561, 562, 711-713, 811-814);
+# *23.	(NAICS 111-115) Agriculture, Forestry, Fishing, and Hunting (c1)
+# *Mining, Quarrying, and Oil and Gas Extraction (c2).
+```
+
+The follwing code assign state-to-state trade flows at the NAICS level. 
+Calculate X_{ij,k}^{CFS} for the 12 manufacturing sectors
+The previous matrix is calculated by applying the proportions of redistribution for each commodity into 13 sectors for the US,
+to each commodity that flows between state origin and state destination.
+```{r}
+CFSapportionment <- read.csv(paste("1-Intermediate_Processed_Data/CFSapportionment.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+final <- c()
+#fips
+list <- statefips$statename
+orig <- statefips %>% 
+  dplyr::rename(orig_state = statefip) %>%
+  dplyr::rename(origin = statename)
+dest <- statefips %>% 
+  dplyr::rename(dest_state = statefip) %>%
+  dplyr::rename(destination = statename) 
+
+for (yr in c(2002, 2007, 2012)){
+# * Import CFS data from original table
+# *"STATE Table 22. Shipment Characteristics by Destination and Two-Digit Commodity for State of Origin: 2002"
+# *"Origin State","Destination State","Code","SCTG (2-Digit)","Value ($mil) 02","Value % 02","Tons (thous) 02","Tons % 02","Ton-miles (mil) 02","Ton-miles % 02","Avg miles 02"  
+# Renaming variables
+if (yr == 2002){
+base <- data.frame(read_excel(paste("0-Raw_Data/CFS/CFS2002mine.xlsx",sep=""), sheet = "sttbl1412281724", skip = 1))
+base <- base %>%
+  dplyr::rename(   origin = Origin.State, destination = Destination.State, commodity = Code, value = Value...mil..02)
+base$origin <- gsub(".", "", base$origin, fixed = TRUE)
+base$destination <- gsub(".", "", base$destination, fixed = TRUE)
+base <- base %>%
+  filter(origin %in% list & destination %in% list) %>%
+  mutate(value = as.numeric(value))
+}
+if (yr == 2007){
+base <- read_excel(paste("0-Raw_Data/CFS/CFS2007.xlsx", sep=""), sheet = "CF0700A22")
+base <- base %>%
+  dplyr::rename(origin = GEOGRAPHY, destination = DDESTGEO_MEANING, commodity = COMM, value = VAL) %>%
+  filter(origin %in% list & destination %in% list)
+}
+if (yr == 2012){
+base <- read.csv(paste("0-Raw_Data/CFS/CF1200A24.csv", sep=""), header = TRUE, sep = ",", dec = ".")  
+base <- base %>%
+  dplyr::rename(origin = geo_ttl, destination = ddestgeo_ttl, commodity = comm, value = val) %>%
+  filter(origin %in% list & destination %in% list)
+}
+#Convert origin/dest to fips codes  
+base <- base %>%
+  select(origin, destination, value, commodity) %>%
+  filter(origin != "United States" & origin != "Total" & origin != "District of Columbia") %>%
+  filter(destination != "United States" & destination != "Total" & destination != "District of Columbia") %>%
+  mutate(commodity = as.character(commodity))
+base$origin <- gsub(" ", "", base$origin, fixed = TRUE)
+base$destination <- gsub(" ", "", base$destination, fixed = TRUE)
+base <- base %>%
+  left_join(statefips, by=c('origin'='statename')) %>% 
+  dplyr::rename(origin_fip=statefip) %>%
+  left_join(statefips, by=c('destination'='statename')) %>% 
+  dplyr::rename(destination_fip=statefip)
+
+# Get two digit codes
+base <- base %>% 
+  mutate(code= as.numeric(substr(x=commodity, start=1, stop=2))) %>%
+  select(origin, destination, code, value) %>%
+  dplyr::rename(COMM = code) %>%
+  filter(COMM != 99 & COMM != 0) %>% #takes out NA as well
+  mutate(year = yr) %>%
+  left_join(CFSapportionment, by=c('COMM'='COMM', 'year'='year'))
+base <- melt(base, id.vars=c("origin", "destination", "COMM", "value", "year"), variable.name="portion", value.name = "portion_value")
+# MATRIX
+base <- base %>%
+  mutate(value = ifelse(is.na(value) == TRUE, 0, value)) %>%
+  mutate(portion_value = portion_value * value) %>%
+  select(-value, -COMM) %>%
+  group_by(origin, destination, year, portion) %>%
+  mutate(portion_value = sum(portion_value)) %>%
+  ungroup() %>%
+  distinct(origin, destination, year, portion, .keep_all = TRUE) %>%
+  mutate(sector = as.numeric(substr(x=portion, start=8, stop=9))) %>%
+  select(-portion) %>%
+  mutate(origin = paste("trade",origin, sep=""))
+base <- spread(base, origin, portion_value, fill = 0, convert = TRUE,  drop = TRUE, sep = NULL)
+base <- base %>%
+  arrange(sector, destination) %>%
+  dplyr::rename(importer = destination) %>%
+  select(year, everything())
+
+# APPENDING YEARS
+final <- rbind(final, base)
+}
+
+write.table(final, file = paste("1-Intermediate_Processed_Data/CFS_Xijk.csv", sep=""), sep = ",", row.names = FALSE)
+
+
+```
+
+# Task 2
+
+# Manufacturing bilateral trade between US states
+
+## Intermediate variables
+
+Using CFS data we construct: $$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}},$$ where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS.
+
+
+##Main variable 
+
+The object of interest is: $$X_{ij,k}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD},$$ where $X_{US,US,k}^{WIOD}$ is the consumption of the US in sector $k$ that is produced in the US, according to WIOD. Note that proportionality implies that $$\sum_{i} \sum_{j} X_{ij,k}=X_{US,US,k}^{WIOD}$$ for each manufacturing sector. 
+
+## Importing datasets to R
+
+```{r}
+#CFS
+cfs_base <- read.csv("1-Intermediate_Processed_Data//CFS_Xijk.csv")
+#WIOD
+wiod_base <- c()
+for (yr in 2000:2007) {
+  wiod <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
+  wiod_base <- rbind(wiod_base, wiod)
+}
+
+#General parameters
+regions <- read.csv("0-Raw_Data/regions.csv")
+s.names <- regions %>% filter(status=="state") 
+s.names <- s.names$region
+n.s <- length(s.names)
+
+reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
+n.sec <- length(unique(reclass_sectors$final_sector)) - 3
+
+epsilon <- 0.0001
+```
+
+
+## Calculations
+
+```{r calculations}
+#x_ijk
+
+for (yr in 2000:2007) {
+
+#################################Bases  
+#Aproximation
+c=c(2002, 2007, 2012)
+ap=1000
+for (i in 1:3) {
+  p=yr-c[i]
+  if(abs(p)<ap) {
+    aprox = p
+    ap = abs(p)
+  }
+}
+yr. <- yr-aprox
+
+#CFS
+CFS <- subset(cfs_base, year == yr.)
+CFS <- subset(CFS, select = -year )
+
+
+#WIOD
+wiod <- subset(wiod_base, year == yr)
+wiod <- subset(wiod, select = -year)  
+  
+  
+##########################Construction of intermediate variables    
+# Create data frame
+df <- data.frame(CFS)
+
+# Dimensions of data frame
+n_rows <- dim(df)[1]
+n_columns <- dim(df)[2]
+
+# Sectors
+n_sectors <- length(unique(df$sector))
+
+# Unique sectors
+unique_sectors <- unique(df$sector)
+
+# Create XijkCFS and xijkCFS
+XijkCFS <- df[,3:n_columns]
+sum_hl_XhlkCFS <- numeric(n_sectors)
+for(k in 1:n_sectors) {
+  sum_hl_XhlkCFS[k] <- sum(XijkCFS[df$sector==k,])
+}
+
+
+XijkCFS_1 <- c()
+denominator <- c()
+for (i in 1:n.sec) {
+  denominator <- rbind(denominator,matrix(replicate(n.s*n.s,sum_hl_XhlkCFS[i]), 
+                                         nrow = n.s, ncol = n.s))
+  XijkCFS_1 <- rbind(XijkCFS_1,XijkCFS[df$sector==i,])
+}
+
+# Compute xijkCFS
+xijkCFS <- XijkCFS_1/denominator  
+
+##################################Main variable  
+#X_ijk  
+# Create data frame
+df_wiod <- data.frame(wiod)
+
+# Ignore non-USA exporters (columns)
+df_wiod <- df_wiod %>% select(importer, sector, USA)
+
+#Filter out non-USA importers
+USA_exporter_indices <- df_wiod$importer == "USA"
+
+# Take into account only the first 12 sectors 
+X_USA_USA_k <- df_wiod$USA[USA_exporter_indices]
+X_USA_USA_k <- X_USA_USA_k[1:n.sec]
+
+Xijk <- c()
+for(i in 1:n.sec) {
+  Xijk <- rbind(Xijk, xijkCFS[((i-1)*n.s + 1):(n.s*i),]*X_USA_USA_k[i])
+}
+
+###########################################Check that the following condition holds:
+  
+Xijk$sector <- df$sector[1:(n.sec*n.s)]
+Xijk$importer <- df$importer[1:(n.sec*n.s)]
+Xijk <- Xijk %>% select(importer, sector, everything())
+
+xijkCFS$sector <- df$sector[1:(n.sec*n.s)]
+xijkCFS$importer <- df$importer[1:(n.sec*n.s)]
+xijkCFS <- xijkCFS %>% select(importer, sector, everything())
+
+# Check for all  k
+for(k in 1:n.sec) {
+  if(abs(sum(Xijk[Xijk$sector==k,3:52])/X_USA_USA_k[k] -1)>epsilon) 
+    stop(paste("states' exports to states != US WIOD exports to US for year", yr))
+}
+
+Step2 <- Xijk 
+
+Step2 <- Step2 %>%
+  mutate(year = yr) %>%
+  select(year, importer, sector, everything())
+
+
+#Exporting 
+colnames(Step2)[4:dim(Step2)[2]] = cfs_base$importer[1:n.s]
+
+  #Exporting
+write.table(Step2, file = paste("1-Intermediate_Processed_Data//state_cfs_step_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
+}
+```
+
+
