@@ -1,0 +1,448 @@
+---
+title: "2-State_country"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+  word_document: default
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+1) Takes imports and exports data from census and changes the sectors to final 1-14
+2) This code calculates the sector-country bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
+
+## Input files
+
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-i.csv`
+4. `0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-i.csv`
+5. `1-Intermediate_Processed_Data//census_exports.csv`
+6. `1-Intermediate_Processed_Data//census_imports.csv`
+7. `1-Intermediate_Processed_Data/state_imports_exports.csv`
+8. `1-Intermediate_Processed_Data/country_country_step_.csv`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data//census_exports.csv`
+2. `1-Intermediate_Processed_Data//census_imports.csv`
+3. `1-Intermediate_Processed_Data/state_imports_exports.csv`
+4. `Intermediate_Processed_Data//state_country_step_y_.csv`
+5. `Intermediate_Processed_Data//state_country_step_e_.csv`
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+#Libraries
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+
+# libraries
+#options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
+# Install libraries in case they are not installed
+#for( i in length(libs)){ 
+  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+
+# Task 1
+
+## Importing datasets to R
+
+```{r data, warning=FALSE}
+reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+reclass_sectors <- reclass_sectors %>% 
+  filter(is.na(naics) == FALSE) %>%
+  select(final_sector, naics)
+
+#Export data
+base_e <- c()
+for (i in 1:5){
+temp <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-",i,".csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base_e <- rbind(base_e, temp)
+}
+
+
+#Import data
+base_i <- c()
+for (i in 1:5){
+temp <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-",i,".csv", sep=""), skip = 3, header = FALSE, sep = ",", dec = ".")
+base_i <- rbind(base_i, temp)
+}
+
+
+```
+
+# Unifying .csv files
+
+```{r}
+
+colnames(base_e) <- c("state", "naics3", "country", "year", "exports")
+colnames(base_i) <- c("state", "naics3", "country", "year", "imports")
+
+base_e <- base_e %>%
+  arrange(year, state) %>%
+  select(year, state, naics3, country, everything())
+base_e$exports <- as.numeric(gsub(",","",base_e$exports))
+base_i <- base_i %>%
+  arrange(year, state) %>%
+  select(year, state, naics3, country, everything())
+base_i$imports <- as.numeric(gsub(",","",base_i$imports))
+
+
+#exporting to .csv
+write.table(base_e, file = paste("1-Intermediate_Processed_Data//census_exports.csv", sep=""), sep = ",", row.names = FALSE)
+write.table(base_i, file = paste("1-Intermediate_Processed_Data//census_imports.csv", sep=""), sep = ",", row.names = FALSE)
+
+```
+
+# Changing sectors
+
+```{r}
+list_countries <- c("Australia", "Austria", "Belgium", "Brazil", "Bulgaria", "Canada", "China", "Cyprus", "Czech Republic", "Denmark", "Estonia", "Finland", "France", "United Kingdom", "Germany", "Greece", "Hungary", "India", "Indonesia", "Ireland", "Italy", "Japan", "Korea, South", "Lithuania", "Mexico", "Netherlands", "Poland", "Portugal", "Romania", "Russia", "Slovakia", "Slovenia", "Spain", "Sweden", "Taiwan", "Turkey", "Rest of world")
+list_codes <- c("AUS" , "AUT" , "BEL" , "BRA", "BGR", "CAN" , "CHN", "CYP", "CZE", "DNK", "EST", "FIN", "FRA", "GBR", "DEU", "GRC", "HUN", "IND", "IDN", "IRL", "ITA", "JPN", "KOR", "LTU", "MEX", "NLD", "POL", "PRT", "ROU", "RUS", "SVK", "SVN", "ESP", "SWE", "TWN", "TUR", "RoW")
+list <- data.frame(cbind(list_countries, list_codes))
+list$list_countries <- as.character(list$list_countries)
+list$list_codes <- as.character(list$list_codes)
+final <- c()
+
+for (type in c("exports", "imports")){
+base <- read.csv(paste("1-Intermediate_Processed_Data//census_", type, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")  
+colnames(base) <- c("year", "state", "naics3", "country", "value") 
+base <- base %>%
+  filter(state!="Dist of Columbia" & state!="Puerto Rico" & state!="US Virgin Islands" & state!="Unknown") %>%
+  filter(country!="APEC - Asia Pacific Economic Co-operation" & country!="ASEAN - Association of Southeast Asian Nations" & country!="Asia" & country!="Australia and Oceania" & country!="Central American Common Market" & country!="Euro Area" & country!="Europe" & country!="European Union" & country!="LAFTA - Latin American Free Trade Association" & country!="NATO (North Atlantic Treaty Organization) Allies" & country!="NICS - Newly Industrialized Countries" & country!="OECD - Organization for Economic Co-operation and Development" & country!="OPEC - Organization of Petroleum Exporting Countries" & country!="North America" & country!="Pacific Rim Countries" & country!="South/Central America" & country!="Twenty Latin American Republics" & country!="US Trade Agreements Partners" & country!="Western Sahara") %>%
+  mutate(country = as.character(country)) %>%
+  mutate(country = ifelse(country %in% list_countries, as.character(country), "Rest of world")) %>%
+  left_join(list, by=c('country'='list_countries')) %>% 
+  dplyr::rename(region = list_codes) %>%
+  select(-country) %>%
+  group_by(year, state, naics3, region) %>%
+  mutate(value = sum(value)) %>%
+  ungroup() %>%
+  distinct(year, state, naics3, region, .keep_all = TRUE)
+if (type == "exports"){
+base <- base %>%
+    dplyr::rename(origin = state) %>%
+    dplyr::rename(destination = region)
+} 
+if (type == "imports"){
+base <- base %>%
+    dplyr::rename(destination = state) %>%
+    dplyr::rename(origin = region)
+}  
+
+#Changing sectors Naics to final: only sending sector
+base <- base %>%
+    filter(naics3 != "All Commodities") %>%
+    mutate(sec_naics = as.numeric(substr(x=naics3, start=1, stop=3))) %>%
+    left_join(reclass_sectors, by=c('sec_naics'='naics')) %>% 
+    dplyr::rename(sector = final_sector) %>%
+    select(-naics3, -sec_naics) %>%
+    filter(is.na(sector) == FALSE) %>%
+    group_by(year, sector, destination, origin) %>%
+    mutate(value = sum(value)) %>%
+    ungroup() %>%
+    distinct(year, sector, destination, origin, .keep_all = TRUE)
+
+if (type == "exports"){
+base <- base %>%
+    mutate(file="i in US, j not in US")
+} 
+if (type =="imports"){
+base <- base %>%
+    mutate(file = "i not in US, j in US")
+}  
+base <- base %>% arrange(file, year, sector, destination)
+base <- base %>% select(origin, year, destination, sector, value, file)
+base$origin <- gsub(" ", "", base$origin, fixed = TRUE)
+base$destination <- gsub(" ", "", base$destination, fixed = TRUE)
+final <- rbind(final, base)  
+}
+
+write.table(final, file = paste("1-Intermediate_Processed_Data/state_imports_exports.csv", sep=""), sep = ",", row.names = FALSE)
+
+#*******************************************************************************************************************
+# 	 SECTORS USED AND THEIR MAPPING TO WIOD (indexed by ci)
+#*******************************************************************************************************************
+# 1.	(NAICS 311ñ312) Food Products, Beverage, and Tobacco Products (c3);
+# 2.	(NAICS 313ñ316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4ñc5);
+# 3.	(NAICS 321ñ323) Wood Products, Paper, Printing, and Related Sup- port Activities (c6ñc7); 
+# 4.	(NAICS 324 , 211-213) Petroleum and Coal Products and mining (c2, c8);
+# 5.	(NAICS 325) Chemical (c9); 
+# 6.	(NAICS 326) Plastics and Rubber Products (c10); 
+# 7.	(NAICS 327) Nonmetallic Mineral Products (c11); 
+# 8.	(NAICS 331ñ332) Primary Metal and Fabricated Metal Products (c12); 
+# 9.	(NAICS 333); Machinery (c13); 
+# 10.	(NAICS 334ñ335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14);
+# 11.	(NAICS 336) Transportation Equipment (c15); 
+# 12.	(NAICS 337ñ 339) Furniture and Related Products, and Miscellaneous Manufacturing (c16); 
+# 13.	((NAICS XX) Construction (c18); 
+# 14.	(NAICS 42-45) Wholesale and Retail Trade (c19ñc21); 
+# 15.	(NAICS 481-488) Transport Services (c23ñc26);
+# 16.	(NAICS 511ñ518) Information Services (c27); 
+# 17.	(NAICS 521ñ525) Finance and Insurance (c28); 
+# 18.	(NAICS 531-533)  Real Estate (c29ñc30); 
+# 19.	(NAICS 61) Education (c32); 
+# 20.	(NAICS 621ñ624) Health Care (c33); 
+# 21.	(NAICS 721ñ722) Accommodation and Food Services (c22); 
+# 22.	(NAICS 493, 541, 55, 561, 562, 711ñ713, 811-814) Other Services (c34).
+# 23.	(NAICS 111-115) Agriculture (c1).
+
+```
+
+
+# Task 2
+
+# Exports and imports of US states
+
+We use $X_{ij,k}^{Census}$ and $X_{ij,k}^{WIOD}$ plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;  j \notin US$ (exports from each State to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each State), and $\forall k$ (except services). We do the same procedure each year. Census data on exports and imports starts in 2002 and 2008 respectively. For the years before the starting Census year we assume that the share of sector-level imports (exports) of each state from (to) each country in the total imports (exports) of the state in each year remains constant at the level of the starting Census year.
+
+## Intermediate variables 
+
+Define the share of exports of US State $i$ in sector $k$, going to country $j$ as: $$y_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{h\in US}X_{hj,k}^{Census}} \; \forall i\in US \, , \, j\notin US.$$ 
+
+Similarly, only for $j \in US$ define the share of imports of State $j$ in sector $k$, coming from country $i$ as
+$$e_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{l\in US}X_{il,k}^{Census}}. \; \forall i\notin US \, , \, j\in US.$$ 
+
+**Note**: There are some very few cases that required corrections. For instance, say country j (i) did not import (export) from (to) the US in a given sector $k$ according to CENSUS data but it did it according to WIOD data. Then we would calculate $e_{ij,k}$ ($y_{ij,k}$) by splitting WIOD imports (exports) between the states according to the share of imports (exports) of that state in the total US imports (exports) of that sector $k$. This means:
+
+$$
+y_{i\;j,k}^{census}\equiv\dfrac{\sum_{j\notin US}X_{ij,k}^{census}}{\sum_{h\in US}\sum_{l\notin US}X_{hl,k}^{census}}, \; i\in US \, , \, j\notin US
+$$
+
+$$
+e_{i\;j,k}^{census}\equiv\dfrac{\sum_{i\notin US}X_{ij,k}^{census}}{\sum_{h\notin US}\sum_{l\in US}X_{hl,k}^{census}}, \; i\notin US \, , \, j\in US
+$$
+
+## Main variable
+
+Define $\forall k$: 
+
+$$X_{ij,k}=
+\begin{cases}
+e_{ij,k}^{Census}X_{i\,US,k}^{WIOD} \quad \forall i\notin US, \; \forall j\in US\\
+y_{ij,k}^{Census}X_{US\,j,k}^{WIOD} \quad \forall i\in US, \; \forall j\notin US
+\end{cases} $$
+
+# Calculations 
+
+## Importing datasets to R
+
+```{r}
+#state level imports and exports
+state_imp_exp_0 <- read.csv("1-Intermediate_Processed_Data//state_imports_exports.csv")
+state_imp_exp_0 <- state_imp_exp_0 %>% filter(origin != "AllStates", destination != "AllStates")
+
+#WIOD
+wiod_base <- c()
+for (yr in 2000:2007) {
+  wiod <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
+  wiod_base <- rbind(wiod_base, wiod)
+}
+
+
+#General parameters
+regions <- read.csv("0-Raw_Data/regions.csv")
+c_names <- regions %>% filter(status=="country", region!="USA")
+c_names <- c_names$region
+
+s_names <- regions %>% filter(status=="state") 
+s_names <- s_names$region
+
+n_s <- length(s_names)
+n_c <- length(c_names)
+
+reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
+n_sec <- length(unique(reclass_sectors$final_sector)) - 3
+
+epsilon <- 0.0001;
+
+```
+
+## Imports and Exports
+
+### Imports
+
+```{r}
+### Base year for imports (2008)
+state_imp_exp <- data.frame(state_imp_exp_0) %>% 
+  filter(year == 2008, file == "i not in US, j in US") %>%
+  select(-year, -file)
+
+state_imp_exp <-spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+base_e <- state_imp_exp %>% 
+  arrange(sector, destination) %>%
+  filter(sector <= n_sec | sector == (n_sec + 2))
+
+colnames(base_e) <- c("importer", "sector", c_names)
+base_e[is.na(base_e)] <- 0
+
+
+for (yr in 2000:2007) {
+
+#WIOD
+wiod <- subset(wiod_base, year == yr)
+wiod <- subset(wiod, select = -year) 
+
+
+##################################################
+
+eijkBase <- melt(base_e, id.vars=c("importer", "sector"), variable.name="origin", value.name = "value")
+eijkBase <-spread(eijkBase, importer, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+eijkBase <- eijkBase[, 3:dim(eijkBase)[2]] / rowSums(eijkBase[, 3:dim(eijkBase)[2]]) 
+
+
+#######################################Main Variable
+#e
+df_wiod <- data.frame(wiod)
+df_wiod <- df_wiod %>%
+  filter(sector <= n_sec | sector == (n_sec + 2)) %>%
+  filter(importer == 'USA')
+df_wiod1 <- df_wiod %>% select(-USA, -importer)
+colnames(df_wiod1) <- c("sector", c_names)
+df_wiod1 <- melt(df_wiod1, id.vars=c("sector"), variable.name = "origin", value.name = "value")
+df_wiod1 <- df_wiod1 %>% arrange(sector, origin)
+
+step3e <- eijkBase*df_wiod1$value
+step3e <- cbind(df_wiod1[, 1:2], step3e)
+
+
+#Check
+check <- as.matrix(rowSums(step3e[, 3:dim(step3e)[2]]) - df_wiod1$value)
+
+##############################
+#Correcting if needed
+m_correct <- c()
+for (sec in c(1:(n_sec), (n_sec + 2))) {
+m <- base_e %>% filter(sector == sec)
+m <- (rowSums(m[, 3:dim(m)[2]]) / sum(m[, 3:dim(m)[2]]))
+m <- t(matrix(replicate(n_c, m), nrow = length(m), ncol = n_c))
+m_correct <- rbind(m_correct, m) 
+}
+m_correct <- m_correct*df_wiod1$value
+
+for (r in 1:(dim(check)[1])) {
+  if(is.na(check[r]) == TRUE){step3e[r, 3:dim(step3e)[2]] = m.correct[r, ]}
+}
+
+if(sum(abs(rowSums(step3e[, 3:dim(step3e)[2]])/df_wiod1$value -1))>epsilon) 
+   stop(paste("states' imports from countries != WIOD US imports from countries for", yr, " value=", sum(abs(rowSums(step3e[, 3:dim(step3e)[2]])/df_wiod1$value -1))))
+################
+
+step3e <- melt(step3e, id.vars=c("origin", "sector"), variable.name="importer", value.name = "value")
+step3e <-spread(step3e, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+
+step3e <- step3e %>%
+  mutate(year = yr) %>%
+  select(year, importer, sector, everything())
+
+  #Exporting dataset
+write.table(step3e, file = paste("1-Intermediate_Processed_Data//state_country_step_e_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
+}
+
+```
+
+
+### Exports
+
+```{r}
+
+for (yr in 2000:2007) {
+
+#WIOD
+wiod <- subset(wiod_base, year == yr)
+wiod <- subset(wiod, select = -year) 
+
+
+#Base year for exports (2002)
+yr. <- yr
+if(yr < 2002){yr. = 2002}
+state_imp_exp <- data.frame(state_imp_exp_0) %>% 
+  filter(year == yr., file == "i in US, j not in US") %>%
+  select(-year, -file)
+state_imp_exp <- spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+#no trade from US states to SVK in sector 4 in 2002
+if(yr <= 2002) {row <- c("SVK", 4L, matrix(0, nrow = 1, ncol = n_s))
+state_imp_exp <- rbind(state_imp_exp, row)}
+state_imp_exp$sector <- as.numeric(state_imp_exp$sector)
+
+base_y <- state_imp_exp %>% 
+  arrange(sector, destination) %>%
+  filter(sector <= n_sec | sector == (n_sec + 2))
+colnames(base_y) = c("importer", "sector", s_names)
+base_y[is.na(base_y)] <- 0
+base_y <- cbind(base_y[, 1:2], mapply(base_y[, 3:dim(base_y)[2]], FUN=as.numeric))
+
+
+##################################################
+
+##################################################
+
+yijkBase <- base_y[, 3:dim(base_y)[2]] / rowSums(base_y[, 3:dim(base_y)[2]]) 
+
+############################### Main variable
+#y
+df_wiod <- data.frame(wiod)
+df_wiod <- df_wiod %>%
+  filter(sector <= n_sec | sector == (n_sec + 2)) %>%
+  filter(importer != 'USA') 
+
+df_wiod1 <- df_wiod %>% select(importer, sector, USA)
+
+step3y <- yijkBase*df_wiod1$USA
+step3y <- cbind(df_wiod1[, 1:2], step3y)
+
+#Check
+check <- as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) - df_wiod1$USA)
+
+
+##############################
+#Correcting if needed
+base_y1 <- melt(base_y, id.vars=c("importer", "sector"), variable.name="origin", value.name = "value")
+base_y1 <-spread(base_y1, importer, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+
+m_correct <- c()
+for (sec in c(1:(n_sec), (n_sec + 2))) {
+m <- base_y1 %>% filter(sector == sec)
+m <- (rowSums(m[, 3:dim(m)[2]]) / sum(m[, 3:dim(m)[2]]))
+m <- t(matrix(replicate(n_c, m), nrow = length(m), ncol = n_c))
+m_correct <- rbind(m_correct, m) 
+}
+m_correct <- m_correct*df_wiod1$USA
+
+for (r in 1:(dim(check)[1])) {
+  if(is.na(check[r]) == TRUE){step3y[r, 3:dim(step3y)[2]] = m_correct[r, ]}
+}
+
+if(sum(abs(rowSums(step3y[, 3:dim(step3y)[2]])/df_wiod1$USA -1))>epsilon) 
+   stop(paste("states' exports to countries != WIOD US exports to countries for", yr, " value=", sum(abs(rowSums(step3y[, 3:dim(step3y)[2]])/df_wiod1$USA -1))))
+################
+
+step3y <- step3y %>%
+  mutate(year = yr) %>%
+  select(year, importer, sector, everything())
+colnames(step3y) <- c("year", "importer", "sector", s_names)
+
+#Exporting data
+write.table(step3y, file = paste("1-Intermediate_Processed_Data//state_country_step_y_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
+}
+```
+
