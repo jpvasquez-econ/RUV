@@ -15,9 +15,10 @@ header-includes:
 - \usepackage{mathpazo}
 ---
 
-# General information
+## General information
 
-1) Takes imports and exports data from census and changes the sectors to final 1-14
+1) Takes imports and exports data from census and changes the sectors to final 1-14.
+
 2) This code calculates the sector-country bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
 
 ## Input files
@@ -44,8 +45,6 @@ header-includes:
 knitr::opts_chunk$set(echo = TRUE)
 remove(list = ls())
 ```
-
-#Libraries
 
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 
@@ -90,9 +89,10 @@ base_i <- rbind(base_i, temp)
 
 ```
 
-# Unifying .csv files
+
 
 ```{r}
+# Unifying .csv files
 
 colnames(base_e) <- c("state", "naics3", "country", "year", "exports")
 colnames(base_i) <- c("state", "naics3", "country", "year", "imports")
@@ -113,9 +113,10 @@ write.table(base_i, file = paste("1-Intermediate_Processed_Data//census_imports.
 
 ```
 
-# Changing sectors
+## Changing sectors to relevant 1-14 sectors
 
 ```{r}
+
 list_countries <- c("Australia", "Austria", "Belgium", "Brazil", "Bulgaria", "Canada", "China", "Cyprus", "Czech Republic", "Denmark", "Estonia", "Finland", "France", "United Kingdom", "Germany", "Greece", "Hungary", "India", "Indonesia", "Ireland", "Italy", "Japan", "Korea, South", "Lithuania", "Mexico", "Netherlands", "Poland", "Portugal", "Romania", "Russia", "Slovakia", "Slovenia", "Spain", "Sweden", "Taiwan", "Turkey", "Rest of world")
 list_codes <- c("AUS" , "AUT" , "BEL" , "BRA", "BGR", "CAN" , "CHN", "CYP", "CZE", "DNK", "EST", "FIN", "FRA", "GBR", "DEU", "GRC", "HUN", "IND", "IDN", "IRL", "ITA", "JPN", "KOR", "LTU", "MEX", "NLD", "POL", "PRT", "ROU", "RUS", "SVK", "SVN", "ESP", "SWE", "TWN", "TUR", "RoW")
 list <- data.frame(cbind(list_countries, list_codes))
@@ -211,11 +212,9 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/state_imports_exp
 
 # Task 2
 
-# Exports and imports of US states
-
 We use $X_{ij,k}^{Census}$ and $X_{ij,k}^{WIOD}$ plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;  j \notin US$ (exports from each State to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each State), and $\forall k$ (except services). We do the same procedure each year. Census data on exports and imports starts in 2002 and 2008 respectively. For the years before the starting Census year we assume that the share of sector-level imports (exports) of each state from (to) each country in the total imports (exports) of the state in each year remains constant at the level of the starting Census year.
 
-## Intermediate variables 
+Intermediate variables 
 
 Define the share of exports of US State $i$ in sector $k$, going to country $j$ as: $$y_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{h\in US}X_{hj,k}^{Census}} \; \forall i\in US \, , \, j\notin US.$$ 
 
@@ -232,7 +231,7 @@ $$
 e_{i\;j,k}^{census}\equiv\dfrac{\sum_{i\notin US}X_{ij,k}^{census}}{\sum_{h\notin US}\sum_{l\in US}X_{hl,k}^{census}}, \; i\notin US \, , \, j\in US
 $$
 
-## Main variable
+Main variable
 
 Define $\forall k$: 
 
@@ -241,8 +240,6 @@ $$X_{ij,k}=
 e_{ij,k}^{Census}X_{i\,US,k}^{WIOD} \quad \forall i\notin US, \; \forall j\in US\\
 y_{ij,k}^{Census}X_{US\,j,k}^{WIOD} \quad \forall i\in US, \; \forall j\notin US
 \end{cases} $$
-
-# Calculations 
 
 ## Importing datasets to R
 
@@ -277,9 +274,8 @@ epsilon <- 0.0001;
 
 ```
 
-## Imports and Exports
 
-### Imports
+## States' imports from countries
 
 ```{r}
 ### Base year for imports (2008)
@@ -361,7 +357,7 @@ write.table(step3e, file = paste("1-Intermediate_Processed_Data//state_country_s
 ```
 
 
-### Exports
+## States' exports to countries
 
 ```{r}
 
@@ -380,8 +376,23 @@ state_imp_exp <- data.frame(state_imp_exp_0) %>%
   select(-year, -file)
 state_imp_exp <- spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 #no trade from US states to SVK in sector 4 in 2002
-if(yr <= 2002) {row <- c("SVK", 4L, matrix(0, nrow = 1, ncol = n_s))
-state_imp_exp <- rbind(state_imp_exp, row)}
+#if(yr <= 2002) {
+#  row <- c("SVK", 4L, matrix(0, nrow = 1, ncol = n_s))
+#  state_imp_exp <- rbind(state_imp_exp, row)}
+#### adding rows if no trade info for country-sector 
+temp_names_1 <- as.character(unique(state_imp_exp$destination))
+for (i in temp_names_1) {
+  for (sec in c(1:12, 14)) {
+    temp_1 <- state_imp_exp %>% filter(destination == i, sector == sec)
+    if(dim(temp_1)[1] == 0){
+      #print(yr)
+      #print(i)
+      #print(sec)
+      row <- c(i, sec, matrix(0, nrow = 1, ncol = n_s))
+      state_imp_exp <- rbind(state_imp_exp, row)}
+    }
+}
+#### 
 state_imp_exp$sector <- as.numeric(state_imp_exp$sector)
 
 base_y <- state_imp_exp %>% 
