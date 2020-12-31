@@ -15,14 +15,20 @@ header-includes:
 - \usepackage{mathpazo}
 ---
 
-# General information
+## General information
 
 1) Takes WIOD and maps to the 14 relevant sectors that we consider.
+
 2) This code calculates the sector-country bilateral trade flows $X_{ij,k}$ between countries using data from WIOD.
+
 3) This code calculates the share of value-added (mapped in the model to the labor share) for each country, each sector, and each year using data from WIOD. 
+
 4) This code calculates the input output matrix shares for each sector, country and year using data from WIOD. Each entry is the share of expenditure of each buying sector. For each country-year, the sum across rows of each column sums up to one. 
+
 5) The code in this document produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population; the previous information is available for the period 1950-2017 for almost all countries except: Austria, Cyprus, Denmark, Estonia, Hungary, Ireland, Lithuania, Slovakia and Slovenia. The missing information is only for the variable, "city population", for certain years. 
-6) Calculates the distances between all regions. 
+
+6) Calculates the distances between all regions.
+
 7) This code calculates the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US).
 
 ## Input files
@@ -281,8 +287,6 @@ write.table(wiod_matrix, file = paste("1-Intermediate_Processed_Data//WIOD_count
 
 # Task 2
 
-# Bilateral trade matrix
-
 ## Importing datasets to R
 
 ```{r}
@@ -338,7 +342,7 @@ wiot_inter <- wiot_full %>%
 ```
 
 
-## Calculations
+## Value added and labor shares for countries
 
 Gross output for each region, for each sector
 
@@ -400,7 +404,7 @@ for (yr in 2000:2007) {
 
 # Task 4
 
-# Constructing Input-Output matrices for countries
+## Constructing Input-Output matrices for countries
 
 Define $\alpha_{j,ks}$ for region $j$ as the share of purchases of sector $s$ that come from sector $k$ in the total purchases of sector $s$ (this is the input output coefficient). We have that:
 
@@ -408,9 +412,10 @@ $$\alpha_{j,ks}=\dfrac{\sum_{i}X_{ij,ks}}{\sum_{r}\sum_{i}X_{ij,rs}}=\dfrac{X_{j
 
 Note that $\sum_{k}\alpha_{j,ks}=1\quad\forall j$. 
 
-## Calculating shares
 
 ```{r}
+## Calculating shares
+
 num <- wiot_inter %>%
   group_by(year, col_country, col_item, row_item) %>%
   mutate(val = sum(value)) %>%
@@ -453,7 +458,7 @@ for (yr in 2000:2007) {
 
 ```
 
-## EXPORTING ALL IO-TABLES IN A UNIQUE FILE
+## Exporting all IO-Tables in a unique file
 ```{stata, collectcode=TRUE}
 
 forvalue i=2000/2007{
@@ -492,7 +497,7 @@ The final output is based mainly on input a), with some information of b) and c)
 
 ***Note that for the case of Cyprus, a more precise statistic for the cities' population can be given through municipalities' population instead of districts (province), but only for 2011.  
 
-## Importing data 
+## Importing dataset to R
 
 ```{r}
 coordinates_counties <- read_excel(paste("0-Raw_Data/Fips/us_states_coordinates_counties.xlsx", sep=""))
@@ -613,6 +618,8 @@ write.table(UN_1, file = paste("1-Intermediate_Processed_Data//country_coordinat
 ```
 
 # Task 6 
+
+## Distances between all regions
 
 ```{r}
 country_coordinates <- UN_1
@@ -761,7 +768,7 @@ where $\lambda_t$ is a time FE, $\delta_{i}^{o}$ is an origin FE, $\delta_{j}^{d
 
 We focus on countries only (including the US), and our focus is on separate regressions for services and agriculture.
 
-## Importing data
+## Importing dataset to R
 
 ```{r}
 regions <- read.csv("0-Raw_Data/regions.csv")
@@ -838,7 +845,7 @@ for (i in 1:dim(data_services1)[1]){
 }
 ```
 
-### adding US-country distances 
+### Adding US-country distances 
 
 ```{r distance-1}
 
@@ -912,7 +919,7 @@ for(i in 1:n_s){
     mutate(pond_s = replace(pond_s, iso_d == us_pop1$State[i], us_pop1$pond[i]))
 }
 
-USserv.final <- USserv %>%
+USserv_final <- USserv %>%
   mutate(component = pond_r*pond_s*dist) %>%
   group_by(year) %>%
   mutate(dist_US_US = sum(component)) %>%
@@ -920,9 +927,9 @@ USserv.final <- USserv %>%
   distinct(year, .keep_all=TRUE) %>%
   mutate(dist_US_US = 1/dist_US_US) 
 
-USserv.final$iso_o = "USA"
-USserv.final$iso_d = "USA"
-USserv <- USserv.final %>%
+USserv_final$iso_o = "USA"
+USserv_final$iso_d = "USA"
+USserv <- USserv_final %>%
   unite(name1, c("iso_o", "iso_d"), remove = FALSE) 
   
 #adding US_US  
@@ -944,7 +951,7 @@ final <- wiod3 %>%
 write.csv(final, "1-Intermediate_Processed_Data//Country_Gravity_Services_WIOD.csv")
 ```
 
-#### Stata code for services
+### Stata code for services
 
 ```{stata, collectcode=TRUE}
 import delimited "1-Intermediate_Processed_Data//Country_Gravity_Services_WIOD.csv"
@@ -1009,7 +1016,7 @@ for (i in 1:dim(data_agriculture1)[1]){
 
 ```
 
-### adding US-country distances
+### Adding US-country distances
  
 ```{r dist-agri}
 
@@ -1109,7 +1116,7 @@ final <- wiod3 %>%
 write.csv(final, "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv")
 ```
 
-#### Stata code for agriculture
+### Stata code for agriculture
 
 ```{stata, collectcode=TRUE}
 import delimited "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv", clear

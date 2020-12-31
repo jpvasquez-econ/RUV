@@ -14,10 +14,11 @@ header-includes:
 - \usepackage{mathpazo}
 ---
 
-# General information
+## General information
 
-1) This code creates a file that contains information about distances between regions, agricultural production for all regions and agricultural consumption for countries. In doing so, the code also applies the usual proportionality rule so that aggregate expenditure and production matches WIOD. 
-2) This code generates the inputs of the gravity system in agriculture and solves the system.
+1) This code creates a file that contains information about distances between regions, agricultural production for all regions and agricultural consumption for countries. In doing so, the code also applies the usual proportionality rule so that aggregate expenditure and production matches WIOD.
+
+2) This code generates the inputs of the agricultural gravity system and solves it.
 
 ## Input files
 
@@ -132,7 +133,7 @@ epsilon <- 0.0001
 ```
 
 
-# State's agriculture production 
+## State's agricultural revenue 
 
 ```{r}
 
@@ -255,7 +256,7 @@ if(abs(sum(check_2$production / check_1$total-1))>epsilon)
 ```
 
 
-## Production and expenditure for countries
+## Agricultural revenue and expenditure for countries
 
 ```{r prod-exp-countries}
 #agricultural production for countries 
@@ -297,7 +298,7 @@ write.table(data_agriculture, file = paste("1-Intermediate_Processed_Data//data_
 
 # Task 2
 
-# Theory
+## Theory
 
 Start with the standard gravity equation,
 $$
@@ -318,7 +319,7 @@ X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}
 $$
 We don't know $\{X_{j}\}_{j\in US}$. But we know: 1) $\{X_{ij}\}\quad\forall i,j\notin US$ (from WIOD), 2) $\{X_{ij}\}\quad\forall i\notin US\;or\:j\notin US$ (from CENSUS). 
 
-# Importing data to R
+## Importing data to R
 
 ```{r data, warning=FALSE}
 # COEFFIENTS FROM REGRESSIONS
@@ -354,7 +355,7 @@ census_imp <- melt(census_imp, id.var=c("year", "importer"), variable = "origin"
 
 ```
 
-# Creating vector $\lambda$ and matrix $B$ for agriculture
+## Creating and solving gravity system for agriculture
 
 ```{r warning=FALSE}
 

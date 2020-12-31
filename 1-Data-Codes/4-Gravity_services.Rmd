@@ -15,11 +15,11 @@ header-includes:
 - \usepackage{mathpazo}
 ---
 
-# General information
+## General information
 
-1) Constructs the data of PRODUCTION and EXPENDITURE OF SERVICES by state
+1) Constructs the data of Revenue and Expenditure of services by state.
 
-2) This code generates the inputs of the gravity system and solves it.
+2) This code generates the inputs of the services gravity system and solves it.
 
 ## Input files
 
@@ -63,6 +63,8 @@ lapply( libs, require, character.only=TRUE );
 ```
 
 
+# Task 1
+
 ## Importing datasets to R
 
 ```{r data, warning=FALSE}
@@ -72,9 +74,11 @@ wiod_countries <- read.csv(paste("1-Intermediate_Processed_Data/WIOD_countries.c
 
 ```
 
-# Step 1
+## Services revenue and expenditure
 
 ```{r}
+## Step 1
+
 # State codes   
 state_code$state <- gsub(" ", "", state_code$state, fixed = TRUE)
 #state_code1 <- as.vector(state_code$code)
@@ -226,12 +230,13 @@ write.table(bea_raw, file = paste("1-Intermediate_Processed_Data/state_exp_gdp_s
 
 ```
 
-# Step 2
 
 FORMULA 
 $d_{ij} = (\sum_{r \in i} \sum_{s \in j} (\dfrac{pop_r}{pop_i}) (\dfrac{pop_s}{pop_j}) d_{rs}^\theta)^{1/ \theta}$
 
 ```{r}
+# Step 2
+
 state_exp_gdp_services <- read.csv(paste("1-Intermediate_Processed_Data/state_exp_gdp_services.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 distances <- read.csv(paste("1-Intermediate_Processed_Data/distances.csv", sep=""), header = TRUE, sep = ",", dec = ".")
@@ -296,7 +301,7 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/data_services.csv
 
 # Task 2 
 
-# Theory
+## Theory
 
 Start with the standard gravity equation: 
 
@@ -354,7 +359,7 @@ $$ \lambda\circ S=B\cdot S^{-1}, $$
 
 where $\circ$ is the element-by-element product and $B$ is the big matrix. Given $\left\{ X_{j}\right\}$  and $\left\{ Y_{i}\right\}$  and $\left\{ \tilde{\tau}_{ij}\right\}$ (more on the computation of $\tilde{\tau}_{ij}$ below) ,  we can get $\left\{ \tilde{P}_{j}\right\}$  and $\left\{ \tilde{\Pi}_{i}\right\}$. The solution for $\left\{ \tilde{P}_{j}, \tilde{\Pi}_{i} \right\}$ is unique up to a constant. This indeterminacy requires a normalization. We thus impose $\tilde{P}_{1}=100$. Then we compute $\left\{ X_{ij}\right\}$  from $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}.$$
 
-# Importing data to R
+## Importing data to R
 
 ```{r, warning=FALSE}
 #COEFFIENTS FROM REGRESSIONS
@@ -389,7 +394,7 @@ epsilon<-0.01;
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ```
 
-# Creating vector $\lambda$ and matrix $B$ for services
+## Creating and solving gravity system for services
 
 ```{r inputs, warning=FALSE}
 for (yr in 2000:2007) {
