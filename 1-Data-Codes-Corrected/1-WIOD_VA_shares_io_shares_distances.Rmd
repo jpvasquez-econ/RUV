@@ -84,7 +84,7 @@ lapply( libs, require, character.only=TRUE );
 
 ## Importing datasets to R
 
-```{r data, warning=FALSE}
+```{r data}
 regions <- read.csv(paste("0-Raw_Data/regions.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 #sector reclassification table
@@ -689,7 +689,7 @@ cities <- state_0 %>%
   dplyr::rename(lat = Latitude, lon = Longitude) %>%
   mutate(lon = as.numeric(substr(x=lon, start=2, stop=10))) %>% 
   mutate(lon = -lon) %>%
-  #mutate(lon = ifelse( State == "Alaska" & County == "Aleutians West[4]", 178.33881299999999, lon)) %>%	
+  mutate(lon = ifelse( State == "Alaska" & County == "Aleutians West[4]", 178.33881299999999, lon)) %>%	
   select(-State, -County)
 cities <- rbind(cities, country_coor) 
 colnames(cities) <- c("state_s", "fips_s", "lat_s", "lon_s")
