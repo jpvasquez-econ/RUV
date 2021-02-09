@@ -27,12 +27,13 @@ header-includes:
 3. `1-Intermediate_Processed_Data/state_imports_exports.csv`
 4. `1-Intermediate_Processed_Data/country_country_step_.csv`
 5. `0-Raw_Data//Agriculture_Census/data_agriculture.csv`
-6. `1-Intermediate_Processed_Data/data_services.csv`
-7. `1-Intermediate_Processed_Data/state_country_step_y_.csv`
-8. `1-Intermediate_Processed_Data/state_country_step_e_.csv`
-9. Coefficients from `Country_Gravity_WIOD`
-10. `1-Intermediate_Processed_Data/io_shares.csv`
-11. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
+6. `0-Raw_Data//Agriculture_Census//data_fish.csv`
+7. `1-Intermediate_Processed_Data/data_services.csv`
+8. `1-Intermediate_Processed_Data/state_country_step_y_.csv`
+9. `1-Intermediate_Processed_Data/state_country_step_e_.csv`
+10. Coefficients from `Country_Gravity_WIOD`
+11. `1-Intermediate_Processed_Data/io_shares.csv`
+12. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
 
 ## Output files
 
@@ -120,8 +121,13 @@ census <- read.csv("1-Intermediate_Processed_Data//state_imports_exports.csv")
 state_imp_exp_0 <- census %>%
   filter(origin != "AllStates", destination != "AllStates")
 
+#### Agriculture and fish
 #Agriculture production states
 data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
+
+#Fish production states
+data_fish <- read.csv("0-Raw_Data//Agriculture_Census//data_fish.csv")
+######
 
 #Trade distances
 data_agriculture <- read.csv("1-Intermediate_Processed_Data//data_services.csv")
@@ -156,6 +162,15 @@ data_agriculture <- data_agriculture %>%
   left_join(census_exp, by=c('year'='year', 'iso_o'='iso_o'))
 
 ##########Component ii of state production: export to US states
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# sum of crops, livestock, and fish
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+data_agri<- merge(data_agri,data_fish, by=c("iso_o", "year"))
+data_agri <- data_agri %>% 
+  arrange(year) %>%
+  mutate(R_i = fish_prod + R_i) %>%
+  select(-fish_prod)
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # calculating relative state productions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -757,7 +772,7 @@ gravity_system <- function(x){
     #B <- B
     
 }
-start <- 100*matrix(1, 2*n_s, 1)
+start <- 100*matrix(0.6, 2*n_s, 1)
 if (yr > 2000){start <- as.matrix(sol)}
 
 sol <- lsqnonlin(gravity_system, start)
