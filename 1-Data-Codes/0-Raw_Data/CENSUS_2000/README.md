@@ -1,4 +1,4 @@
-# Replication of Labor Distribution and Migration matrices
+# Computation of Employment Allocations and the Matrices of Migration Flows
 
 This file explains how to calculate labor allocation by state an sector for the years 1999-2007 and how to compute the labor movements across these states and sectors for all those years.
 
