@@ -28,6 +28,14 @@ The second one is the Current Population Survey (CPS), which provides details of
 
 ## Employment allocation in each state and sector for all years
 
+#### For other countries
+
+We compute the employment distribution by sector for each country and each year 1999-2007. It also applies proportionality to $L_{2000}$ (US states labor distribution) so that the matrix is consistent with WIOD. Steps:
+
+1. Labor distribution by sector for each country during years 1999-2007 is obtained from WIOD Socio Economic Accounts (Released July 2014) in the following (link)[http://www.wiod.org/database/seas13]. The downloaded excel does not require a change of name. The variable of interest is EMP (number of persons engaged in thousands) and sectors are recoded into 1-14. Sector 0 (unemployed and out of labor force) is incorporated using WIOD-SEA's worker population and each country's labor force participation rate (see .lyx file). Year 2000 is taken as the base year and therefore all other years undergo a proportionality process so that population for each country maintains constant over time (zero growth, only redistribution between sectors). 
+
+2. US labor distribution by sector and state, $L_{2000}$, undergoes a proportionality process (see .lyx file) so that the values are consistent with US-WIOD's information.  
+
 #### For US States
 
 We compute the employment distribution, for 1999, 2001-2007 using the employment distribution for 2000 and the mobility matrix for 1999. Steps:
@@ -35,4 +43,4 @@ We compute the employment distribution, for 1999, 2001-2007 using the employment
 1. Using the labor distribution for 2000, $L_{2000}$, and the mobility matrix, $\mu_{2000}$, for 2000-2007 it is possible to compute the labor of the following year using:  $$ L_{t}^{nj}=\sum_{i=1}^{N}\sum_{k=0}^{J}\mu_{t-1}^{ik,nj}\times L_{t-1}^{ik}$$ . We express this equation in vector form $L_{t} = t(\mu_{t-1})*L_{t-1}$. All subsequent labors distributions are computed in the same way. 
 2.  $L_{1999}$ is computed using $L_{2000}$, and the 1999 mobility matrix in levels (and adjusted with proportionality so that it is consistent and sums to total $L$ in 2000).
 
-#### For other countries
+US state labor distribution by sector and each other country labor distribution by sector are combined into a single matrix, $L_{yr}$. 

@@ -55,6 +55,8 @@ This file explains the general purpose of each code associated with the data con
 
 1) This code computes the employment level for each state and sector in year 2000, $L_{2000}$. 
 
-2) This code computes the mobility matrices (as shares of initial allocation of workers in a specific state-sector) for years 2000-2006, $\mu_{yr}$. The matrices are constructed so that flows go from rows to columns.  
+2) This code computes the US mobility matrices (as shares of initial allocation of workers in a specific state-sector) for years 2000-2006, $\mu_{yr}$. The matrices are constructed so that flows go from rows to columns.  
 
-3) This code computes the labor distribution matrices for years 2001-2007, $L$, using the base year distribution, $L_{2000}$ and the mobility matrices from the previous step ($\mu$). Then, calculates the mobility matrix for 1999 in levels, the labor distribution for 1999, $L_{1999}$, and the 1999 mobility matrix (as shares), in that order. 
+3) This code computes the employment distribution by sector for each country and each year 1999-2007. It also applies proportionality to $L_{2000}$ of step 1 so that the matrix is consistent with WIOD. 
+
+4) This code computes the labor distribution matrices (all regions) for years 1999-2007, $L_{yr}$.
