@@ -577,10 +577,10 @@ final <- spread(final, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  
 check <- final %>% select(-year, -state_ori, -sector_ori)
 if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
   stop(paste("mobility shares do not add to 1,", yr))
-write.table(final, file = paste("1-Intermediate_Processed_Data//mu_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
+write.table(final, file = paste("2-Final_Data//mu_", yr, ".csv", sep=""), sep = ",", row.names = FALSE)
 }
 
-write.table(mu_all, file = paste("1-Intermediate_Processed_Data//mu_all.csv", sep=""), sep = ",", row.names = FALSE)
+#write.table(mu_all, file = paste("1-Intermediate_Processed_Data//mu_all.csv", sep=""), sep = ",", row.names = FALSE)
 
 rm(acs, cps, mobility, mu_1999_levels, check, final, mu_all, temp)
 
@@ -725,7 +725,7 @@ epsilon <- 0.001
 for (yr in 2001:2007) {
   
 L_base <- read.csv(paste("1-Intermediate_Processed_Data/L_", yr-1,".csv", sep=""), header = TRUE, sep = ",", dec = ".")
-mu_base <- read.csv(paste("1-Intermediate_Processed_Data/mu_", yr-1,".csv", sep=""), header = TRUE, sep = ",", dec = ".")
+mu_base <- read.csv(paste("2-Final_Data/mu_", yr-1,".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 SEA_countries <- read.csv("1-Intermediate_Processed_Data/SEA_countries.csv", header = TRUE, sep = ",", dec = ".")
 
 
@@ -797,7 +797,7 @@ mu_1999 <- spread(mu_1999, state_dest_sector_dest, rel, fill = NA, convert = TRU
 check <- mu_1999 %>% select(-year, -state_ori, -sector_ori)
 if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
   stop(paste("mobility shares do not add to 1,", yr))
-write.table(mu_1999, file = paste("1-Intermediate_Processed_Data//mu_1999.csv", sep=""), sep = ",", row.names = FALSE)
+write.table(mu_1999, file = paste("2-Final_Data//mu_1999.csv", sep=""), sep = ",", row.names = FALSE)
 
 #check L_1999 and mu_1999 gives L_2000
 L_2000 <- read.csv(paste("1-Intermediate_Processed_Data/L_2000.csv", sep=""), header = TRUE, sep = ",", dec = ".")
@@ -841,7 +841,7 @@ L_states <- spread(L_states, sector, employ, fill = NA, convert = TRUE,  drop = 
 
 L <- rbind(L_states, L_countries)
 
-write.table(L, file = paste("1-Intermediate_Processed_Data/L_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
+write.table(L, file = paste("2-Final_Data/L_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
 
 
 }
