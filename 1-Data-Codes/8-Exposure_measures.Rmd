@@ -1,0 +1,187 @@
+---
+title: "8-Exposure_measures"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
+# Install libraries in case they are not installed
+#for( i in length(libs)){ 
+  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+## General Instructions
+
+1)This code imports WIOD data to create the 2000-2007 change in imports from China to the US and other advanced economies (Australia, Germany, Denmark, Spain, Finland and Japan; New Zealand and Switzerland are not included in the WIOD). Then, runs a linear regression (with and without constant) using the change of sectoral US imports from China as the dependent variable and the change of sectoral  advanced economies' imports from China as the independent variable. 
+
+2) This code computes de exposure measure using i) level el state-sector employment, ii) predicted values of regression in step 1) and iii) total US 2000 sales by sector. It also computes the correlation between the previous exposure measures and the BLS respective ones.  
+
+## Input files
+
+1. `1-Intermediate_Processed_Data/WIOD_countries.csv`
+2. `1-Intermediate_Processed_Data/L_2000.csv`
+3. `1-Intermediate_Processed_Data/state_emp_share_2000.dta`
+
+
+## Output files
+
+1. `2-Final_Data/exposures.xlsx`
+
+
+## Importing general datasets to R
+```{r}
+
+WIOD <- read.csv("1-Intermediate_Processed_Data/WIOD_countries.csv")
+
+L_2000 <- read.csv("1-Intermediate_Processed_Data/L_2000.csv", header = TRUE, sep = ",", dec = ".")
+
+state_emp_share_2000 <- read_dta("1-Intermediate_Processed_Data/state_emp_share_2000.dta")
+state_emp_share_2000 <- state_emp_share_2000 %>%
+  select(-share_adh) %>%
+  dplyr::rename(state = region)
+```
+
+
+# Task 1
+
+```{r}
+
+list_countries <- c("USA", "CHN", "AUS", "DEU", "DNK", "ESP", "FIN", "JPN")
+adv_countries <- c("AUS", "DEU", "DNK", "ESP", "FIN", "JPN")
+
+
+WIOD_1 <- WIOD %>%
+  filter(year == 2000 | year == 2007) %>%
+  filter(importer_country %in% list_countries) %>%
+  select(-importer)
+
+WIOD_1 <- melt(WIOD_1, id.vars=c("year", "importer_country", "sector"), variable.name="exporter", value.name = "value")
+
+WIOD_1 <- WIOD_1 %>%
+  mutate(exporter = gsub("value_", "", exporter)) %>%
+  filter(exporter == "CHN" & importer_country != "CHN" & sector <= 12) %>%
+  mutate(importer_country = ifelse(importer_country %in% adv_countries, "adv", importer_country)) %>%
+  group_by(year, importer_country, exporter, sector) %>%
+  mutate(value = sum(value)) %>%
+  ungroup() %>%
+  distinct(year, importer_country, exporter, sector, .keep_all = TRUE) %>%
+  mutate(value_2000 = ifelse(year == 2000, value, 0)) %>%
+  mutate(value_2007 = ifelse(year == 2007, value, 0)) %>%
+  group_by(importer_country, exporter, sector) %>%
+  mutate(value_2000 = max(value_2000)) %>%
+  mutate(value_2007 = max(value_2007)) %>%
+  ungroup() %>%
+  distinct(importer_country, exporter, sector, .keep_all = TRUE) %>%
+  mutate(M_change = value_2007 - value_2000) %>%
+  select(-year, -value, -value_2000, -value_2007)
+x_data <- WIOD_1 %>%
+  filter(importer_country == "adv") %>%
+  dplyr::rename(delta_M_others = M_change) %>%
+  select(sector, delta_M_others)
+data <- WIOD_1 %>%
+  filter(importer_country == "USA") %>%
+  dplyr::rename(delta_M_USA = M_change) %>%
+  left_join(x_data, by=c("sector"="sector"))
+
+
+#regression
+reg_cons <- lm(data$delta_M_USA ~ data$delta_M_others)
+reg_nocons <- lm(data$delta_M_USA ~ data$delta_M_others -1)
+data$hat_cons <- predict(reg_cons, data.frame(data$delta_M_others))
+data$hat_nocons <- predict(reg_nocons, data.frame(data$delta_M_others))
+
+data_reg <- data %>% select(sector, hat_cons, hat_nocons)
+
+```
+
+
+# Task 2
+
+```{r}
+
+#sales 
+R_US <- WIOD %>% 
+  filter(year == 2000 & sector <= 12) %>%
+  select(importer_country, sector, value_USA)
+R_US <- melt(R_US, id.vars=c("importer_country", "sector"), variable.name="exporter", value.name = "value")
+R_US <- R_US %>%
+  mutate(exporter = gsub("value_", "", exporter)) %>%
+  group_by(exporter, sector) %>%
+  mutate(sales = sum(value)) %>%
+  ungroup() %>%
+  distinct(exporter, sector, .keep_all = TRUE) %>%
+  select(sector, sales)
+
+#employment
+L <- melt(L_2000, id.vars=c("state"), variable.name="sector", value.name = "employ")
+L <- L %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector))) %>%
+  filter(sector != 0) %>%
+  group_by(state) %>%
+  mutate(employ_state = sum(employ)) %>%
+  ungroup() %>%
+  filter(sector <= 12)
+
+#exposure
+final <- L %>%
+  left_join(R_US, by=c("sector"="sector")) %>%
+  left_join(data_reg, by=c("sector"="sector")) %>%
+  mutate(state = tolower(state)) %>%
+  left_join(state_emp_share_2000, by=c("state"="state", "sector"="sector")) %>%
+  mutate(exposure_cons = ( (employ*hat_cons)/(employ_state*sales) ) ) %>%
+  mutate(exposure_nocons = ( (employ*hat_nocons)/(employ_state*sales) ) ) %>%
+  mutate(exposure_cons_bls = ( (share_bls*hat_cons)/(sales) ) ) %>%
+  mutate(exposure_nocons_bls = ( (share_bls*hat_nocons)/(sales) ) ) %>%
+  group_by(state) %>%
+  mutate(ADH_EXP_pred = sum(exposure_cons)) %>%
+  mutate(ADH_EXP_pred_nocons = sum(exposure_nocons)) %>%
+  mutate(ADH_EXP_pred_bls = sum(exposure_cons_bls)) %>%
+  mutate(ADH_EXP_pred_nocons_bls = sum(exposure_nocons_bls)) %>%
+  ungroup() %>%
+  distinct(state, .keep_all = TRUE) %>%
+  dplyr::rename(region = state) %>%
+  select(region, ADH_EXP_pred_nocons, ADH_EXP_pred, ADH_EXP_pred_nocons_bls, ADH_EXP_pred_bls)
+
+corr_cons <- cor(final$ADH_EXP_pred, final$ADH_EXP_pred_bls)
+print(corr_cons)
+corr_nocons <- cor(final$ADH_EXP_pred_nocons, final$ADH_EXP_pred_nocons_bls)
+print(corr_nocons)
+
+#correlation ACS+CPS shares and BLS shares
+temp_L <- L %>% 
+  arrange(state, sector) %>%
+  mutate(share_L = employ/employ_state) %>%
+  select(state, sector, share_L)
+corr_employ_BLS <- cor(temp_L$share_L, state_emp_share_2000$share_bls)
+print(corr_employ_BLS)
+plot(x = temp_L$share_L, y = state_emp_share_2000$share_bls, xlab = "share_L", ylab = "share_bls")
+
+
+final <- final %>%
+  select(region, ADH_EXP_pred_nocons, ADH_EXP_pred)
+
+write_xlsx(final, path = "2-Final_Data/exposures.xlsx")
+
+```
