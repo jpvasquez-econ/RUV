@@ -60,3 +60,10 @@ This file explains the general purpose of each code associated with the data con
 3) This code computes the employment distribution by sector for each country and each year 1999-2007. It also applies proportionality to $L_{2000}$ of step 1 so that the matrix is consistent with WIOD. 
 
 4) This code computes the labor distribution matrices (all regions) for years 1999-2007, $L_{yr}$.
+
+## Code 8:
+
+1) This code imports WIOD data to create the 2000-2007 change in imports from China to the US, $\Delta X_{C,US,s}^{2007-2000}$, and other advanced economies, $\Delta X_{C,OC,s}^{2007-2000}$ (Australia, Germany, Denmark, Spain, Finland and Japan; New Zealand and Switzerland are not included in the WIOD). Then, runs a linear regression (with and without constant) using the change of sectoral US imports from China as the dependent variable and the change of sectoral  advanced economies' imports from China as the independent variable. Finally, the predicted values are computed, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$.
+
+2) This code computes de exposure measure using i) level el state-sector employment, ii) predicted values of regression in step 1) and iii) total US 2000 sales by sector. The exposure measure for each state $i$ is given by $E__{i} \equiv \sum_{s=1}^{12}\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}$, where $R_{US,s,2000}\equiv\sum_{i\in US}\sum_{j}X_{ij,s,2000}$ is total U.S. sales in sector s in the year 2000, $L_{i,s,2000}$ is the employment of state i in manufacturing sector s in year 2000, $L_{i,2000}\equiv\sum_{s}^{14}L_{i,s,2000}$ is the TOTAL employment of state i. This values of employment come from code 7. Finally, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$ is the predicted 2000-2007 change in U.S. imports in sector s from China (computed in the first step).
+
