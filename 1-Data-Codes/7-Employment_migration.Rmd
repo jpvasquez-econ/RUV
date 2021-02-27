@@ -104,6 +104,11 @@ sectors_census2003_final <- sectors_census2003_naics %>%
 
 #state codes
 states_fips <- read_excel("0-Raw_Data/Fips/states_fips_num.xlsx", range = "A1:D53")
+states_fips_mod_ACS <- states_fips %>% 
+  select(st_num, st_name) %>%
+  mutate(st_num = ifelse(st_num > 8, st_num + 1, st_num)) %>%
+  distinct(st_name, .keep_all = TRUE) %>%
+  dplyr::rename(st_name1 = st_name)
 states_fips <- states_fips %>% select(st_fips, st_num, st_name)
 
 
@@ -227,14 +232,18 @@ ACS_PUMS <- ACS_PUMS %>%
   filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% # age
   filter( is.na(ESR) == FALSE & (ESR==1 |ESR==2 | ESR==3 | ESR==6)) %>% #employ status
   mutate(ESR = as.numeric( recode( as.character(ESR), '6' ="0", '3' ="0", '1' = "1", '2' = "1"))) %>%
-  filter( is.na(POWSP) == TRUE | (is.na(POWSP) == FALSE & POWSP != 11 & POWSP <= 56)) %>%
+  filter( is.na(POWSP) == TRUE | (is.na(POWSP) == FALSE & POWSP != 11 & POWSP <= 56 & year>=2003) | (is.na(POWSP) == FALSE & POWSP != 9 & POWSP <= 51 & year<=2002)) %>%
   left_join(states_fips, by=c('POWSP' = 'st_fips')) %>% 
+  mutate(st_num = ifelse(year <= 2002, POWSP, st_num)) %>%
+  mutate(st_num = ifelse(year <= 2002 & POWSP > 8, st_num - 1, st_num)) %>%       
   filter( is.na(st_num) == TRUE  | (is.na(st_num) == FALSE & st_num == c)) %>% # workplace (state)
   select(-st_name, -POWSP, -st_num) %>%
   mutate(state_dest = s_names[c]) %>% 
-  filter( is.na(MIGSP) == TRUE | (is.na(MIGSP) == FALSE & MIGSP != 11 & MIGSP <= 56)) %>%
+  filter( is.na(MIGSP) == TRUE | (is.na(MIGSP) == FALSE & MIGSP != 11 & MIGSP <= 56 & year>=2003) | (is.na(MIGSP) == FALSE & MIGSP != 9 & MIGSP <= 51 & year<=2002)) %>%
   left_join(states_fips, by=c('MIGSP' = 'st_fips')) %>% #lived 1 yr ago
-  select(-MIGSP, -st_num, -AGEP) %>%
+  left_join(states_fips_mod_ACS, by=c('MIGSP' = 'st_num')) %>% #lived 1 yr ago
+  mutate(st_name = ifelse(year <= 2002, st_name1, st_name)) %>%
+  select(-MIGSP, -st_num, -AGEP, -st_name1) %>%
   dplyr::rename(state_ori = st_name, employ_status = ESR) %>%
   mutate(state_ori = ifelse(is.na(state_ori) == TRUE, s_names[c], state_ori)) %>% # no MIG
   dplyr::rename(naics = NAICSP) %>%
@@ -392,7 +401,7 @@ for (yr in 2000:2007) {
 for (mn in mn_list) {
 #print(yr)
 #print(mn)
-temp_cps <- cps %>% 
+temp_cps <- cps %>%
   filter(month == mn & ( (year == yr & inter_num>=5) | (year == yr-1 & inter_num<=4) ))
 a <- dim(temp_cps)[1]
 temp_cps <- temp_cps %>%
@@ -410,19 +419,19 @@ info_past <- temp_cps %>%
   filter(year == yr-1) %>%
   dplyr::rename(sector_ori = sector, state_ori = st_name, age_ori = age)
 temp <- full_join(info_present, info_past, by=c("H_ID", "P_ID"))
-temp <- temp %>% 
+temp <- temp %>%
   filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) #only matches
 base <- rbind(base, temp)
 }
 }
 
-#matching quarter-quarter (run instead of previous one)
-###########################################################
+# #matching quarter-quarter (run instead of previous one)
+# ##########################################################
 # base <- c()
 # for (inter in c(1,5)) {
 # #print(yr)
 # #print(mn)
-# temp_cps <- cps %>% 
+# temp_cps <- cps %>%
 #   filter( inter_num == inter | inter_num == inter+3 )
 # a <- dim(temp_cps)[1]
 # temp_cps <- temp_cps %>%
@@ -440,7 +449,7 @@ base <- rbind(base, temp)
 #   filter(inter_num == inter) %>%
 #   dplyr::rename(sector_ori = sector, state_ori = st_name, age_ori = age)
 # temp <- full_join(info_present, info_past, by=c("H_ID", "P_ID"))
-# temp <- temp %>% 
+# temp <- temp %>%
 #   filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) #only matches
 # base <- rbind(base, temp)
 # }
@@ -582,7 +591,7 @@ write.table(final, file = paste("2-Final_Data//mu_", yr, ".csv", sep=""), sep = 
 
 #write.table(mu_all, file = paste("1-Intermediate_Processed_Data//mu_all.csv", sep=""), sep = ",", row.names = FALSE)
 
-rm(acs, cps, mobility, mu_1999_levels, check, final, mu_all, temp)
+#rm(acs, cps, mobility, mu_1999_levels, check, final, mu_all, temp)
 
 #First attempt to compute L_1999 gives negatives in L
 # #Computing L_1999 using mobility matrices and L_2000
