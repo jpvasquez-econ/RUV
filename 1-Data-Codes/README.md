@@ -61,6 +61,8 @@ This file explains the general purpose of each code associated with the data con
 
 4) This code computes the labor distribution matrices (all regions) for years 1999-2007, $L_{yr}$.
 
+5) This code recreates CDP's Table I (percentages of moving workers' categories).
+
 ## Code 8:
 
 1) This code imports WIOD data to create the 2000-2007 change in imports from China to the US, $\Delta X_{C,US,s}^{2007-2000}$, and other advanced economies, $\Delta X_{C,OC,s}^{2007-2000}$ (Australia, Germany, Denmark, Spain, Finland and Japan; New Zealand and Switzerland are not included in the WIOD). Then, runs a linear regression (with and without constant) using the change of sectoral US imports from China as the dependent variable and the change of sectoral  advanced economies' imports from China as the independent variable. Finally, the predicted values are computed, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$.
