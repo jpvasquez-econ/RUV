@@ -1,0 +1,53 @@
+﻿Detailed Industry  ,Recode,Industry Code
+Agriculture Service ,1,14
+Other Agriculture ,2,14
+Mining ,3,4
+Construction ,4,13
+" Lumber and wood products, except furniture ",5,3
+ Furniture and fixtures ,6,12
+" Stone clay, glass, and concrete product ",7,7
+ Primary metals ,8,8
+ Fabricated metal ,9,8
+ Not specified metal industries ,10,
+"Machinery, except electrical ",11,9
+"Electrical machinery, equipment, and supplies ",12,10
+Motor vehicles and equipment ,13,11
+Aircraft and parts ,14,11
+Other transportation equipment ,15,11
+"Professional and photographic equipment, and watches ",16,12
+"Toys, amusements, and sporting goods ",17,12
+Miscellaneous and not specified manufacturing industries ,18,12
+Food and kindred products ,19,1
+Tobacco manufactures ,20,1
+Textile mill products ,21,2
+Apparel and other finished textile products ,22,2
+Paper and allied products ,23,3
+"Printing, publishing and allied industries ",24,3
+Chemicals and allied products ,25,5
+Petroleum and coal products ,26,4
+Rubber and miscellaneous plastics products ,27,6
+Leather and leather products ,28,2
+Transportation ,29,13
+Communications ,30,13
+Utilities and Sanitary Services ,31,
+Wholesale Trade ,32,13
+Retail Trade ,33,13
+Banking and Other Finance ,34,13
+Insurance and Real Estate ,35,13
+Private Household Services ,36,13
+Business Services ,37,13
+Repair Services ,38,13
+"Personal Services, Except Private Household ",39,13
+Entertainment and Recreation Services ,40,13
+Hospitals ,41,13
+"Health Services, Except Hospitals ",42,13
+Educational Services ,43,13
+Social Services ,44,13
+Other Professional Services ,45,13
+Forestry and Fisheries ,46,14
+"Justice, Public Order and Safety ",47,
+Administration of Human Resource Programs ,48,
+National Security and Internal Affairs ,49,
+Other Public Administration ,50,
+"Armed Forces last job, currently unemployed ",51,
+Filler,,0
