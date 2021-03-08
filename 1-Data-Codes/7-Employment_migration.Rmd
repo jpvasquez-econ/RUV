@@ -384,8 +384,8 @@ cps <- cps %>%
   mutate(P_ID = 1:n()) %>%
   ungroup() %>%
   mutate(employ_status = as.numeric(substr(V1, start=180, stop=181))) %>% #employ status
-  filter( is.na(employ_status)==FALSE & ((employ_status>=1 & employ_status<=4)|employ_status==7)) %>%
-  mutate(employ_status = as.numeric( recode( as.character(employ_status), '7' ="0", '4' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
+  filter( is.na(employ_status)==FALSE & ((employ_status>=1 & employ_status<=6)|employ_status==7)) %>%
+  mutate(employ_status = as.numeric( recode( as.character(employ_status), '6' ="0", '5' ="0", '7' ="0", '4' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
   mutate(st_fips = as.numeric(substr(V1, start=93, stop=94))) %>% #state
   filter( is.na(st_fips) == FALSE & (st_fips != 11 & st_fips <= 56)) %>%
   left_join(states_fips, by=c('st_fips' = 'st_fips')) %>% 
@@ -597,6 +597,7 @@ mobility <- cps %>%
   mutate(n_cps_adj = n_cps/tot_n_cps_accros_sec) %>%
   mutate(n_cps_adj = n_cps_adj*n_acs) %>%
   select(-tot_n_cps_accros_sec, -n_cps, -n_acs)
+
 
 #mu_1999 prime for L_1999
 #the second part of this calculation is in the next step since there is an additional proportionality that has to be implemented in L_2000 so that it is consistent with WIOD
