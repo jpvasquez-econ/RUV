@@ -760,7 +760,7 @@ mobility <- mobility %>%
 
 mu_all <- c()
 epsilon <- 0.001
-for (yr in 1999:2006) {
+for (yr in 2000:2006) {
 final <- mobility %>%
   filter(year == yr)
 #taking out 0's in diagonal and renormalizing so that sum(prob)==1
@@ -938,22 +938,9 @@ rm(mu_1999_prime, L_2000, SEA_US_2000, SEA_1)
 
 ```{r}
 
-#Computing L_1999 using mobility matrices and L_2000
-mu_1999_prime <- read.csv(paste("1-Intermediate_Processed_Data/mu_1999_prime.csv", sep=""), header = TRUE, sep = ",", dec = ".")
-L_1999 <- mu_1999_prime %>%
-  group_by(state_ori, sector_ori) %>%
-  mutate(employ = sum(level_employ)) %>%
-  ungroup() %>%
-  distinct(state_ori, sector_ori, .keep_all = TRUE) %>%
-  dplyr::rename(state = state_ori, sector = sector_ori) %>%
-  select(state, sector, employ) %>%
-  arrange(state, sector)
-L_1999 <- spread(L_1999, sector, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-write.table(L_1999, file = paste("1-Intermediate_Processed_Data/L_1999.csv", sep=""), sep = ",", row.names = FALSE)
-
 #Computing L_2001 and forward
 epsilon <- 0.01
-for (yr in 2000:2007) {
+for (yr in 2001:2007) {
   
 L_base <- read.csv(paste("1-Intermediate_Processed_Data/L_", yr-1,".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 mu_base <- read_excel(paste("2-Final_Data/mu_", yr-1,".xlsx", sep=""))
@@ -990,6 +977,55 @@ L_aft <- spread(L_aft, sector, employ, fill = NA, convert = TRUE,  drop = TRUE, 
 write.table(L_aft, file = paste("1-Intermediate_Processed_Data/L_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
 
 }
+
+
+#Computing L_1999 using mobility matrices and L_2000
+mu_1999_prime <- read.csv(paste("1-Intermediate_Processed_Data/mu_1999_prime.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+L_1999 <- mu_1999_prime %>%
+  group_by(state_ori, sector_ori) %>%
+  mutate(employ = sum(level_employ)) %>%
+  ungroup() %>%
+  distinct(state_ori, sector_ori, .keep_all = TRUE) %>%
+  dplyr::rename(state = state_ori, sector = sector_ori) %>%
+  select(state, sector, employ) %>%
+  arrange(state, sector)
+temp_L_1999 <- L_1999
+L_1999 <- spread(L_1999, sector, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+write.table(L_1999, file = paste("1-Intermediate_Processed_Data/L_1999.csv", sep=""), sep = ",", row.names = FALSE)
+#Recalculating mu_1999 and checking flow 1999-2000
+mu_1999 <- mu_1999_prime %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% 
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+mu_1999 <- mu_1999 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999 <- spread(mu_1999, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+#check sum(prob)==1
+check <- mu_1999 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop(paste("mobility shares do not add to 1,", yr))
+write_xlsx(mu_1999, path = paste("2-Final_Data//mu_1999.xlsx", sep=""))
+#check L_1999 and mu_1999 gives L_2000
+L_2000 <- read.csv(paste("1-Intermediate_Processed_Data/L_2000.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+L_2000 <- melt(L_2000, id.vars=c("state"), variable.name="sector", value.name = "employ")
+L_2000 <- L_2000 %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector))) %>%
+  arrange(state, sector)
+L_2000 <- as.matrix(L_2000$employ)
+L_1999 <- as.matrix(temp_L_1999$employ)
+mu_1999 <- mu_1999 %>% select(-year, -state_ori, -sector_ori)
+mu_1999 <- as.matrix(mu_1999)
+if(sum(L_2000 - (t(mu_1999)%*%L_1999)) > epsilon) 
+  stop(paste("L_1999 and mu_1999 do NOT give L_2000"))
+
+
 
 
 #Combining L states with L countries
@@ -1085,7 +1121,7 @@ write_xlsx(table, path = paste("2-Final_Data/table_I_", yr,".xlsx", sep=""))
 
 
 ```{r}
-mu_1999 <- mu_all %>% filter(year == 1999)
+#mu_1999 <- mu_all %>% filter(year == 1999)
 mu_diag_99 <- mu_1999 %>%
   filter(sector_dest==sector_ori & state_dest==state_ori) %>%
   arrange(rel)
