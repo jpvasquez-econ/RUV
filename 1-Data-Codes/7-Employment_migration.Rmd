@@ -540,6 +540,7 @@ rm(base, final_base)
 
 #filling missing matrix sections as CDP
 cps <- cps %>%
+  mutate(n_cps = ifelse(n_cps==0 & state_dest==state_ori & sector_dest== sector_ori, 1, n_cps)) %>%
   mutate(n_master = ifelse(state_ori == state_dest, n_cps, 0)) %>%
   select(-n_cps) %>%
   group_by(year, state_dest, sector_dest, sector_ori) %>%
@@ -725,7 +726,6 @@ acs <- acs %>%
 #adjusting x's to y's
 mobility <- cps %>%
   left_join(acs, by=c('year' = 'year', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori')) %>% 
-  mutate(n_cps = ifelse(n_cps==0 & state_dest==state_ori & sector_dest== sector_ori, 1, n_cps)) %>%
   group_by(year, state_dest, state_ori) %>% 
   mutate(tot_n_cps_accros_sec = sum(n_cps)) %>% 
   ungroup() %>% 
