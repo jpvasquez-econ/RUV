@@ -310,7 +310,7 @@ rm(ACS_PUMS)
 final_base <- c()
 for (yr in 1999:2006) {
 temp <- acs %>%
-  filter(year >= yr & year <= yr + 1) %>%
+  filter(year >= yr & year <= yr + 2) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -331,7 +331,7 @@ write.table(acs, file = paste("1-Intermediate_Processed_Data//acs.csv", sep=""),
 #Mobility matrices (mu)
 
 #CPS: sector-sector within state movements
-yr_list <- c("98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08")
+yr_list <- c("97", "98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09")
 mn_list <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 #yr_list <- c("03", "04", "05")
@@ -424,7 +424,7 @@ a <- dim(cps)[1]
 no_match <- cps %>%
   group_by(H_ID) %>%
   filter( min(inter_num) > 4 | max(inter_num) < 5 ) %>%
-  filter(year == 1998 | year == 2008) %>%
+  filter(year == 1997 | year == 2009) %>%
   ungroup()
 b <- dim(no_match)[1]
 cps <- cps %>%
@@ -439,7 +439,7 @@ rm(no_match)
 
 #matching persons via same month in consecutive years
 base <- c()
-for (yr in 1999:2008) {
+for (yr in 1998:2009) {
 for (mn in mn_list) {
 #print(yr)
 #print(mn)
@@ -502,7 +502,7 @@ base <- rbind(base, temp)
 final_base <- c()
 for (yr in 1999:2006) {
 temp <- base %>%
-  filter(year >= yr - 1 & year <= yr + 1) %>%
+  filter(year >= yr - 2 & year <= yr + 2) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -538,9 +538,52 @@ cps  <- base %>%
 rm(base, final_base)  
 
 
+write.table(cps, file = paste("1-Intermediate_Processed_Data//cps_temp.csv", sep=""), sep = ",", row.names = FALSE)
+
+cps <- read.csv(paste("1-Intermediate_Processed_Data//cps_temp.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+
+L_2000 <- read.csv("1-Intermediate_Processed_Data/L_2000.csv", header = TRUE, sep = ",", dec = ".")
+L_2000 <- melt(L_2000, id.vars=c("state"), variable.name="sector", value.name = "employ")
+L_2000 <- L_2000 %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector))) %>%
+  arrange(state, sector) %>%
+  dplyr::rename(denom = employ)
+
+#replacing 0 in diag
+cps <- cps %>%
+  left_join(L_2000, by=c("state_dest"="state", "sector_dest"="sector")) %>%
+  mutate(numer = ifelse(sector_ori == sector_dest & state_ori == state_dest, n_cps, 0)) %>%
+  group_by(year, state_dest, sector_dest) %>%
+  mutate(numer = max(numer)) %>%
+  ungroup() %>%
+  mutate(frac = ifelse(numer==0, NA, numer/denom)) %>%
+  #mutate(frac = ifelse(numer==0 | numer<10, NA, numer/denom)) %>%
+  mutate(frac = ifelse(sector_ori == sector_dest & state_ori == state_dest, frac, NA)) %>%
+  group_by(year, state_dest) %>%
+  mutate(frac = mean(frac, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(n_cps=ifelse(sector_ori==sector_dest & state_ori==state_dest & n_cps==0,denom*frac,n_cps)) %>%
+  #mutate(n_cps=ifelse(sector_ori==sector_dest & state_ori==state_dest & (n_cps==0 | n_cps<10),denom*frac,n_cps)) %>%
+  select(-numer, -denom, -frac)
+
+# #replacing 0 in diag for min non-zero
+# temp <- cps %>%
+#   mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
+#   filter(diag == 1 & n_cps != 0) %>%
+#   group_by(year, diag) %>%
+#   mutate(min_diag = min(n_cps)) %>%
+#   ungroup() %>%
+#   select(year, min_diag)
+# cps <- cps %>%
+#   left_join(temp, by=c("year"="year")) %>%
+#   mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
+#   mutate(n_cps = ifelse(diag == 1 & n_cps == 0 , min_diag, n_cps)) %>%
+#   select(-min_diag)
+# rm(temp)
+
 #filling missing matrix sections as CDP
 cps <- cps %>%
-  mutate(n_cps = ifelse(n_cps==0 & state_dest==state_ori & sector_dest== sector_ori, 1, n_cps)) %>%
   mutate(n_master = ifelse(state_ori == state_dest, n_cps, 0)) %>%
   select(-n_cps) %>%
   group_by(year, state_dest, sector_dest, sector_ori) %>%
@@ -641,7 +684,7 @@ acs <- read.csv(paste("1-Intermediate_Processed_Data//acs.csv", sep=""), header 
 final_base <- c()
 for (yr in 1999:2002) {
 temp <- base %>%
-  filter(year >= yr - 1 & year <= yr + 1) %>%
+  filter(year >= yr - 2 & year <= yr + 2) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -870,6 +913,19 @@ SEA_1 <- SEA_1 %>%
   mutate(employ = ifelse(country == "RoW", R/avg_prod_by_employ, employ)) %>%
   select(-R, -R_0, -prod_by_employ, -avg_prod_by_employ)
 
+# ##check mov USA prop
+# 
+# temp_USA <- SEA_1 %>%
+#   filter(country == "USA" & (year == 1999 | year == 2000)) %>%
+#   arrange(year, sector) %>%
+#   mutate(year = paste("y", year , sep=""))
+# temp_USA <- spread(temp_USA, year, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+# temp_USA <- temp_USA %>%
+#   mutate(flow = y2000-y1999) %>%
+#   mutate(flow_perc = (flow*100/y1999))
+
+###
+
 #Population growth 0 and population fixed to year 2000
 SEA_1 <- SEA_1 %>%
   group_by(year, country) %>%
@@ -882,7 +938,21 @@ SEA_1 <- SEA_1 %>%
   ungroup() %>%
   mutate(employ = share*pop) %>%
   select(-pop, -share)
-  
+
+
+# ##check mov USA prop
+# 
+# temp_USA_prop <- SEA_1 %>%
+#   filter(country == "USA" & (year == 1999 | year == 2000)) %>%
+#   arrange(year, sector) %>%
+#   mutate(year = paste("y", year , sep=""))
+# temp_USA_prop <- spread(temp_USA_prop, year, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+# temp_USA_prop <- temp_USA_prop %>%
+#   mutate(flow = y2000-y1999) %>%
+#   mutate(flow_perc = (flow*100/y1999))
+
+###
+
 #SEA countries
 SEA_countries <- SEA_1 %>%
   filter(country != "USA")
@@ -1122,6 +1192,7 @@ write_xlsx(table, path = paste("2-Final_Data/table_I_", yr,".xlsx", sep=""))
 
 ```{r}
 #mu_1999 <- mu_all %>% filter(year == 1999)
+
 mu_diag_99 <- mu_1999 %>%
   filter(sector_dest==sector_ori & state_dest==state_ori) %>%
   arrange(rel)
