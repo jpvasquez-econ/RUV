@@ -239,7 +239,7 @@ if (yr_c == 2000){ACS_PUMS <- read.csv(paste("0-Raw_Data/ACS/20", yr,"/c2ssp", s
 if (yr_c != 2000){ACS_PUMS <- read.csv(paste("0-Raw_Data/ACS/20", yr,"/ss", yr,"p", st,".csv", sep=""), sep=",")}    
 ACS_PUMS$year <- yr_c
 ACS_PUMS <- ACS_PUMS %>%
-  select(year, AGEP, POWSP, MIGSP, ESR, NAICSP) %>%
+  select(year, AGEP, POWSP, MIGSP, ESR, NAICSP, PWGTP) %>%
   filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% # age
   filter( is.na(ESR) == FALSE & (ESR==1 |ESR==2 | ESR==3 | ESR==6)) %>% #employ status
   mutate(ESR = as.numeric( recode( as.character(ESR), '6' ="0", '3' ="0", '1' = "1", '2' = "1"))) %>%
@@ -272,9 +272,11 @@ ACS_PUMS <- ACS_PUMS %>%
 #counting by state and sector, origin and dest
 ACS_PUMS <- ACS_PUMS %>%
   group_by(year, sector_dest, state_dest, state_ori) %>%
-  mutate(n = n()) %>%
+  #mutate(n = n()) %>%
+  mutate(n = sum(PWGTP)) %>% #weights (how many the obs represents)
   ungroup() %>%
-  distinct(year, sector_dest, state_dest, state_ori, .keep_all = TRUE)
+  distinct(year, sector_dest, state_dest, state_ori, .keep_all = TRUE) %>%
+  select(-PWGTP)
 
 #adding missing combinations state_sector_dest-state_ori
 add <- c()
@@ -310,7 +312,7 @@ rm(ACS_PUMS)
 final_base <- c()
 for (yr in 1999:2006) {
 temp <- acs %>%
-  filter(year >= yr & year <= yr + 2) %>%
+  filter(year >= yr & year <= yr + 1) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -331,10 +333,10 @@ write.table(acs, file = paste("1-Intermediate_Processed_Data//acs.csv", sep=""),
 #Mobility matrices (mu)
 
 #CPS: sector-sector within state movements
-yr_list <- c("97", "98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09")
+#yr_list <- c("97", "98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09")
 mn_list <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
-#yr_list <- c("03", "04", "05")
+yr_list <- c("98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08")
 #mn_list <- c("jan")
 #loading PUMS CPS
 cps <- c()
@@ -360,8 +362,10 @@ list_aft_may <- c("may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 #creating variables
 cps <- cps %>%
   mutate(year = as.numeric(year)) %>%
-  mutate(year = ifelse( (year!=99 & year!=98), 2000 + year, 1900+year)) %>%
+  mutate(year = ifelse( (year!=99 & year!=98 & year!=97), 2000 + year, 1900+year)) %>%
   mutate(len = nchar(V1)) %>% #len matches data dictionary
+  mutate(person_weight_1 = as.numeric(substr(V1, start=846, stop=855))) %>% #weight final
+  mutate(person_weight_2 = as.numeric(substr(V1, start=593, stop=602))) %>% #weight longitude
   mutate(inter_num = as.numeric(substr(V1, start=63, stop=64))) %>% #interview number (1-8)
   mutate(H_ID_1 = substr(V1, start=1, stop=15)) %>% #household ID 
   mutate(H_ID_2 = substr(V1, start=71, stop=74)) %>% 
@@ -385,6 +389,7 @@ cps <- cps %>%
   ungroup() %>%
   mutate(employ_status = as.numeric(substr(V1, start=180, stop=181))) %>% #employ status
   filter( is.na(employ_status)==FALSE & ((employ_status>=1 & employ_status<=6)|employ_status==7)) %>%
+  #mutate(employ_status_back = employ_status) %>%
   mutate(employ_status = as.numeric( recode( as.character(employ_status), '6' ="0", '5' ="0", '7' ="0", '4' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
   mutate(st_fips = as.numeric(substr(V1, start=93, stop=94))) %>% #state
   filter( is.na(st_fips) == FALSE & (st_fips != 11 & st_fips <= 56)) %>%
@@ -424,7 +429,7 @@ a <- dim(cps)[1]
 no_match <- cps %>%
   group_by(H_ID) %>%
   filter( min(inter_num) > 4 | max(inter_num) < 5 ) %>%
-  filter(year == 1997 | year == 2009) %>%
+  filter(year == 1998 | year == 2008) %>%
   ungroup()
 b <- dim(no_match)[1]
 cps <- cps %>%
@@ -439,7 +444,7 @@ rm(no_match)
 
 #matching persons via same month in consecutive years
 base <- c()
-for (yr in 1998:2009) {
+for (yr in 1999:2008) {
 for (mn in mn_list) {
 #print(yr)
 #print(mn)
@@ -455,7 +460,7 @@ b <- dim(temp_cps)[1]
 #print(b*100/a)
 info_present <- temp_cps %>%
   filter(year == yr) %>%
-  select(-age, -year, -month, -gender, -inter_num) %>%
+  select(-age, -year, -month, -gender, -inter_num, -person_weight_1, -person_weight_2) %>%
   dplyr::rename(sector_dest = sector, state_dest = st_name)
 info_past <- temp_cps %>%
   filter(year == yr-1) %>%
@@ -486,7 +491,7 @@ base <- rbind(base, temp)
 # #print(b*100/a)
 # info_present <- temp_cps %>%
 #   filter(inter_num == inter+3) %>%
-#   select(-age, -year, -month, -gender, -inter_num) %>%
+#   select(-age, -year, -month, -gender, -inter_num, -person_weight_1, -person_weight_2) %>%
 #   dplyr::rename(sector_dest = sector, state_dest = st_name)
 # info_past <- temp_cps %>%
 #   filter(inter_num == inter) %>%
@@ -502,7 +507,7 @@ base <- rbind(base, temp)
 final_base <- c()
 for (yr in 1999:2006) {
 temp <- base %>%
-  filter(year >= yr - 2 & year <= yr + 2) %>%
+  filter(year >= yr - 1 & year <= yr + 1) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -511,11 +516,14 @@ base <- final_base
 #counting sector-sector within state movements
 base <- base %>%
   select(-age_ori, -month, -H_ID, -P_ID, -gender, -inter_num) %>%
+  #filter(person_weight_1!= -1) %>%
+  filter(person_weight_2!= -1) %>%
   group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
-  mutate(n_cps = n()) %>%
+  #mutate(n_cps = sum(person_weight_1)) %>%
+  mutate(n_cps = sum(person_weight_2)) %>%
   ungroup() %>%
   distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) %>%
-  select(year, state_ori, sector_ori, state_dest, sector_dest, everything())
+  select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps)
 
 
 #adding missing combinations
@@ -633,6 +641,7 @@ cps_persons <- cps_supp %>%
   mutate(len = nchar(V1)) %>% #len matches data dictionary
   mutate(type = as.numeric(substr(V1, start=1, stop=1))) %>% 
   filter(type == 3) %>% # only persons  
+  mutate(person_weight = as.numeric(substr(V1, start=66, stop=73))) %>% 
   mutate(ID_H = substr(V1, start=2, stop=6)) %>% #Household ID
   mutate(age = as.numeric(substr(V1, start=15, stop=16))) %>% #age
   filter(age >=25 & age <=65) %>%
@@ -659,7 +668,7 @@ cps_persons <- cps_supp %>%
   mutate(census_sec = (substr(V1, start = 190, stop = 192))) %>% # sector_ori
   mutate(census_sec = ifelse(employ_status == 0, NA, census_sec)) %>%
   mutate(census_sec = gsub(" ", "", census_sec)) %>%
-  select(year, state_dest, sector_dest, state_ori, census_sec)
+  select(year, state_dest, sector_dest, state_ori, census_sec, person_weight)
 #sectors 
 cps_1 <- cps_persons %>%
   filter(year < 2003) %>%
@@ -684,7 +693,7 @@ acs <- read.csv(paste("1-Intermediate_Processed_Data//acs.csv", sep=""), header 
 final_base <- c()
 for (yr in 1999:2002) {
 temp <- base %>%
-  filter(year >= yr - 2 & year <= yr + 2) %>%
+  filter(year >= yr - 1 & year <= yr + 1) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -692,9 +701,10 @@ base <- final_base
 #counting sector-sector within state movements
 base <- base %>%
   group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
-  mutate(n_cps = n()) %>%
+  mutate(n_cps = sum(person_weight)) %>%
   ungroup() %>%
-  distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE)
+  distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) %>%
+  select(-person_weight)
 
 #adding missing combinations
 add <- c()
@@ -914,17 +924,17 @@ SEA_1 <- SEA_1 %>%
   select(-R, -R_0, -prod_by_employ, -avg_prod_by_employ)
 
 # ##check mov USA prop
-# 
-# temp_USA <- SEA_1 %>%
-#   filter(country == "USA" & (year == 1999 | year == 2000)) %>%
-#   arrange(year, sector) %>%
-#   mutate(year = paste("y", year , sep=""))
-# temp_USA <- spread(temp_USA, year, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-# temp_USA <- temp_USA %>%
-#   mutate(flow = y2000-y1999) %>%
-#   mutate(flow_perc = (flow*100/y1999))
 
-###
+temp_USA <- SEA_1 %>%
+  filter(country == "USA" & (year == 1999 | year == 2000)) %>%
+  arrange(year, sector) %>%
+  mutate(year = paste("y", year , sep=""))
+temp_USA <- spread(temp_USA, year, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+temp_USA <- temp_USA %>%
+  mutate(flow = y2000-y1999) %>%
+  mutate(flow_perc = (flow*100/y1999))
+
+# ##
 
 #Population growth 0 and population fixed to year 2000
 SEA_1 <- SEA_1 %>%
@@ -941,15 +951,15 @@ SEA_1 <- SEA_1 %>%
 
 
 # ##check mov USA prop
-# 
-# temp_USA_prop <- SEA_1 %>%
-#   filter(country == "USA" & (year == 1999 | year == 2000)) %>%
-#   arrange(year, sector) %>%
-#   mutate(year = paste("y", year , sep=""))
-# temp_USA_prop <- spread(temp_USA_prop, year, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-# temp_USA_prop <- temp_USA_prop %>%
-#   mutate(flow = y2000-y1999) %>%
-#   mutate(flow_perc = (flow*100/y1999))
+
+temp_USA_prop <- SEA_1 %>%
+  filter(country == "USA" & (year == 1999 | year == 2000)) %>%
+  arrange(year, sector) %>%
+  mutate(year = paste("y", year , sep=""))
+temp_USA_prop <- spread(temp_USA_prop, year, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+temp_USA_prop <- temp_USA_prop %>%
+  mutate(flow = y2000-y1999) %>%
+  mutate(flow_perc = (flow*100/y1999))
 
 ###
 
