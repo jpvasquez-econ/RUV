@@ -240,7 +240,8 @@ if (yr_c != 2000){ACS_PUMS <- read.csv(paste("0-Raw_Data/ACS/20", yr,"/ss", yr,"
 ACS_PUMS$year <- yr_c
 ACS_PUMS <- ACS_PUMS %>%
   select(year, AGEP, POWSP, MIGSP, ESR, NAICSP, PWGTP) %>%
-  filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% # age
+  #filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% # age
+  filter( is.na(AGEP) == TRUE  | (AGEP >= 16)) %>% # age
   filter( is.na(ESR) == FALSE & (ESR==1 |ESR==2 | ESR==3 | ESR==6)) %>% #employ status
   mutate(ESR = as.numeric( recode( as.character(ESR), '6' ="0", '3' ="0", '1' = "1", '2' = "1"))) %>%
   filter( is.na(POWSP) == TRUE | (is.na(POWSP) == FALSE & POWSP != 11 & POWSP <= 56 & year>=2003) | (is.na(POWSP) == FALSE & POWSP != 9 & POWSP <= 51 & year<=2002)) %>%
@@ -312,7 +313,7 @@ rm(ACS_PUMS)
 final_base <- c()
 for (yr in 1999:2006) {
 temp <- acs %>%
-  filter(year >= yr & year <= yr + 1) %>%
+  filter(year >= yr & year <= yr + 0) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -333,7 +334,7 @@ write.table(acs, file = paste("1-Intermediate_Processed_Data//acs.csv", sep=""),
 #Mobility matrices (mu)
 
 #CPS: sector-sector within state movements
-#yr_list <- c("97", "98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08", "09")
+#yr_list <- c("01", "02", "03")
 mn_list <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 yr_list <- c("98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08")
@@ -381,7 +382,8 @@ cps <- cps %>%
   mutate(H_ID = ifelse(temp==1 & inter_num>=5, paste(H_ID_1, H_ID_2_aft, sep="_"), H_ID)) %>%
   select(-H_ID_1, -H_ID_2_bef, -H_ID_2_aft) %>%
   mutate(age = as.numeric(substr(V1, start=122, stop=123))) %>% #age
-  filter(age >=25 & age <=65) %>%
+  #filter(age >=25 & age <=65) %>%
+  filter(age >=16) %>%
   mutate(gender = as.numeric(substr(V1, start=129, stop=130))) %>% #male: 1; female: 2
   arrange(year, month, H_ID, -age) %>%
   group_by(year, month, H_ID) %>%
@@ -415,6 +417,24 @@ cps_2 <- cps %>%
   filter(is.na(sector) == FALSE) %>%
   select(-V1, -census_sec, -len, -employ_status, -st_num, -temp)
 
+####borrar
+hola_1 <- cps_1 %>%
+  filter(sector != 0 & year==2002) %>%
+  #filter(person_weight_1!= -1) %>%
+  filter(person_weight_2!= -1) %>%
+  group_by(year, month, sector) %>%
+  #mutate(n_cps = sum(person_weight_1/(10000*1000))) %>%
+  mutate(n_cps = sum(person_weight_2/(10000*1000))) %>%
+  ungroup() %>%
+  distinct(year, month, sector, .keep_all = TRUE) %>%
+  group_by(year, sector) %>%
+  mutate(n_cps = mean(n_cps)) %>%
+  ungroup() %>%
+  distinct(year, sector, .keep_all = TRUE) %>%
+  select(year, sector, n_cps) %>%
+  arrange(year, sector)
+####
+
 cps <- rbind(cps_1, cps_2)
 rm(cps_1, cps_2)
 
@@ -442,6 +462,25 @@ c <- dim(cps)[1]
 print(c*100/(a-b))
 rm(no_match)
 
+####borrar
+hola_3 <- cps %>%
+  filter(sector != 0 & year==2002) %>%
+  #filter(person_weight_1!= -1) %>%
+  filter(person_weight_2!= -1) %>%
+  group_by(year, month, sector) %>%
+  #mutate(n_cps = sum(person_weight_1/(10000*1000))) %>%
+  mutate(n_cps = sum(person_weight_2/(10000*1000))) %>%
+  ungroup() %>%
+  distinct(year, month, sector, .keep_all = TRUE) %>%
+  group_by(year, sector) %>%
+  mutate(n_cps = mean(n_cps)) %>%
+  ungroup() %>%
+  distinct(year, sector, .keep_all = TRUE) %>%
+  select(year, sector, n_cps) %>%
+  arrange(year, sector)
+####
+
+
 #matching persons via same month in consecutive years
 base <- c()
 for (yr in 1999:2008) {
@@ -460,11 +499,12 @@ b <- dim(temp_cps)[1]
 #print(b*100/a)
 info_present <- temp_cps %>%
   filter(year == yr) %>%
-  select(-age, -year, -month, -gender, -inter_num, -person_weight_1, -person_weight_2) %>%
+  #select(-age, -year, -month, -gender, -inter_num, -person_weight_1, -person_weight_2) %>%
   dplyr::rename(sector_dest = sector, state_dest = st_name)
 info_past <- temp_cps %>%
   filter(year == yr-1) %>%
-  dplyr::rename(sector_ori = sector, state_ori = st_name, age_ori = age)
+  select(-age, -year, -month, -gender, -inter_num, -person_weight_1, -person_weight_2) %>%
+  dplyr::rename(sector_ori = sector, state_ori = st_name)
 temp <- full_join(info_present, info_past, by=c("H_ID", "P_ID"))
 temp <- temp %>%
   filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) %>% #only matches
@@ -505,26 +545,45 @@ base <- rbind(base, temp)
 
 #rolling basis
 final_base <- c()
-for (yr in 1999:2006) {
+for (yr in 2000:2007) {
 temp <- base %>%
-  filter(year >= yr - 1 & year <= yr + 1) %>%
+  filter(year >= yr & year <= yr + 0) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
-base <- final_base
+base <- final_base %>% mutate(year = year - 1)
 
 #counting sector-sector within state movements
 base <- base %>%
-  select(-age_ori, -month, -H_ID, -P_ID, -gender, -inter_num) %>%
+  select(-month, -H_ID, -P_ID, -gender, -inter_num) %>%
   #filter(person_weight_1!= -1) %>%
   filter(person_weight_2!= -1) %>%
   group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
-  #mutate(n_cps = sum(person_weight_1)) %>%
-  mutate(n_cps = sum(person_weight_2)) %>%
+  #mutate(n_cps = sum(person_weight_1/(10000))) %>%
+  mutate(n_cps = sum(person_weight_2/(10000))) %>%
   ungroup() %>%
   distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) %>%
   select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps)
 
+
+####borrar
+
+# base <- base %>%
+#   select(-H_ID, -P_ID, -gender, -inter_num) %>%
+#   #filter(person_weight_1!= -1) %>%
+#   filter(person_weight_2!= -1) %>%
+#   group_by(year, month, state_ori, sector_ori, state_dest, sector_dest) %>%
+#   #mutate(n_cps = sum(person_weight_1/(10000))) %>%
+#   mutate(n_cps = sum(person_weight_2/(10000))) %>%
+#   ungroup() %>%
+#   distinct(year, month, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) %>%
+#   group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
+#   mutate(n_cps = mean(n_cps)) %>%
+#   ungroup() %>%
+#   distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) %>%
+#   select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps)
+
+####
 
 #adding missing combinations
 add <- c()
@@ -549,6 +608,18 @@ rm(base, final_base)
 write.table(cps, file = paste("1-Intermediate_Processed_Data//cps_temp.csv", sep=""), sep = ",", row.names = FALSE)
 
 cps <- read.csv(paste("1-Intermediate_Processed_Data//cps_temp.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+
+####borrar
+hola_2 <- cps %>%
+  group_by(year, sector_dest) %>%
+  mutate(n_cps = sum(n_cps)) %>%
+  ungroup() %>%
+  filter(year==2002 & sector_dest!=0) %>%
+  distinct(year, sector_dest, .keep_all = TRUE) %>%
+  select(year, sector_dest, n_cps) %>%
+  arrange(year, sector_dest)
+####
 
 
 L_2000 <- read.csv("1-Intermediate_Processed_Data/L_2000.csv", header = TRUE, sep = ",", dec = ".")
@@ -589,6 +660,7 @@ cps <- cps %>%
 #   mutate(n_cps = ifelse(diag == 1 & n_cps == 0 , min_diag, n_cps)) %>%
 #   select(-min_diag)
 # rm(temp)
+
 
 #filling missing matrix sections as CDP
 cps <- cps %>%
@@ -730,19 +802,16 @@ write.table(cps_supp, file = paste("1-Intermediate_Processed_Data//cps_supp.csv"
 
 ```
 
-
-
-
 ```{r}
 cps <- read.csv(paste("1-Intermediate_Processed_Data//cps_2.csv", sep=""), header = TRUE, sep = ",", dec = ".")
-cps_supp <- read.csv(paste("1-Intermediate_Processed_Data//cps_supp.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+#cps_supp <- read.csv(paste("1-Intermediate_Processed_Data//cps_supp.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
-cps <- rbind(cps, cps_supp)
-cps <- cps %>%
-  group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
-  mutate(n_cps = sum(n_cps)) %>%
-  ungroup() %>%
-  distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE)
+# cps <- rbind(cps, cps_supp)
+# cps <- cps %>%
+#   group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
+#   mutate(n_cps = sum(n_cps)) %>%
+#   ungroup() %>%
+#   distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE)
 
 
 acs <- read.csv(paste("1-Intermediate_Processed_Data//acs.csv", sep=""), header = TRUE, sep = ",", dec = ".")
@@ -756,8 +825,8 @@ acs <- read.csv(paste("1-Intermediate_Processed_Data//acs.csv", sep=""), header 
 #   mutate(tot_within_state = sum(n_cps_temp)) %>%
 #   mutate(tot = sum(n_cps)) %>%
 #   ungroup() %>%
-#   mutate(n_cps = ifelse(tot_within_state < 10 & state_ori==state_dest & sector_ori==sector_dest, tot, n_cps)) %>%
-#   mutate(n_cps = ifelse(tot_within_state < 10 & (state_ori!=state_dest | sector_ori!=sector_dest), 0, n_cps)) %>%
+#   mutate(n_cps = ifelse(tot_within_state < 650 & state_ori==state_dest & sector_ori==sector_dest, tot, n_cps)) %>%
+#   mutate(n_cps = ifelse(tot_within_state < 650 & (state_ori!=state_dest | sector_ori!=sector_dest), 0, n_cps)) %>%
 #   select(-tot, -tot_within_state, -n_cps_temp)
 
 ######
@@ -785,6 +854,22 @@ mobility <- cps %>%
   mutate(n_cps_adj = n_cps/tot_n_cps_accros_sec) %>%
   mutate(n_cps_adj = n_cps_adj*n_acs) %>%
   select(-tot_n_cps_accros_sec, -n_cps, -n_acs)
+
+
+###special output
+
+temp <- cps %>%
+  filter(year<=2000)
+write.table(temp, file = paste("2-Final_Data//cps_1999_2000.csv", sep=""), sep = ",", row.names = FALSE)
+temp <- acs %>%
+  filter(year<=2000)
+write.table(temp, file = paste("2-Final_Data//acs_1999_2000.csv", sep=""), sep = ",", row.names = FALSE)
+temp <- mobility %>%
+  filter(year<=2000)
+write.table(temp, file = paste("2-Final_Data//x_adj_1999_2000.csv", sep=""), sep = ",", row.names = FALSE)
+
+###
+
 
 
 #mu_1999 prime for L_1999
