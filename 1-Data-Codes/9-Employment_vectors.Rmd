@@ -1,0 +1,222 @@
+---
+title: "9-Employment_vectors"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
+# Install libraries in case they are not installed
+#for( i in length(libs)){ 
+  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+## General Instructions
+
+1) This code creates employment vectors by year (1998-2009), state and sector. The information was taken from BLS (https://www.bls.gov/lau/rdscnp16.htm) for sector 0 (unemployment and out of labor force) and BEA's SAEMP25 series (https://apps.bea.gov/iTable/iTable.cfm?reqid=70&step=1&acrdn=4) for the rest of the sectors.  
+
+2) This code produces the level migration flows for state-sector for options 1-5, including the distances between states. 
+
+## Input files
+
+1. `0-Raw_Data/BEA/BEA_employ_1998_2001.xlsx`
+2. `0-Raw_Data/BEA/BEA_employ_2002_2005.xlsx`
+3. `0-Raw_Data/BEA/BEA_employ_2006_2009.xlsx`
+4. `0-Raw_Data/BLS/state_employ.xlsx`
+5. `1-Intermediate_Processed_Data/distances.csv`
+6. `1-Intermediate_Processed_Data/Options/Op",i,"/L_1999.xlsx`
+7. `1-Intermediate_Processed_Data/Options/Op",i,"/mu_1999.xlsx`
+
+
+## Output files
+
+1. `2-Final_Data//BEA_employment.xlsx`
+2. `2-Final_Data//Gravity_employment.xlsx`
+
+
+
+## Task 1
+```{r}
+
+`%notin%` <- Negate(`%in%`)
+
+#loading
+BEA_employ_1 <- read_excel("0-Raw_Data/BEA/BEA_employ_1998_2001.xlsx", 
+    skip = 4)
+BEA_employ_1 <- BEA_employ_1 %>%
+  filter(GeoFips > 0 & GeoFips <= 56000) %>%
+  select(-GeoFips, -Description, -LineCode)
+BEA_employ_2 <- read_excel("0-Raw_Data/BEA/BEA_employ_2002_2005.xlsx", 
+    skip = 4)
+BEA_employ_2 <- BEA_employ_2 %>%
+  filter(GeoFips > 0 & GeoFips <= 56000) %>%
+  select("2002", "2003", "2004", "2005")
+BEA_employ_3 <- read_excel("0-Raw_Data/BEA/BEA_employ_2006_2009.xlsx", 
+    skip = 4)
+BEA_employ_3 <- BEA_employ_3 %>%
+  filter(GeoFips > 0 & GeoFips <= 56000) %>%
+  select("2006", "2007", "2008", "2009")
+
+BEA_employ <- cbind(BEA_employ_1, BEA_employ_2, BEA_employ_3)
+BEA_employ <- BEA_employ %>%
+  filter(GeoName != "District of Columbia" & is.na(sector)==FALSE) %>%
+  select(GeoName, sector, everything())
+colnames(BEA_employ) <- c("state", "sector", 1998:2009)  
+
+BEA_employ <- melt(BEA_employ, id.vars=c("state", "sector"), variable.name="year", value.name = "employ")
+
+#correcting missing values (using labor growth for each state)
+BEA_employ <- BEA_employ %>%
+  mutate(temp = ifelse(employ=="(T)" | employ=="(D)", 1, 0)) %>%
+  mutate(employ = ifelse(employ=="(T)" | employ=="(D)", NA, employ)) %>%
+  mutate(employ = as.numeric(employ)) %>%
+  group_by(year, state, sector) %>%
+  mutate(employ = sum(employ, na.rm=TRUE)) %>%
+  ungroup() %>%
+  distinct(year, state, sector, .keep_all=TRUE)
+
+growth <-  BEA_employ %>%
+  group_by(year, state) %>%
+  mutate(employ = sum(employ, na.rm=TRUE)) %>%
+  ungroup() %>%
+  distinct(year, state, .keep_all=TRUE) %>%
+  arrange(state, year) %>%
+  mutate(growth = ifelse(year == 1998, NA, (employ/lag(employ))-1  )) %>%
+  select(year, state, growth)
+
+BEA_employ <- BEA_employ %>%
+  left_join(growth, by=c("year"="year", "state"="state"))
+
+for (i in c(1:10)) {
+BEA_employ <- BEA_employ %>% 
+  arrange(state, sector, year) %>%
+  mutate(employ = ifelse(temp==1 & employ==0 & year!=1998, (growth+1)*lag(employ), employ))
+}
+
+growth <- growth %>% 
+  mutate(year = as.numeric(as.character(year)) - 1) %>%
+  filter(is.na(growth)==FALSE)
+BEA_employ <- BEA_employ %>% 
+  mutate(year = as.numeric(as.character(year))) %>%
+  select(-growth) %>%
+  left_join(growth, by=c("year"="year", "state"="state"))
+  
+for (i in c(1:10)) {
+BEA_employ <- BEA_employ %>% 
+  arrange(state, sector, -year) %>%
+  mutate(employ = ifelse(temp==1 & employ==0 & year!=2009, lag(employ)/(growth+1), employ))
+}
+
+BEA_employ <- BEA_employ %>%
+  select(-growth, -temp)
+
+
+#sector 0: unemployed and out of labor force
+sector_0 <- read_excel("0-Raw_Data/BLS/state_employ.xlsx", skip = 7)
+sector_0 <- sector_0 %>%
+  filter(FIPS %notin% c("037", "11", "51000")) %>%
+  mutate(year = as.numeric(year)) %>%
+  filter(year >=1998 & year<=2009) %>%
+  mutate(employ = unemployment + (population - labor_force), sector = 0) %>%
+  select(state, sector, year, employ)
+
+BEA_employ <- rbind(BEA_employ, sector_0)
+BEA_employ <- BEA_employ %>%
+  mutate(year = paste("L_",year, sep="")) %>%
+  mutate(sector = sector + 100) %>%
+  mutate(employ = round(employ, 0))
+
+BEA_employ <- spread(BEA_employ, year, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+BEA_employ <- BEA_employ %>% arrange(sector)
+
+#saving
+write_xlsx(BEA_employ, path = "2-Final_Data//BEA_employment.xlsx")
+
+
+```
+
+
+# Task 2
+
+```{r}
+
+distances <- read.csv(paste("1-Intermediate_Processed_Data/distances.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+distances <- distances %>%
+  mutate(len_o = nchar(iso_o), len_d = nchar(iso_d)) %>%
+  filter(len_o > 3 & len_d > 3 & year == 2000) %>%
+  select(iso_o, iso_d, dist)
+
+#flows
+final <- c()
+for (i in c(1:5)) {
+  
+L_1999 <- read_excel(paste("1-Intermediate_Processed_Data/Options/Op",i,"/L_1999.xlsx", sep=""))
+mu_1999 <- read_excel(paste("1-Intermediate_Processed_Data/Options/Op",i,"/mu_1999.xlsx", sep=""))  
+
+L_1999 <- melt(L_1999, id.vars=c("region"), variable.name="sector", value.name = "employ")
+L_1999 <- L_1999 %>% 
+  mutate(sector = as.numeric(gsub("sector_", "", sector))) %>%
+  mutate(len = nchar(region)) %>%
+  filter(len > 3) %>%
+  select(-len) %>%
+  arrange(region, sector)
+L_1999 <- L_1999$employ
+temp <- mu_1999
+mu_1999 <- mu_1999 %>% select(-year, -state_ori, -sector_ori)
+
+L_flow <- mu_1999*L_1999
+L_flow$state_ori <- temp$state_ori
+L_flow$sector_ori <- temp$sector_ori
+L_flow <- melt(L_flow, id.vars=c("state_ori", "sector_ori"), variable.name="state_sector", value.name = "employ")
+L_flow <- L_flow %>% 
+  mutate(len = nchar(as.character(state_sector))) %>%
+  mutate(state_dest = substr(state_sector, 1, len-3)) %>%
+  mutate(sector_dest = as.numeric(substr(state_sector, len-1, len))) %>%
+  select(-len, -state_sector) %>%
+  arrange(state_ori, sector_ori, state_dest, sector_dest)
+
+final <- cbind(final, L_flow$employ)
+}
+
+final <- data.frame(final)
+final$state_ori <- L_flow$state_ori
+final$sector_ori <- L_flow$sector_ori
+final$state_dest <- L_flow$state_dest
+final$sector_dest <- L_flow$sector_dest
+
+
+colnames(final) <- c("L_flow_op1", "L_flow_op2", "L_flow_op3", "L_flow_op4", "L_flow_op5", "state_ori", "sector_ori", "state_dest", "sector_dest")
+final <- final %>% select(state_ori, sector_ori, state_dest, sector_dest, everything())
+
+#adding distances
+final <- final %>% 
+  mutate(year = 1999) %>%
+  left_join(distances, by=c("state_ori"="iso_o", "state_dest"="iso_d")) %>%
+  select(year, state_ori, sector_ori, state_dest, sector_dest, dist, everything())
+
+#saving
+write_xlsx(final, path = "2-Final_Data//Gravity_employment.xlsx")
+
+```
+
