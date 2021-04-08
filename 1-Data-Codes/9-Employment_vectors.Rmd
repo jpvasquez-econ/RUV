@@ -23,7 +23,7 @@ remove(list = ls())
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'fastDummies', 'lfe');
 # Install libraries in case they are not installed
 #for( i in length(libs)){ 
   #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
@@ -37,6 +37,8 @@ lapply( libs, require, character.only=TRUE );
 1) This code creates employment vectors by year (1998-2009), state and sector. The information was taken from BLS (https://www.bls.gov/lau/rdscnp16.htm) for sector 0 (unemployment and out of labor force) and BEA's SAEMP25 series (https://apps.bea.gov/iTable/iTable.cfm?reqid=70&step=1&acrdn=4) for the rest of the sectors.  
 
 2) This code produces the level migration flows for state-sector for options 1-5, including the distances between states. 
+
+3) This code runs regression on 
 
 ## Input files
 
@@ -220,3 +222,85 @@ write_xlsx(final, path = "2-Final_Data//Gravity_employment.xlsx")
 
 ```
 
+
+# Task 3
+
+```{r}
+
+#loading
+gravity_employment <- read_excel("2-Final_Data/Gravity_employment.xlsx")
+
+gravity_employment_1 <- gravity_employment %>%
+  mutate(I_is = paste(state_ori, "_",sector_ori, sep="")) %>%
+  mutate(I_jk = paste(state_dest,"_",sector_dest, sep="")) %>%
+  mutate(I_sk = paste(sector_ori,"_",sector_dest, sep="")) %>%
+  mutate(log_dist = log(dist))
+
+I_is_dumm <- gravity_employment_1 %>%
+  mutate(I_is = paste("I_is_",I_is, sep="")) %>%
+  distinct(I_is)
+
+I_jk_dumm <- gravity_employment_1 %>%
+  filter(I_jk != "Wyoming_14") %>%
+  mutate(I_jk = paste("I_jk_",I_jk, sep="")) %>%
+  distinct(I_jk)
+
+I_sk_dumm <- gravity_employment_1 %>%
+  filter(sector_dest != 14 & sector_ori != 14) %>%
+  mutate(I_sk = paste("I_sk_",I_sk, sep="")) %>%
+  distinct(I_sk)
+
+I_is_dumm <- I_is_dumm %>% pull(I_is)
+I_jk_dumm <- I_jk_dumm %>% pull(I_jk)
+I_sk_dumm <- I_sk_dumm %>% pull(I_sk)
+
+gravity_employment_1 <- gravity_employment_1 %>% 
+  dummy_cols(select_columns = "I_is", ignore_na = TRUE) %>% 
+  dummy_cols(select_columns = "I_jk", ignore_na = TRUE) %>%
+  dummy_cols(select_columns = "I_sk", ignore_na = TRUE)
+
+dep_var <- "L_flow_op5"
+Sys.time()
+# running regression
+fit <- felm(as.formula(paste(dep_var," ~ log_dist +", paste(I_jk_dumm, collapse = "+"),"+", paste(I_sk_dumm, collapse = "+"),"| I_is")),
+            data = gravity_employment_1, exactDOF = TRUE)
+Sys.time()
+##
+
+coefs <- fit$coefficients %>%
+  as_tibble(rownames = "term") 
+
+write.table(coefs, paste("1-Intermediate_Processed_Data/reg_mig_gravity_",dep_var,".csv", sep=""), sep=",", row.names = FALSE)
+
+coefs <-read.csv(paste("1-Intermediate_Processed_Data/reg_mig_gravity_",dep_var,".csv", sep=""))
+
+gravity_employment_2 <- gravity_employment_1 %>% select(-year, -state_ori, -sector_ori, -state_dest, -sector_dest, -dist, -L_flow_op1, -L_flow_op2, -L_flow_op3, -L_flow_op4, -L_flow_op5, -I_is, -I_jk, -I_sk)
+col_names <- data.frame(colnames(gravity_employment_2))
+colnames(col_names) <- c("variable")
+col_names <- col_names %>%
+  left_join(coefs, by=c("variable"="term"))
+colnames(col_names) <- c("variable", "coef")
+col_names <- col_names %>%
+  mutate(coef = ifelse(is.na(coef) == TRUE, 0, coef)) %>%
+  mutate(coef = ifelse(substr(variable, 1,4)=="I_is" | substr(variable, 1,4)=="I_jk", 0, coef))
+matrix <- as.matrix(gravity_employment_2)
+vec <- as.matrix(col_names$coef)  
+Z <- data.frame(matrix %*% vec)
+colnames(Z) <- c("Z")
+Z$state_ori <- gravity_employment_1$state_ori
+Z$sector_ori <- gravity_employment_1$sector_ori
+Z$state_dest <- gravity_employment_1$state_dest
+Z$sector_dest <- gravity_employment_1$sector_dest
+
+Z <- Z %>% 
+  mutate(year = 1999) %>%
+  select(year, state_ori, sector_ori, state_dest, sector_dest, everything()) %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+
+Z <- spread(Z, state_dest_sector_dest, Z, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+
+write.table(Z, paste("2-Final_Data/Z_mig_gravity_",dep_var,".csv", sep=""), sep=",", row.names = FALSE)
+
+```
