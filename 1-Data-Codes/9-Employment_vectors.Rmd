@@ -301,6 +301,6 @@ Z <- Z %>%
 
 Z <- spread(Z, state_dest_sector_dest, Z, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
-write.table(Z, paste("2-Final_Data/Z_mig_gravity_",dep_var,".csv", sep=""), sep=",", row.names = FALSE)
+write_xlsx(Z, path = "2-Final_Data/smoothed_flows_1999.xlsx")
 
 ```
