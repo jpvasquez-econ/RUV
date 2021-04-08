@@ -230,6 +230,13 @@ write_xlsx(final, path = "2-Final_Data//Gravity_employment.xlsx")
 #loading
 gravity_employment <- read_excel("2-Final_Data/Gravity_employment.xlsx")
 
+#shares instead of levels
+gravity_employment <- gravity_employment %>%
+  group_by(state_ori, sector_ori) %>%
+  mutate(tot_ori = sum(L_flow_op5)) %>%
+  ungroup() %>%
+  mutate(L_flow_op5 = L_flow_op5/tot_ori)
+
 gravity_employment_1 <- gravity_employment %>%
   mutate(I_is = paste(state_ori, "_",sector_ori, sep="")) %>%
   mutate(I_jk = paste(state_dest,"_",sector_dest, sep="")) %>%
