@@ -242,6 +242,7 @@ gravity_employment_1 <- gravity_employment %>%
   mutate(I_is = paste(state_ori, "_",sector_ori, sep="")) %>%
   mutate(I_jk = paste(state_dest,"_",sector_dest, sep="")) %>%
   mutate(I_sk = paste(sector_ori,"_",sector_dest, sep="")) %>%
+  mutate(I_isjk = ifelse(state_ori==state_dest & sector_ori==sector_dest, 1, 0)) %>%
   mutate(log_dist = log(dist))
 
 I_is_dumm <- gravity_employment_1 %>%
@@ -270,7 +271,7 @@ gravity_employment_1 <- gravity_employment_1 %>%
 dep_var <- "L_flow_op5"
 Sys.time()
 # running regression
-fit <- felm(as.formula(paste(dep_var," ~ log_dist +", paste(I_jk_dumm, collapse = "+"),"+", paste(I_sk_dumm, collapse = "+"),"| I_is")),
+fit <- felm(as.formula(paste(dep_var," ~ log_dist + I_isjk +", paste(I_jk_dumm, collapse = "+"),"+", paste(I_sk_dumm, collapse = "+"),"| I_is")),
             data = gravity_employment_1, exactDOF = TRUE)
 Sys.time()
 ##
@@ -290,7 +291,7 @@ col_names <- col_names %>%
 colnames(col_names) <- c("variable", "coef")
 col_names <- col_names %>%
   mutate(coef = ifelse(is.na(coef) == TRUE, 0, coef)) %>%
-  mutate(coef = ifelse(substr(variable, 1,4)=="I_is" | substr(variable, 1,4)=="I_jk", 0, coef))
+  mutate(coef = ifelse(substr(variable, 1,5)=="I_is_" | substr(variable, 1,5)=="I_jk_", 0, coef))
 matrix <- as.matrix(gravity_employment_2)
 vec <- as.matrix(col_names$coef)  
 Z <- data.frame(matrix %*% vec)
