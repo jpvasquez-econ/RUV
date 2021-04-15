@@ -337,7 +337,7 @@ acs <- read.csv(paste("1-Intermediate_Processed_Data//acs_temp.csv", sep=""), he
 final_base <- c()
 for (yr in 1999:2006) {
 temp <- acs %>%
-  filter(year >= yr & year <= yr + 1) %>%
+  filter(year >= yr & year <= yr + 2) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -587,7 +587,7 @@ base <- base %>%
 final_base <- c()
 for (yr in 2000:2007) {
 temp <- base %>%
-  filter(year >= yr - 1 & year <= yr + 1) %>%
+  filter(year >= yr - 2 & year <= yr + 2) %>%
   mutate(year = yr)
 final_base <- rbind(final_base, temp)
 }
@@ -957,6 +957,9 @@ mobility <- cps %>%
   mutate(n_cps_adj = ifelse(is.na(n_cps_adj) == TRUE, 0, n_cps_adj)) %>%
   mutate(n_cps_adj = n_cps_adj*n_acs) %>%
   select(-tot_n_cps_accros_sec, -n_cps, -n_acs)
+
+# mobility <- cps %>%
+#   mutate(n_cps_adj = n_cps)
 
 # mobility <- cps %>%
 #   left_join(acs, by=c('year' = 'year', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori', 'sector_dest'='sector_dest')) %>%
