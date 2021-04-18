@@ -193,7 +193,7 @@ census <- census %>%
   filter(type=="P") %>% #keeping only persons and NOT households
   mutate(age = as.numeric(substr(V1, start=25, stop=26))) %>%
   filter(age >=25 & age <=65) %>%
-  mutate(weight = as.numeric(substr(V1, start=13, stop=16))) %>%
+  #mutate(weight = as.numeric(substr(V1, start=13, stop=16))) %>%
   mutate(employ_status = as.numeric(substr(V1, start=154, stop=154))) %>%
   filter(is.na(employ_status) == FALSE & ((employ_status>=1 & employ_status<=3)|employ_status==6)) %>%
   mutate(employ_status = as.numeric(recode( as.character(employ_status), '6' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
@@ -210,7 +210,8 @@ census <- census %>%
 #computing employment and unemployment, by sector and state
 census <- census %>%
   group_by(state, sector) %>%
-  mutate(num_employ = sum(weight)) %>%
+  mutate(num_employ = n()) %>%
+  #mutate(num_employ = sum(weight)) %>%
   ungroup() %>%
   distinct(state, sector, .keep_all = TRUE) %>%
   select(state, sector, num_employ) %>%
