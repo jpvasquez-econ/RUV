@@ -193,6 +193,7 @@ census <- census %>%
   filter(type=="P") %>% #keeping only persons and NOT households
   mutate(age = as.numeric(substr(V1, start=25, stop=26))) %>%
   filter(age >=25 & age <=65) %>%
+  mutate(weight = as.numeric(substr(V1, start=13, stop=16))) %>%
   mutate(employ_status = as.numeric(substr(V1, start=154, stop=154))) %>%
   filter(is.na(employ_status) == FALSE & ((employ_status>=1 & employ_status<=3)|employ_status==6)) %>%
   mutate(employ_status = as.numeric(recode( as.character(employ_status), '6' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
@@ -209,7 +210,7 @@ census <- census %>%
 #computing employment and unemployment, by sector and state
 census <- census %>%
   group_by(state, sector) %>%
-  mutate(num_employ = n()) %>%
+  mutate(num_employ = sum(weight)) %>%
   ungroup() %>%
   distinct(state, sector, .keep_all = TRUE) %>%
   select(state, sector, num_employ) %>%
@@ -259,8 +260,8 @@ if (yr_c != 2000){ACS_PUMS <- read.csv(paste("0-Raw_Data/ACS/20", yr,"/ss", yr,"
 ACS_PUMS$year <- yr_c
 ACS_PUMS <- ACS_PUMS %>%
   select(year, AGEP, POWSP, MIGSP, ESR, NAICSP, PWGTP) %>%
-  #filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% # age
-  filter( is.na(AGEP) == TRUE  | (AGEP >= 16)) %>% # age
+  filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% # age
+  #filter( is.na(AGEP) == TRUE  | (AGEP >= 16)) %>% # age
   filter( is.na(ESR) == FALSE & (ESR==1 |ESR==2 | ESR==3 | ESR==6)) %>% #employ status
   mutate(ESR = as.numeric( recode( as.character(ESR), '6' ="0", '3' ="0", '1' = "1", '2' = "1"))) %>%
   filter( is.na(POWSP) == TRUE | (is.na(POWSP) == FALSE & POWSP != 11 & POWSP <= 56 & year>=2003) | (is.na(POWSP) == FALSE & POWSP != 9 & POWSP <= 51 & year<=2002)) %>%
@@ -435,8 +436,8 @@ cps <- cps %>%
   mutate(H_ID = ifelse(temp==1 & inter_num>=5, paste(H_ID_1, H_ID_2_aft, sep="_"), H_ID)) %>%
   select(-H_ID_1, -H_ID_2_bef, -H_ID_2_aft) %>%
   mutate(age = as.numeric(substr(V1, start=122, stop=123))) %>% #age
-  #filter(age >=25 & age <=65) %>%
-  filter(age >=16) %>%
+  filter(age >=25 & age <=65) %>%
+  #filter(age >=16) %>%
   mutate(gender = as.numeric(substr(V1, start=129, stop=130))) %>% #male: 1; female: 2
   arrange(year, month, H_ID, -age) %>%
   group_by(year, month, H_ID) %>%

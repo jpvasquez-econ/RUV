@@ -328,3 +328,109 @@ Z <- spread(Z, state_dest_sector_dest, Z, fill = NA, convert = TRUE,  drop = TRU
 write_xlsx(Z, path = "2-Final_Data/smoothed_flows_1999.xlsx")
 
 ```
+
+#no mig
+```{r}
+# 
+# #loading
+# gravity_employment <- read_excel("2-Final_Data/Gravity_employment.xlsx")
+# 
+# #shares instead of levels
+# gravity_employment <- gravity_employment %>%
+#   group_by(state_ori, sector_ori) %>%
+#   mutate(tot_ori = sum(L_flow_op6)) %>%
+#   ungroup() %>%
+#   mutate(L_flow_op6 = L_flow_op6/tot_ori) %>%
+#   select(-tot_ori)
+# 
+# gravity_employment_1 <- gravity_employment %>%
+#   mutate(I_is = paste(state_ori, "_",sector_ori, sep="")) %>%
+#   mutate(I_jk = paste(state_dest,"_",sector_dest, sep="")) %>%
+#   mutate(I_sk = paste(sector_ori,"_",sector_dest, sep="")) %>%
+#   mutate(I_same_st_sec = ifelse(state_ori==state_dest & sector_ori==sector_dest, 1, 0)) %>%
+#   mutate(I_same_st = ifelse(state_ori==state_dest, 1, 0)) %>%
+#   mutate(I_same_sec = ifelse(sector_ori==sector_dest, 1, 0)) %>%
+#   mutate(log_dist = log(dist))
+# 
+# I_is_dumm <- gravity_employment_1 %>%
+#   mutate(I_is = paste("I_is_",I_is, sep="")) %>%
+#   distinct(I_is)
+# 
+# I_jk_dumm <- gravity_employment_1 %>%
+#   filter(I_jk != "Wyoming_14") %>%
+#   mutate(I_jk = paste("I_jk_",I_jk, sep="")) %>%
+#   distinct(I_jk)
+# 
+# I_sk_dumm <- gravity_employment_1 %>%
+#   filter(sector_dest != 14 & sector_ori != 14 & sector_ori != 13) %>%
+#   mutate(I_sk = paste("I_sk_",I_sk, sep="")) %>%
+#   distinct(I_sk)
+# 
+# I_same_st_sk <- gravity_employment_1 %>%
+#   filter(sector_dest != 14 & sector_ori != 14 & sector_ori != 13) %>%
+#   mutate(I_same_st_sk = paste("I_same_st*I_sk_",I_sk, sep="")) %>%
+#   distinct(I_same_st_sk)
+# 
+# I_is_dumm <- I_is_dumm %>% pull(I_is)
+# I_jk_dumm <- I_jk_dumm %>% pull(I_jk)
+# I_sk_dumm <- I_sk_dumm %>% pull(I_sk)
+# I_same_st_sk <- I_same_st_sk %>% pull(I_same_st_sk)
+# 
+# gravity_employment_1 <- gravity_employment_1 %>% 
+#   dummy_cols(select_columns = "I_is", ignore_na = TRUE) %>% 
+#   dummy_cols(select_columns = "I_jk", ignore_na = TRUE) 
+# gravity_employment_no_dumm <- gravity_employment_1
+# gravity_employment_1 <- gravity_employment_1 %>% 
+#   dummy_cols(select_columns = "I_sk", ignore_na = TRUE)
+# 
+# dep_var <- "L_flow_op6"
+# Sys.time()
+# # running regression
+# fit <- felm(as.formula(paste(dep_var," ~ -1 + log_dist + I_same_st_sec + I_same_sec +",paste(I_is_dumm, collapse = "+"),"+", paste(I_jk_dumm, collapse = "+"),"+",paste(I_same_st_sk, collapse = "+"))),
+#             data = gravity_employment_1, exactDOF = TRUE)
+# Sys.time()
+# ##
+# 
+# 
+# coefs <- fit$coefficients %>%
+#   as_tibble(rownames = "term") 
+# print(summary(fit)$r.squared)
+# fitted_val <- fit$fitted.values
+# 
+# write.table(coefs, paste("1-Intermediate_Processed_Data/reg_mig_gravity_coefs_",dep_var,".csv", sep=""), sep=",", row.names = FALSE)
+# write.table(fitted_val, paste("1-Intermediate_Processed_Data/reg_mig_gravity_fitted_",dep_var,".csv", sep=""), sep=",", row.names = FALSE)
+# 
+# fitted_val <-read.csv(paste("1-Intermediate_Processed_Data/reg_mig_gravity_fitted_",dep_var,".csv", sep=""))
+# coefs <-read.csv(paste("1-Intermediate_Processed_Data/reg_mig_gravity_coefs_",dep_var,".csv", sep=""))
+# 
+# gravity_employment_2 <- gravity_employment_no_dumm %>% select(-year, -state_ori, -sector_ori, -state_dest, -sector_dest, -dist, -L_flow_op1, -L_flow_op2, -L_flow_op3, -L_flow_op4, -L_flow_op5, -L_flow_op6, -I_is, -I_jk, -I_sk, -log_dist, -I_same_st_sec, -I_same_st, -I_same_sec)
+# col_names <- data.frame(colnames(gravity_employment_2))
+# colnames(col_names) <- c("variable")
+# col_names <- col_names %>%
+#   left_join(coefs, by=c("variable"="term"))
+# colnames(col_names) <- c("variable", "coef")
+# col_names <- col_names %>%
+#   mutate(coef = ifelse(is.na(coef) == TRUE, 0, coef))
+# matrix <- as.matrix(gravity_employment_2)
+# vec <- as.matrix(col_names$coef)  
+# Z_delta_eta <- data.frame(matrix %*% vec)
+# Z <- fitted_val-Z_delta_eta
+# colnames(Z) <- c("Z")
+# Z$state_ori <- gravity_employment_1$state_ori
+# Z$sector_ori <- gravity_employment_1$sector_ori
+# Z$state_dest <- gravity_employment_1$state_dest
+# Z$sector_dest <- gravity_employment_1$sector_dest
+# 
+# Z <- Z %>% 
+#   mutate(year = 1999) %>%
+#   select(year, state_ori, sector_ori, state_dest, sector_dest, everything()) %>%
+#   mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+#   mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+#   select(-state_dest, -sector_dest)
+# 
+# Z <- spread(Z, state_dest_sector_dest, Z, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+# 
+# write_xlsx(Z, path = "2-Final_Data/smoothed_flows_1999.xlsx")
+
+```
+
