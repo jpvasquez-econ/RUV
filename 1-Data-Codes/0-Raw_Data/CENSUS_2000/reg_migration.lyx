@@ -1,0 +1,332 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{lscape}
+\usepackage{hyperref}
+\usepackage{bookmark}
+\usepackage{array}
+\hypersetup{colorlinks=true,citecolor=blue, linkcolor=black}
+%\usepackage{mathpazo}
+%\usepackage[round]{natbib}
+\setcitestyle{round}
+\usepackage{color}
+\usepackage{xcolor}
+\definecolor{DarkBlue}{rgb}{0,0,0.5}
+\hypersetup{
+    unicode=false,          					% non-Latin characters in Acrobat's bookmarks
+    pdftoolbar=true,       						% show Acrobat's toolbar?
+    pdfmenubar=true,        					% show Acrobat's menu?
+    pdffitwindow=true,     						% window fit to page when opened
+    pdfstartview={FitH},    					% fits the width of the page to the window
+    pdftitle={JP}, % title
+    pdfauthor={JP},     		% author
+    pdfsubject={LaTeX},   						% subject of the document
+    pdfcreator={JP},	% creator of the document
+    pdfproducer={JP}, 			% producer of the document
+    pdfkeywords={}, % list of keywords
+    pdfdisplaydoctitle=true,					% display title instead of file name
+    pdfnewwindow=true,      					% links in new window
+    colorlinks=true, 
+    linktoc=all,   
+    % false: boxed links; true: colored links
+    linkcolor=DarkBlue,          			% color of internal links
+    citecolor=DarkBlue,	        			% color of links to bibliography
+    filecolor=DarkBlue,      					% color of file links
+    urlcolor=DarkBlue,           					% color of external links
+    citebordercolor=0 0 1,	 					% color of border around cites 0 1 0
+    linkbordercolor=0 0 1,						% color of border around links 1 0 0
+    urlbordercolor=0 0 1,							%	color of border around URL links 0 1 1
+		frenchlinks=false,    						% use small caps instead of color for links
+		linktocpage=true,
+    draft=false
+}
+\def\old@comma{,}
+\catcode`\,=13
+\def,{%
+  \ifmmode%
+    \old@comma\discretionary{}{}{}%
+  \else%
+    \old@comma%
+  \fi%
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "ae" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 1
+\bibtex_command default
+\index_command default
+\float_placement h
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 0
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+We need to run a regression with many fixed effects and store some coefficients.
+ Take the file 
+\begin_inset Quotes eld
+\end_inset
+
+Gravity_employment.
+\begin_inset Quotes erd
+\end_inset
+
+ The outcome variable will be the number of people who move from region
+ 
+\begin_inset Formula $i$
+\end_inset
+
+ and sector 
+\begin_inset Formula $s$
+\end_inset
+
+ to region 
+\begin_inset Formula $j$
+\end_inset
+
+ and sector 
+\begin_inset Formula $k$
+\end_inset
+
+.
+ This is what we have in each of the columns 
+\begin_inset Quotes eld
+\end_inset
+
+L_flow_opt
+\begin_inset Quotes erd
+\end_inset
+
+ for each of the options.
+ Let's define this outcome variable as 
+\begin_inset Formula $X_{is,jk}^{t,t+1}$
+\end_inset
+
+, where 
+\begin_inset Formula $t=1999$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+The regression we want to run is the following:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+X_{is,jk}^{t,t+1}=\delta_{is}^{t,t+1}+\eta_{jk}^{t,t+1}+\beta{}^{t,t+1}\ln dist_{i,j}+\mu_{s,k}^{t,t+1}+\varepsilon_{is,jk}^{t,t+1}
+\]
+
+\end_inset
+
+and we will only use data for 1999 and 2000.
+ 
+\end_layout
+
+\begin_layout Standard
+For the regressors, we need to follow these steps:
+\end_layout
+
+\begin_layout Enumerate
+Compute 
+\begin_inset Formula $i\times s=750$
+\end_inset
+
+ indicator functions 
+\begin_inset Formula $I_{is}^{\delta}$
+\end_inset
+
+ equal to one if the origin sector is 
+\begin_inset Formula $s$
+\end_inset
+
+ and the origin state is 
+\begin_inset Formula $i$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Compute 
+\begin_inset Formula $i\times s=750$
+\end_inset
+
+ indicator functions 
+\begin_inset Formula $I_{jk}^{\eta}$
+\end_inset
+
+ equal to one if the destination sector is 
+\begin_inset Formula $k$
+\end_inset
+
+ and the destination state is 
+\begin_inset Formula $j$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Drop the indicator variable 
+\begin_inset Formula $I_{jk}^{\eta}$
+\end_inset
+
+ when the destination state 
+\begin_inset Formula $j$
+\end_inset
+
+ is Wyoming and the destination sector 
+\begin_inset Formula $s$
+\end_inset
+
+ is the last one of our sectors (sector 14).
+ 
+\end_layout
+
+\begin_layout Enumerate
+Compute 
+\begin_inset Formula $s\times k=225$
+\end_inset
+
+ indicator functions 
+\begin_inset Formula $I_{sk}^{\mu}$
+\end_inset
+
+ equal to one if the origin sector is 
+\begin_inset Formula $s$
+\end_inset
+
+ and the destination sector is 
+\begin_inset Formula $k$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Run the regression (note that there is no constant):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+X_{is,jk}^{t,t+1}=\sum_{i}\sum_{s}\theta_{is}I_{is}^{\delta}+\sum_{j}\sum_{k}\gamma_{jk}I_{jk}^{\eta}+\beta{}^{t,t+1}\ln dist_{i,j}+\sum_{s}\sum_{k}\alpha_{sk}I_{sk}^{\mu}+\varepsilon_{is,jk}^{t,t+1}
+\]
+
+\end_inset
+
+which is just the equivalent to the regression above (we did all these steps
+ to make sure exactly what dummy we are omitting).
+ 
+\end_layout
+
+\begin_layout Itemize
+Then compute the prediced quantity:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Z_{is,jk}^{t,t+1}=\hat{\beta}{}^{t,t+1}\ln dist_{i,j}+\sum_{s}\sum_{k}\hat{\alpha}_{sk}I_{sk}^{\mu}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Finally, arrange 
+\begin_inset Formula $Z_{is,jk}^{t,t+1}$
+\end_inset
+
+ in the exact same format as the matrix mu_1999.
+ For now do this for the matrix of Option 5 ("rolling 2")
+\end_layout
+
+\end_body
+\end_document

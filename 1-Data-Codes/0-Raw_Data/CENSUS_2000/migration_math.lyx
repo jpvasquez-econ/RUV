@@ -1,0 +1,371 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{lscape}
+\usepackage{hyperref}
+\usepackage{bookmark}
+\usepackage{array}
+\hypersetup{colorlinks=true,citecolor=blue, linkcolor=black}
+%\usepackage{mathpazo}
+%\usepackage[round]{natbib}
+\setcitestyle{round}
+\usepackage{color}
+\usepackage{xcolor}
+\definecolor{DarkBlue}{rgb}{0,0,0.5}
+\hypersetup{
+    unicode=false,          					% non-Latin characters in Acrobat's bookmarks
+    pdftoolbar=true,       						% show Acrobat's toolbar?
+    pdfmenubar=true,        					% show Acrobat's menu?
+    pdffitwindow=true,     						% window fit to page when opened
+    pdfstartview={FitH},    					% fits the width of the page to the window
+    pdftitle={JP}, % title
+    pdfauthor={JP},     		% author
+    pdfsubject={LaTeX},   						% subject of the document
+    pdfcreator={JP},	% creator of the document
+    pdfproducer={JP}, 			% producer of the document
+    pdfkeywords={}, % list of keywords
+    pdfdisplaydoctitle=true,					% display title instead of file name
+    pdfnewwindow=true,      					% links in new window
+    colorlinks=true, 
+    linktoc=all,   
+    % false: boxed links; true: colored links
+    linkcolor=DarkBlue,          			% color of internal links
+    citecolor=DarkBlue,	        			% color of links to bibliography
+    filecolor=DarkBlue,      					% color of file links
+    urlcolor=DarkBlue,           					% color of external links
+    citebordercolor=0 0 1,	 					% color of border around cites 0 1 0
+    linkbordercolor=0 0 1,						% color of border around links 1 0 0
+    urlbordercolor=0 0 1,							%	color of border around URL links 0 1 1
+		frenchlinks=false,    						% use small caps instead of color for links
+		linktocpage=true,
+    draft=false
+}
+\def\old@comma{,}
+\catcode`\,=13
+\def,{%
+  \ifmmode%
+    \old@comma\discretionary{}{}{}%
+  \else%
+    \old@comma%
+  \fi%
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "ae" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 1
+\bibtex_command default
+\index_command default
+\float_placement h
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 0
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Refresher
+\end_layout
+
+\begin_layout Standard
+We want to compute 
+\begin_inset Formula $\mu^{nj,ik}$
+\end_inset
+
+ (the share of workers that were originally in region 
+\begin_inset Formula $n$
+\end_inset
+
+ and sector 
+\begin_inset Formula $j$
+\end_inset
+
+ that move to region 
+\begin_inset Formula $i$
+\end_inset
+
+ and sector 
+\begin_inset Formula $k$
+\end_inset
+
+).
+ We have 
+\begin_inset Formula $N$
+\end_inset
+
+ regions and sectors from 
+\begin_inset Formula $0$
+\end_inset
+
+ to 
+\begin_inset Formula $J$
+\end_inset
+
+.
+ Under that definition we have that: 
+\begin_inset Formula 
+\begin{align*}
+\sum_{i=1}^{N}\sum_{k=0}^{J}\mu_{t}^{nj,ik} & =1\;\forall t\\
+L_{t+1}^{ik} & =\sum_{n=1}^{N}\sum_{j=0}^{J}\mu_{t}^{nj,ik}\times L_{t}^{nj}\;\forall i,k
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $L_{t}^{nj,ik}$
+\end_inset
+
+ be the number of workers who move from region 
+\begin_inset Formula $n$
+\end_inset
+
+ and sector 
+\begin_inset Formula $j$
+\end_inset
+
+ to region 
+\begin_inset Formula $i$
+\end_inset
+
+ and sector 
+\begin_inset Formula $k$
+\end_inset
+
+ between 
+\begin_inset Formula $t$
+\end_inset
+
+ and 
+\begin_inset Formula $t+1$
+\end_inset
+
+.
+ We construct 
+\begin_inset Formula $L_{t}^{nj,ik}$
+\end_inset
+
+ combining the CPS and ACS surveys.
+ Then we define:
+\begin_inset Formula 
+\[
+\mu_{t}^{nj,ik}=\frac{L_{t}^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=0}^{J}L_{t}^{nj,pq}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let us drop the time subscript for now.
+ We have two data sources:
+\end_layout
+
+\begin_layout Itemize
+From the CPS data we get 
+\begin_inset Formula $L_{CPS}^{nj,nk}\:\forall n\in US$
+\end_inset
+
+ and any origin or destination sectors 
+\begin_inset Formula $k,j$
+\end_inset
+
+ (intra-state flows of people between sectors).
+ 
+\end_layout
+
+\begin_layout Itemize
+From the ACS data we have 
+\begin_inset Formula $L_{ACS}^{n?,ik}\:\forall i,n\in US$
+\end_inset
+
+ and destination sector 
+\begin_inset Formula $k$
+\end_inset
+
+ (interstate flows but without knowing the sector of origin).
+ 
+\end_layout
+
+\begin_layout Section
+How to square the two databases together? Proportionality
+\end_layout
+
+\begin_layout Standard
+I refer below to how we combine ACS and CPS.
+ After what I describe, we then need to do an extra proportionality so that
+ total number of workers in the US adds up to the total of the US in 2000
+ according to WIOD.
+\end_layout
+
+\begin_layout Subsection
+What we are doing now
+\end_layout
+
+\begin_layout Subsubsection
+Within the State
+\end_layout
+
+\begin_layout Standard
+We follow a a proportionality assumption so that the total movements within
+ the state coincide with ACS (just the total across sectors but not sector
+ by sector).
+ In this case, we will be prioritizing the CPS when it comes to intra-state
+ movements.
+ This is, let's fix a given state 
+\begin_inset Formula $n$
+\end_inset
+
+ and define: 
+\begin_inset Formula 
+\[
+L^{nj,nk}=\sum_{q}L_{ACS}^{n?,nq}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in US,\:\forall j,k
+\]
+
+\end_inset
+
+Note that 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,nk}=\sum_{q}L_{ACS}^{n?,nq}$
+\end_inset
+
+ (so the total coincides at the movements within the state regardless of
+ the sector but not necessarily sector-by-sector).
+ Also note that 
+\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$
+\end_inset
+
+ by construction.
+\end_layout
+
+\begin_layout Subsubsection
+Between States
+\end_layout
+
+\begin_layout Standard
+We use 
+\begin_inset Formula 
+\[
+L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}\quad i\neq n.
+\]
+
+\end_inset
+
+Note that this satisfies 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+This means that combining with the 
+\begin_inset Quotes eld
+\end_inset
+
+Within the State part
+\begin_inset Quotes erd
+\end_inset
+
+ we just need to define 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}\quad\forall n,i\in US;\,\forall j,k
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_body
+\end_document

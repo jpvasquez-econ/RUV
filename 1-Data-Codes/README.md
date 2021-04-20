@@ -55,17 +55,26 @@ This file explains the general purpose of each code associated with the data con
 
 1) This code computes the employment level for each state and sector in year 2000, $L_{2000}$. 
 
-2) This code computes the US mobility matrices (as shares of initial allocation of workers in a specific state-sector) for years 2000-2006, $\mu_{yr}$. The matrices are constructed so that flows go from rows to columns.  
+2) This code computes the US mobility matrices (as shares of initial allocation of workers in a specific state-sector) for years 1999-2006, $\mu_{yr}$. The matrices are constructed so that flows go from rows to columns.  
 
 3) This code computes the employment distribution by sector for each country and each year 1999-2007. It also applies proportionality to $L_{2000}$ of step 1 so that the matrix is consistent with WIOD. 
 
-4) This code computes the labor distribution matrices (all regions) for years 1999-2007, $L_{yr}$.
+4) This code computes the final (all regions) employment distribution, L, for 1999-2007 and the mobility matrix 1999.
 
-5) This code recreates CDP's Table I (percentages of moving workers' categories).
+5) This code recreates CDP's Table I (percentages of moving workers' categories) and produces an histogram for the diagonal values of mobility matrix 1999.
 
 ## Code 8:
 
 1) This code imports WIOD data to create the 2000-2007 change in imports from China to the US, $\Delta X_{C,US,s}^{2007-2000}$, and other advanced economies, $\Delta X_{C,OC,s}^{2007-2000}$ (Australia, Germany, Denmark, Spain, Finland and Japan; New Zealand and Switzerland are not included in the WIOD). Then, runs a linear regression (with and without constant) using the change of sectoral US imports from China as the dependent variable and the change of sectoral  advanced economies' imports from China as the independent variable. Finally, the predicted values are computed, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$.
 
 2) This code computes de exposure measure using i) level el state-sector employment, ii) predicted values of regression in step 1) and iii) total US 2000 sales by sector. The exposure measure for each state $i$ is given by $E__{i} \equiv \sum_{s=1}^{12}\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}$, where $R_{US,s,2000}\equiv\sum_{i\in US}\sum_{j}X_{ij,s,2000}$ is total U.S. sales in sector s in the year 2000, $L_{i,s,2000}$ is the employment of state i in manufacturing sector s in year 2000, $L_{i,2000}\equiv\sum_{s}^{14}L_{i,s,2000}$ is the TOTAL employment of state i. This values of employment come from code 7. Finally, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$ is the predicted 2000-2007 change in U.S. imports in sector s from China (computed in the first step).
+
+## Code 9:
+
+1) This code creates employment vectors by year (1998-2009), state and sector. The information was taken from BLS for sector 0 (unemployment and out of labor force) and BEA's SAEMP25 series for the rest of the sectors.  
+
+2) This code produces the level migration flows for state-sector for options 1-5, including the distances between states. Options 1-4 were old tests that are no longer used. Option 5 are the outputs of code 7-Employment_migration. 
+
+3) This code runs a regression on the shares of mobility matrix 1999. The X variables are: no constant, log distance between origin-destination states, same origin-destination state and sector dummy, same origin-destination state dummy, same origin-destination sector dummy; $$I_{is}^{\delta}$$ dummy equal to one if the origin sector is s and the origin state is i; $$I_{jk}^{\eta}$$ dummy equal to one if the destination sector is k and the destination state is j; $$I_{sk}^{\mu}$$ dummy equal to one if the origin sector is s and the destination sector is k; interaction $$I_{\text{same_st}}*I_{sk}^{\mu}$$. Because of multicollinearity, indicator variable I_{jk}^{\eta} when the destination state j is Wyoming and the destination sector s is the last one of our sectors (sector 14) is dropped, as well as other dummies $$I_{sk}^{\mu}$$. This code's final output is a variant of the predicted values of the regression: 
+$$Z_{is,jk}^{t,t+1}= \hat{\mu_{is,jk}^{t,t+1}} - \sum_{i}\sum_{s}\theta_{is}I_{is}^{\delta}-\sum_{j}\sum_{k}\gamma_{jk}I_{jk}^{\eta}$$.
 

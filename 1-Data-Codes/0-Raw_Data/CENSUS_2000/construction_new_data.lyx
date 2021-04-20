@@ -1,0 +1,588 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{lscape}
+\usepackage{hyperref}
+\usepackage{bookmark}
+\usepackage{array}
+\hypersetup{colorlinks=true,citecolor=blue, linkcolor=black}
+%\usepackage{mathpazo}
+%\usepackage[round]{natbib}
+\setcitestyle{round}
+\usepackage{color}
+\usepackage{xcolor}
+\definecolor{DarkBlue}{rgb}{0,0,0.5}
+\hypersetup{
+    unicode=false,          					% non-Latin characters in Acrobat's bookmarks
+    pdftoolbar=true,       						% show Acrobat's toolbar?
+    pdfmenubar=true,        					% show Acrobat's menu?
+    pdffitwindow=true,     						% window fit to page when opened
+    pdfstartview={FitH},    					% fits the width of the page to the window
+    pdftitle={JP}, % title
+    pdfauthor={JP},     		% author
+    pdfsubject={LaTeX},   						% subject of the document
+    pdfcreator={JP},	% creator of the document
+    pdfproducer={JP}, 			% producer of the document
+    pdfkeywords={}, % list of keywords
+    pdfdisplaydoctitle=true,					% display title instead of file name
+    pdfnewwindow=true,      					% links in new window
+    colorlinks=true, 
+    linktoc=all,   
+    % false: boxed links; true: colored links
+    linkcolor=DarkBlue,          			% color of internal links
+    citecolor=DarkBlue,	        			% color of links to bibliography
+    filecolor=DarkBlue,      					% color of file links
+    urlcolor=DarkBlue,           					% color of external links
+    citebordercolor=0 0 1,	 					% color of border around cites 0 1 0
+    linkbordercolor=0 0 1,						% color of border around links 1 0 0
+    urlbordercolor=0 0 1,							%	color of border around URL links 0 1 1
+		frenchlinks=false,    						% use small caps instead of color for links
+		linktocpage=true,
+    draft=false
+}
+\def\old@comma{,}
+\catcode`\,=13
+\def,{%
+  \ifmmode%
+    \old@comma\discretionary{}{}{}%
+  \else%
+    \old@comma%
+  \fi%
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "ae" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 1
+\bibtex_command default
+\index_command default
+\float_placement h
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 0
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Enumerate
+We want initial employment in each state 
+\begin_inset Formula $n$
+\end_inset
+
+ and sector 
+\begin_inset Formula $j$
+\end_inset
+
+, 
+\begin_inset Formula $L_{1999}^{nj}$
+\end_inset
+
+ with 
+\begin_inset Formula $n\in US$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+We want the matrix 
+\begin_inset Formula $\mathcal{\mathbf{\mu}}_{1999-2000}$
+\end_inset
+
+ having the movements across sectors and states of US between 1999 and 2000.
+ 
+\end_layout
+
+\begin_layout Enumerate
+We want 
+\begin_inset Formula $L_{1999}^{nj}$
+\end_inset
+
+ for 
+\begin_inset Formula $n\notin US$
+\end_inset
+
+ and 
+\begin_inset Formula $L_{2000}^{nj}$
+\end_inset
+
+ for all regions and sectors.
+ 
+\end_layout
+
+\begin_layout Section
+Initial employment in each state and sector 
+\begin_inset Formula $L_{1999}^{nj}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+We will follow the same procedure as in the paper of Caliendo, Dvorkin,
+ and Parro (Econometrica 2019, henceworth CDP).
+ The relevant section starts on page 817 of the Econometrica publication
+ with the title 
+\begin_inset Quotes eld
+\end_inset
+
+The initial labor mobility matrix and the initial distribution of labor.
+\begin_inset Quotes erd
+\end_inset
+
+ We will use our sector classification that we have been using to construct
+ the bilateral trade data.
+ We will include (as CDP do) an extra sector 
+\begin_inset Quotes eld
+\end_inset
+
+non-employment.
+\begin_inset Quotes erd
+\end_inset
+
+ We will label this as 
+\begin_inset Formula $L_{1999}^{nj}$
+\end_inset
+
+ for 
+\begin_inset Formula $i\in US$
+\end_inset
+
+ (the employment of US state 
+\begin_inset Formula $n$
+\end_inset
+
+ in sector 
+\begin_inset Formula $j$
+\end_inset
+
+ in 1999).
+ 
+\end_layout
+
+\begin_layout Section
+Matrix 
+\begin_inset Formula $\mu_{1999-2000}$
+\end_inset
+
+ for US states
+\end_layout
+
+\begin_layout Standard
+We will follow the same instructions as CDP (again, we look at pages 817,
+ and in particular at the information of table IV).
+ The main differences are:
+\end_layout
+
+\begin_layout Itemize
+Our time periods are in years, not in quarters.
+\end_layout
+
+\begin_layout Itemize
+We will use our sector classification that we have been using to construct
+ the bilateral trade data.
+ We will include (as CDP do) an extra sector 
+\begin_inset Quotes eld
+\end_inset
+
+non-employment.
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We will arrange the matrix as in the excel attached.
+ The sectors and regions of origin will be in the rows and the sectors and
+ regions of destination will be in columns.
+ Note that each element 
+\begin_inset Formula $\mu_{1999-2000}^{nj,ik}$
+\end_inset
+
+ is given as a share (not in number of people).
+ In particular, it is the share of people that were originally in region
+ 
+\begin_inset Formula $n$
+\end_inset
+
+ and sector 
+\begin_inset Formula $j$
+\end_inset
+
+ that move to region 
+\begin_inset Formula $i$
+\end_inset
+
+ and sector 
+\begin_inset Formula $k$
+\end_inset
+
+.
+ Let's say that there are 
+\begin_inset Formula $N$
+\end_inset
+
+ US states and 
+\begin_inset Formula $J+1$
+\end_inset
+
+ sectors (from 
+\begin_inset Formula $0$
+\end_inset
+
+ to 
+\begin_inset Formula $J$
+\end_inset
+
+, where 
+\begin_inset Formula $0$
+\end_inset
+
+ represents non-employment).
+ Given this definition we will have that:
+\begin_inset Formula 
+\[
+\sum_{i=1}^{N}\sum_{k=0}^{J}\mu_{1999-2000}^{nj,ik}=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset Formula $L_{1999}$
+\end_inset
+
+ and 
+\begin_inset Formula $L_{2000}$
+\end_inset
+
+ for each sector and region
+\end_layout
+
+\begin_layout Subsection
+For countries outside of the US 
+\end_layout
+
+\begin_layout Itemize
+We will find the information in WIOD's website 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+http://www.wiod.org/database/seas13
+\end_layout
+
+\end_inset
+
+.
+ We use the release of July 2014.
+ We want to use the variable of employment by sector.
+ 
+\end_layout
+
+\begin_layout Itemize
+We will use the same countries as in the bilateral trade data.
+ We need to relable and group the sectors in the same way we did for the
+ WIOD trade.
+ 
+\end_layout
+
+\begin_layout Itemize
+Note that so far, the information here does not include the sector 
+\begin_inset Quotes eld
+\end_inset
+
+non-employment.
+\begin_inset Quotes erd
+\end_inset
+
+ To compute the non-employment sector we will do the following: 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Find data for labor force participation for 1999 and 2000.
+ We found them last time at the OECD website.
+ Let's call this 
+\begin_inset Formula $\pi_{n}$
+\end_inset
+
+ (LFP for country 
+\begin_inset Formula $n$
+\end_inset
+
+).
+ Let's compute 
+\begin_inset Formula $\pi_{n}$
+\end_inset
+
+ for all countries (including USA).
+ For now, let's remove the time subscript.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The total active population will be 
+\begin_inset Formula $\ell_{n}^{WIOD}\equiv\frac{1}{\pi_{n}}\sum_{j=1}^{J}L^{nj,WIOD}$
+\end_inset
+
+.
+ Then we define the number of workers in sector 
+\begin_inset Formula $0$
+\end_inset
+
+ (non-employment) as 
+\begin_inset Formula $L^{n0,WIOD}\equiv\ell_{n}^{WIOD}-\sum_{j=1}^{J}L^{nj,WIOD}$
+\end_inset
+
+ (people active but not employed in any of the other 
+\begin_inset Formula $J$
+\end_inset
+
+ sectors).
+ This means that we can compute 
+\begin_inset Formula $L^{n0,WIOD}$
+\end_inset
+
+ directly as
+\begin_inset Formula 
+\[
+L^{n0,WIOD}=\left(\frac{1-\pi_{n}}{\pi_{n}}\right)\times\sum_{j=1}^{J}L^{nj,WIOD}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Following the previous step we would have the number of workers in each
+ sector for 1999 and 2000 for all other countries outside of the US.
+ One extra change: we want to assume away population growth and thus we
+ want to keep the total number of workers per country fixed at the level
+ of 1999.
+ So, we will implement a proportionality assumption to the year 2000.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+For each country 
+\begin_inset Formula $i$
+\end_inset
+
+, construct the share of employment in each sector 
+\begin_inset Formula $j\in\left\{ 0,\dots,J\right\} $
+\end_inset
+
+ from WIOD as 
+\begin_inset Formula $x_{2000}^{nj}=\frac{L_{2000}^{nj,WIOD}}{^{\sum_{k=0}^{J}L_{2000}^{nk,WIOD}}}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Then we will compute the 
+\emph on
+new 
+\emph default
+employment variable 
+\begin_inset Formula $L_{2000}^{nj}=x_{2000}^{nj}\times L_{1999}^{n,WIOD},$
+\end_inset
+
+with 
+\begin_inset Formula $L_{1999}^{n,WIOD}=\sum_{k=0}^{J}L_{1999}^{nk,WIOD}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+In the end we care about 
+\begin_inset Formula $L_{1999}^{nj}=L_{1999}^{nj,WIOD}$
+\end_inset
+
+ and 
+\begin_inset Formula $L_{2000}^{nj}$
+\end_inset
+
+ as defined in the previous point.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+For US States
+\end_layout
+
+\begin_layout Itemize
+We already have an initial 
+\begin_inset Formula $L_{1999}^{nj}$
+\end_inset
+
+ for 
+\begin_inset Formula $i\in US,$
+\end_inset
+
+
+\begin_inset Formula $\forall j$
+\end_inset
+
+ from Section 1.
+ Let's call this 
+\begin_inset Formula $L_{1999}^{nj,data}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+However, we want the total employment summed across states and sectors 1-14
+ for the US to add up to the total employment of the country from WIOD.
+ So, we will do proportionality assumption here too.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+We want that our new data satisfies 
+\begin_inset Formula $\sum_{j\neq0}\sum_{n\in US}L_{1999}^{nj}=L_{1999}^{US,WIOD}$
+\end_inset
+
+.
+ So, define 
+\begin_inset Formula $y^{data}\equiv\frac{L_{1999}^{US,WIOD}}{\sum_{j\neq0}\sum_{n\in US}L_{1999}^{nj,data}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Then we can compute of final employment variable as 
+\begin_inset Formula $L_{1999}^{nj}=y^{data}\times L_{1999}^{nj,data}\;\forall j\in{0,\dots14}$
+\end_inset
+
+ and all US states.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+With 
+\begin_inset Formula $L_{1999}^{nj}$
+\end_inset
+
+ at hand, we will compute the employment 
+\begin_inset Formula $L_{2000}^{nj}$
+\end_inset
+
+ for 
+\begin_inset Formula $i\in US,$
+\end_inset
+
+
+\begin_inset Formula $\forall j$
+\end_inset
+
+ using the matrix of 
+\begin_inset Formula $\mu_{1999-2000}^{nj,ik}$
+\end_inset
+
+ computed in Section 2.
+ The computation will be:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+L_{2000}^{nj}=\sum_{i=1}^{N}\sum_{k=0}^{J}\mu_{1999-2000}^{ik,nj}\times L_{1999}^{ik}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
