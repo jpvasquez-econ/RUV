@@ -36,28 +36,28 @@ The second one is the Current Population Survey (CPS), which provides details of
 
 Mathematical summary. 
 
-We want to compute \mu^{nj,ik} (the share of workers that were originally in region n and sector j that move to region i and sector k). We have N regions and sectors from 0 to J. Under that definition we have that: \sum_{i=1}^{N}\sum_{k=0}^{J}\mu_{t}^{nj,ik}	=1\;\forall t
-L_{t+1}^{ik}	=\sum_{n=1}^{N}\sum_{j=0}^{J}\mu_{t}^{nj,ik}\times L_{t}^{nj}\;\forall i,k
+We want to compute $\mu^{nj,ik}$ (the share of workers that were originally in region n and sector j that move to region i and sector k). We have N regions and sectors from 0 to J. Under that definition we have that: $\sum_{i=1}^{N}\sum_{k=0}^{J}\mu_{t}^{nj,ik}	=1\;\forall t$
+$L_{t+1}^{ik}	=\sum_{n=1}^{N}\sum_{j=0}^{J}\mu_{t}^{nj,ik}\times L_{t}^{nj}\;\forall i,k$
 
-Let L_{t}^{nj,ik} be the number of workers who move from region n and sector j to region i and sector k between t and t+1. We construct L_{t}^{nj,ik} combining the CPS and ACS surveys. Then we define:\mu_{t}^{nj,ik}=\frac{L_{t}^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=0}^{J}L_{t}^{nj,pq}}
+Let $L_{t}^{nj,ik}$ be the number of workers who move from region n and sector j to region i and sector k between t and t+1. We construct $L_{t}^{nj,ik}$ combining the CPS and ACS surveys. Then we define:$\mu_{t}^{nj,ik}=\frac{L_{t}^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=0}^{J}L_{t}^{nj,pq}}$
 
 Let us drop the time subscript for now. We have two data sources:
 
-• From the CPS data we get L_{CPS}^{nj,nk}\:\forall n\in US and any origin or destination sectors k,j (intra-state flows of people between sectors). 
+• From the CPS data we get $L_{CPS}^{nj,nk}\:\forall n\in US$ and any origin or destination sectors k,j (intra-state flows of people between sectors). 
 
-• From the ACS data we have L_{ACS}^{n?,ik}\:\forall i,n\in US and destination sector k (interstate flows but without knowing the sector of origin). 
+• From the ACS data we have $L_{ACS}^{n?,ik}\:\forall i,n\in US$ and destination sector k (interstate flows but without knowing the sector of origin). 
 
 Within the State
 
-We follow a a proportionality assumption so that the total movements within the state coincide with ACS (just the total across sectors but not sector by sector). In this case, we will be prioritizing the CPS when it comes to intra-state movements. This is, let's fix a given state n and define: L^{nj,nk}=\sum_{q}L_{ACS}^{n?,nq}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in US,\:\forall j,kNote that \sum_{k}\sum_{j}L^{nj,nk}=\sum_{q}L_{ACS}^{n?,nq} (so the total coincides at the movements within the state regardless of the sector but not necessarily sector-by-sector). Also note that \frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}} by construction.
+We follow a a proportionality assumption so that the total movements within the state coincide with ACS (just the total across sectors but not sector by sector). In this case, we will be prioritizing the CPS when it comes to intra-state movements. This is, let's fix a given state n and define: $L^{nj,nk}=\sum_{q}L_{ACS}^{n?,nq}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in US,\:\forall j,k$. Note that $\sum_{k}\sum_{j}L^{nj,nk}=\sum_{q}L_{ACS}^{n?,nq}$ (so the total coincides at the movements within the state regardless of the sector but not necessarily sector-by-sector). Also note that $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$ by construction.
 
 Between States
 
-We use L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}\quad i\neq n.Note that this satisfies \sum_{k}\sum_{j}L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}. 
+We use $L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}\quad i\neq n$.Note that this satisfies $\sum_{k}\sum_{j}L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}$. 
 
 This means that combining with the “Within the State part” we just need to define 
 
-L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}\quad\forall n,i\in US;\,\forall j,k
+$L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}\quad\forall n,i\in US;\,\forall j,k$
 
 ## Employment allocation in each state and sector for all years
 
@@ -65,7 +65,7 @@ L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_
 
 We compute the employment distribution by sector for each country and each year 1999-2007. We also apply proportionality to $L_{2000}$ (US states labor distribution) so that the matrix is consistent with WIOD. Steps:
 
-1. Labor distribution by sector for each country during years 1999-2007 is obtained from WIOD Socio Economic Accounts (Released July 2014) in the following (link)[http://www.wiod.org/database/seas13]. The downloaded excel does not require a change of name. The variable of interest is EMP (number of persons engaged in thousands) and sectors are recoded into 1-14. Sector 0 (unemployed and out of labor force) is incorporated using WIOD-SEA's worker population and each country's labor force participation rate (from [World Bank](https://data.worldbank.org/indicator/SL.TLF.CACT.ZS)) (see construction_new_data.lyx file). Year 2000 is taken as the base year and therefore all other years undergo a proportionality process so that population for each country maintains constant over time (zero growth, only redistribution between sectors). Since SEA does not include a Rest of the World country directly, as WIOD does, and since the remaining countries in SEA are too few to argue that their aggregation would form a credible RoW category, an additional computation is introduced. RoW's employment will be such that its production / employment ratio equals the respective average ratio of the other 37 countries; this calculation is done separately for each sector. Production would be calculated using the bilateral trade matrix; it would be R_n = \ sum_i Xni. 
+1. Labor distribution by sector for each country during years 1999-2007 is obtained from WIOD Socio Economic Accounts (Released July 2014) in the following (link)[http://www.wiod.org/database/seas13]. The downloaded excel does not require a change of name. The variable of interest is EMP (number of persons engaged in thousands) and sectors are recoded into 1-14. Sector 0 (unemployed and out of labor force) is incorporated using WIOD-SEA's worker population and each country's labor force participation rate (from [World Bank](https://data.worldbank.org/indicator/SL.TLF.CACT.ZS)) (see construction_new_data.lyx file). Year 2000 is taken as the base year and therefore all other years undergo a proportionality process so that population for each country maintains constant over time (zero growth, only redistribution between sectors). Since SEA does not include a Rest of the World country directly, as WIOD does, and since the remaining countries in SEA are too few to argue that their aggregation would form a credible RoW category, an additional computation is introduced. RoW's employment will be such that its production / employment ratio equals the respective average ratio of the other 37 countries; this calculation is done separately for each sector. Production would be calculated using the bilateral trade matrix; it would be $R_n = \ sum_i Xni$. 
 
 2. US labor distribution by sector and state, $L_{2000}$, undergoes a proportionality process (see construction_new_data.lyx file) so that the values are consistent with US-WIOD's information; that is, so that the total employment summed across states and sectors 1-14 (excluding sector 0) for the US adds up to the total employment of the country from WIOD.  
 
