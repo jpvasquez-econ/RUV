@@ -305,59 +305,59 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/data_services.csv
 
 Start with the standard gravity equation: 
 
-$$X_{ij}=\left(\frac{w_{i}\tau_{ij}}{P_{j}}\right)^{-\varepsilon}X_{j},$$
+$$X_{ij}=\left(\frac{w_{i}\tau_{ij}}{P_{j}}\right)^{-\varepsilon}E_{j},$$
 
-where $P_{j}^{-\varepsilon}=\sum_{i}\left(w_{i}\tau_{ij}\right)^{-\varepsilon}$. But $\sum_{j}X_{ij}=Y_{i}$ and hence $\sum_{j}\left(\frac{w_{i}\tau_{ij}}{P_{j}} \right)^{-\varepsilon}X_{j}=Y_{i}.$ This implies $w_{i}^{-\varepsilon} \Pi_{i}^{-\varepsilon}=Y_{i}$, where $\Pi_{i}^{-\varepsilon}= \sum_{j} \tau_{ij}^{ -\varepsilon}P_{j}^{\varepsilon}X_{j}$. Hence we have:
+where $P_{j}^{-\varepsilon}=\sum_{i}\left(w_{i}\tau_{ij}\right)^{-\varepsilon}$. But $\sum_{j}X_{ij}=R_{i}$ and hence $\sum_{j}\left(\frac{w_{i}\tau_{ij}}{P_{j}} \right)^{-\varepsilon}E_{j}=R_{i}.$ This implies $w_{i}^{-\varepsilon} \Pi_{i}^{-\varepsilon}=R{i}$, where $\Pi_{i}^{-\varepsilon}= \sum_{j} \tau_{ij}^{ -\varepsilon}P_{j}^{\varepsilon}E_{j}$. Hence we have:
 
-$$X_{ij}=\frac{\tau_{ij}^{-\varepsilon}}{\left(\Pi_{i}P_{j}\right)^{-\varepsilon}}Y_{i}X_{j}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j},$$
+$$X_{ij}=\frac{\tau_{ij}^{-\varepsilon}}{\left(\Pi_{i}P_{j}\right)^{-\varepsilon}}R_{i}E_{j}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}R_{i}E_{j},$$
 
 where $\tilde{P}_{j}\equiv P_{j}^{-\varepsilon}$ and $\tilde{\Pi}_{i}\equiv \Pi_{i}^{-\varepsilon}$, and $\tilde{\tau}_{ij}\equiv\tau_{ij}^{-\varepsilon}$. From WIOD we have $X_{ij}$ for some pairs. Define the set $S_{j}$ such that we know $X_{ij}$ whenever $i\in S_{j}$. Letting 
-$$X_{S_{j},j}\equiv\sum_{i\in S_{j}}X_{ij}, \quad\lambda_{j}\equiv1-X_{S_{j},j}/X_{j}, \quad X_{i,S_{i}^{*}}=\sum_{j\in S_{i}^{*}}X_{ij}, \quad\lambda_{i}^{*}\equiv1-X_{i,S_{i}^{*}}/Y_{i}, $$
+$$X_{S_{j},j}\equiv\sum_{i\in S_{j}}X_{ij}, \quad\lambda_{j}\equiv1-X_{S_{j},j}/E_{j}, \quad X_{i,S_{i}^{*}}=\sum_{j\in S_{i}^{*}}X_{ij}, \quad\lambda_{i}^{*}\equiv1-X_{i,S_{i}^{*}}/R_{i}, $$
 the full system becomes:
 
 $$
-\tilde{P}_{j}  =  \sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i}\quad j\in US 
+\tilde{P}_{j}  =  \sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}R_{i}\quad j\in US 
 $$
 
 $$
-\tilde{\Pi}_{i}  = \sum_{j}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}\quad i\in US 
+\tilde{\Pi}_{i}  = \sum_{j}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}E_{j}\quad i\in US 
 $$
 
 $$
-\lambda_{j}\tilde{P}_{j} =  \sum_{i\notin S_{j}}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i}\quad j\notin US 
+\lambda_{j}\tilde{P}_{j} =  \sum_{i\notin S_{j}}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}R_{i}\quad j\notin US 
 $$
 
 $$
-\lambda_{i}^{*}\tilde{\Pi}_{i}  =  \sum_{j\notin S_{i}^{*}}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}\quad i\notin US
+\lambda_{i}^{*}\tilde{\Pi}_{i}  =  \sum_{j\notin S_{i}^{*}}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}E_{j}\quad i\notin US
 $$
 
 Define $P_{s}=(\tilde{P}_{1},...,\tilde{P}_{50})'$ for the states,
 $P_{c}=(\tilde{P}_{51},...,\tilde{P}_{87})'$ for the countries. Similarly
 for $\Pi_{s}$, $\Pi_{c}$,$\lambda_{c}$, and $\lambda_{c}^{*}$.
 Define $\lambda=\left(1_{1\times50},\lambda_{c},1_{1\times50},\lambda_{c}^{*}\right)'$. Define $S=\left(P_{s},P_{c},\Pi_{s},\Pi_{c}\right)'$, and with
-some abuse of notation $S^{-1}=\left(P_{s}^{-1},P_{c}^{-1},\Pi_{s}^{-1},\Pi_{c}^{-1}\right)'$. Define $\left(\mathcal{T} Y\right)_{ss}$ as follows:
+some abuse of notation $S^{-1}=\left(P_{s}^{-1},P_{c}^{-1},\Pi_{s}^{-1},\Pi_{c}^{-1}\right)'$ with dimensions $(s+c+s+c)\times(1)$. Define $\left(\mathcal{T} R\right)_{ss}$ as follows:
 
-$$ \boldsymbol{\left(\mathcal{T} Y\right)_{ss}}=\left(\begin{array}{ccc}
-\tilde{\tau}_{s_{1}s_{1}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{1}}Y_{s_{k}}\\
+$$ \boldsymbol{\left(\mathcal{T} R\right)_{ss}}=\left(\begin{array}{ccc}
+\tilde{\tau}_{s_{1}s_{1}}R_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{1}}R_{s_{k}}\\
 \vdots & \ddots & \vdots\\
-\tilde{\tau}_{s_{1}s_{k}}Y_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{k}}Y_{s_{k}}
+\tilde{\tau}_{s_{1}s_{k}}R_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{k}}R_{s_{k}}
 \end{array}\right), $$
 
-and define , $\left(\mathcal{T} Y\right)_{sc} \,, \left(\mathcal{T} Y\right)_{cs}$,$\left(\mathcal{T} X\right)_{ss}$,
-$\left(\mathcal{T} X\right)_{sc} \,, \left(\mathcal{T} X\right)_{cs}$ analogously. The full system can be written
+and define , $\left(\mathcal{T} R\right)_{sc} \,, \left(\mathcal{T} R\right)_{cs}$,$\left(\mathcal{T} E\right)_{ss}$,
+$\left(\mathcal{T} E\right)_{sc} \,, \left(\mathcal{T} E\right)_{cs}$ analogously. The full system can be written
 as:
 
 $$ \lambda\circ S=\left(\begin{array}{cccc}
-0 & 0 & \left(\mathcal{T} Y\right)_{ss} & \left(\mathcal{T} Y\right)_{sc}\\
-0 & 0 & \left(\mathcal{T} Y\right)_{cs} & 0\\
-\left(\mathcal{T} X\right)_{ss} & \left(\mathcal{T} X\right)_{sc} & 0 & 0\\
-\left(\mathcal{T} X\right)_{cs} & 0 & 0 & 0
+0 & 0 & \left(\mathcal{T} R\right)_{ss} & \left(\mathcal{T} R\right)_{sc}\\
+0 & 0 & \left(\mathcal{T} R\right)_{cs} & 0\\
+\left(\mathcal{T} E\right)_{ss} & \left(\mathcal{T} E\right)_{sc} & 0 & 0\\
+\left(\mathcal{T} E\right)_{cs} & 0 & 0 & 0
 \end{array}\right)\cdot S^{-1}, $$
 
 or as:
 $$ \lambda\circ S=B\cdot S^{-1}, $$
 
-where $\circ$ is the element-by-element product and $B$ is the big matrix. Given $\left\{ X_{j}\right\}$  and $\left\{ Y_{i}\right\}$  and $\left\{ \tilde{\tau}_{ij}\right\}$ (more on the computation of $\tilde{\tau}_{ij}$ below) ,  we can get $\left\{ \tilde{P}_{j}\right\}$  and $\left\{ \tilde{\Pi}_{i}\right\}$. The solution for $\left\{ \tilde{P}_{j}, \tilde{\Pi}_{i} \right\}$ is unique up to a constant. This indeterminacy requires a normalization. We thus impose $\tilde{P}_{1}=100$. Then we compute $\left\{ X_{ij}\right\}$  from $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}.$$
+where $\circ$ is the element-by-element product and $B$ is the big matrix. Given $\left\{ E_{j}\right\}$  and $\left\{ R_{i}\right\}$  and $\left\{ \tilde{\tau}_{ij}\right\}$ (more on the computation of $\tilde{\tau}_{ij}$ below) ,  we can get $\left\{ \tilde{P}_{j}\right\}$  and $\left\{ \tilde{\Pi}_{i}\right\}$. The solution for $\left\{ \tilde{P}_{j}, \tilde{\Pi}_{i} \right\}$ is unique up to a constant. This indeterminacy requires a normalization. We thus impose $\tilde{P}_{1}=100$. Then we compute $\left\{ X_{ij}\right\}$  from $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}R_{i}E_{j}.$$
 
 ## Importing data to R
 
