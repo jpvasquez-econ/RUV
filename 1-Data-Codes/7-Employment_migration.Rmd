@@ -23,7 +23,7 @@ remove(list = ls())
 # libraries
 options( scipen=100, stringsAsFactors=FALSE );
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'readr', 'data.table');
 # Install libraries in case they are not installed
 #for( i in length(libs)){ 
   #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
@@ -168,28 +168,25 @@ employment_pop <- employment_pop %>%
 
 #loading Census PUMS
 list <- c("01", "02", "04", "05", "06", "08", "09", setdiff(10:56, c(11,14,43,52)))
-census <- c()
+#census <- c()
 c <- 1
+census_list <- vector("list", length = n_s)
+
 for (i in list){
-CENSUS_PUMS <- read.csv(paste("0-Raw_Data/CENSUS_2000/PUMS5_", i,".txt", sep=""), header=FALSE, sep=";")
+CENSUS_PUMS <- read_csv(paste("0-Raw_Data/CENSUS_2000/PUMS5_", i,".txt", sep=""), col_names = FALSE)
 CENSUS_PUMS$state <- s_names[c]
-census <- rbind(census, CENSUS_PUMS)
-print(s_names[c])
-c <- c + 1
-}
-rm(CENSUS_PUMS)
 
 #creating variables
-census <- census %>%
-  mutate(len = nchar(V1)) %>% #only two len: Households and Persons; len matches with dictionary
-  mutate(type = substr(V1, start=1, stop=1)) %>% 
+CENSUS_PUMS <- CENSUS_PUMS %>%
+  mutate(len = nchar(X1)) %>% #only two len: Households and Persons; len matches with dictionary
+  mutate(type = substr(X1, start=1, stop=1)) %>% 
   filter(type=="P") %>% #keeping only persons and NOT households
-  mutate(age = as.numeric(substr(V1, start=25, stop=26))) %>%
+  mutate(age = as.numeric(substr(X1, start=25, stop=26))) %>%
   filter(age >=25 & age <=65) %>%
-  mutate(employ_status = as.numeric(substr(V1, start=154, stop=154))) %>%
+  mutate(employ_status = as.numeric(substr(X1, start=154, stop=154))) %>%
   filter(is.na(employ_status) == FALSE & ((employ_status>=1 & employ_status<=3)|employ_status==6)) %>%
   mutate(employ_status = as.numeric(recode( as.character(employ_status), '6' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
-  mutate(naics = substr(V1, start=215, stop=217)) %>%
+  mutate(naics = substr(X1, start=215, stop=217)) %>%
   mutate(naics = ifelse(employ_status == 0, NA, naics)) %>%
   filter((employ_status == 0 & is.na(naics) == TRUE)|(employ_status == 1 & is.na(naics) == FALSE)) %>%
   mutate(naics = ifelse(naics == "23 ", "230", naics)) %>%
@@ -197,7 +194,16 @@ census <- census %>%
   mutate(naics = ifelse(naics == "4MS", "423", naics)) %>%
   left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
   dplyr::rename(sector = final_sector) %>%
-  filter(is.na(sector) == FALSE) #naics that are not in final sectors
+  filter(is.na(sector) == FALSE) %>% #naics that are not in final sectors
+  select(-X1)
+census_list[[c]] <- CENSUS_PUMS
+rm(CENSUS_PUMS)
+print(s_names[c])
+c <- c + 1
+}
+
+census <- rbindlist(census_list)
+rm(census_list)
 
 #computing employment and unemployment, by sector and state
 census <- census %>%
@@ -247,8 +253,8 @@ print(yr)
 c <- 1
 for (st in st_list) {
 #print(st)  
-if (yr_c == 2000){ACS_PUMS <- read.csv(paste("0-Raw_Data/ACS/20", yr,"/c2ssp", st,".csv", sep=""), sep=",")}  
-if (yr_c != 2000){ACS_PUMS <- read.csv(paste("0-Raw_Data/ACS/20", yr,"/ss", yr,"p", st,".csv", sep=""), sep=",")}    
+if (yr_c == 2000){ACS_PUMS <- read_csv(paste("0-Raw_Data/ACS/20", yr,"/c2ssp", st,".csv", sep=""))}  
+if (yr_c != 2000){ACS_PUMS <- read_csv(paste("0-Raw_Data/ACS/20", yr,"/ss", yr,"p", st,".csv", sep=""))}    
 ACS_PUMS$year <- yr_c
 ACS_PUMS <- ACS_PUMS %>%
   select(year, AGEP, POWSP, MIGSP, ESR, NAICSP, PWGTP) %>%
@@ -384,67 +390,74 @@ mn_list <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct
 yr_list <- c("98","99", "00", "01", "02", "03", "04", "05", "06", "07", "08")
 
 #loading PUMS CPS
-cps <- c()
+cps_list <- vector("list", length = length(mn_list)*length(yr_list))
+p <- 1
 for (yr in yr_list){
 print(yr)
 for (mn in mn_list){
-CPS_PUMS <- read.csv(paste("0-Raw_Data/CPS/", mn, yr,"pub_.txt", sep=""), header=FALSE, sep=";")
+CPS_PUMS <- read_csv(paste("0-Raw_Data/CPS/", mn, yr,"pub_.txt", sep=""), col_names = FALSE)
 CPS_PUMS$year <- yr
 CPS_PUMS$month <- mn
-cps <- rbind(cps, CPS_PUMS)
-}  
-}
-rm(CPS_PUMS) 
 
-write.table(cps, file = paste("1-Intermediate_Processed_Data//cps.csv", sep=""), sep = ",", row.names = FALSE)
-
-cps <- read.csv(paste("1-Intermediate_Processed_Data//cps.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 #solving H_ID variable changes around 2004
 list_bef_may <- c("jan", "feb", "mar", "apr")
 list_aft_may <- c("may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 #creating variables
-cps <- cps %>%
+CPS_PUMS <- CPS_PUMS %>%
   mutate(year = as.numeric(year)) %>%
   mutate(year = ifelse( (year!=99 & year!=98 & year!=97), 2000 + year, 1900+year)) %>%
-  mutate(len = nchar(V1)) %>% #len matches data dictionary
-  mutate(person_weight_1 = as.numeric(substr(V1, start=846, stop=855))) %>% #weight final
-  mutate(person_weight_2 = as.numeric(substr(V1, start=593, stop=602))) %>% #weight longitude
-  mutate(inter_num = as.numeric(substr(V1, start=63, stop=64))) %>% #interview number (1-8)
-  mutate(H_ID_1 = substr(V1, start=1, stop=15)) %>% #household ID 
-  mutate(H_ID_2 = substr(V1, start=71, stop=74)) %>% 
-  mutate(H_ID_3 = substr(V1, start=75, stop=76)) %>%
-  mutate(H_ID_4 = substr(V1, start=77, stop=78)) %>% #sample house replacement  
+  mutate(len = nchar(X1)) %>% #len matches data dictionary
+  mutate(person_weight_1 = as.numeric(substr(X1, start=846, stop=855))) %>% #weight final
+  mutate(person_weight_2 = as.numeric(substr(X1, start=593, stop=602))) %>% #weight longitude
+  mutate(inter_num = as.numeric(substr(X1, start=63, stop=64))) %>% #interview number (1-8)
+  mutate(H_ID_1 = substr(X1, start=1, stop=15)) %>% #household ID 
+  mutate(H_ID_2 = substr(X1, start=71, stop=74)) %>% 
+  mutate(H_ID_3 = substr(X1, start=75, stop=76)) %>%
+  mutate(H_ID_4 = substr(X1, start=77, stop=78)) %>% #sample house replacement  
   mutate(H_ID = paste(H_ID_1, H_ID_2, H_ID_3, H_ID_4, sep="_")) %>%
   select(-H_ID_2, -H_ID_3, -H_ID_4) %>%
   mutate(temp = ifelse( ((inter_num<=4 & year == 2003) | (inter_num>=5 & year == 2004)) & month %in% list_aft_may, 1, 0)) %>% # households with H_ID issue
   mutate(temp = ifelse( ((inter_num<=4 & year == 2004) | (inter_num>=5 & year == 2005)) & month %in% list_bef_may, 1, temp)) %>% # households with H_ID issue
-  mutate(H_ID_2_bef = substr(V1, start=72, stop=73)) %>% 
-  mutate(H_ID_2_aft = substr(V1, start=71, stop=72)) %>% 
+  mutate(H_ID_2_bef = substr(X1, start=72, stop=73)) %>% 
+  mutate(H_ID_2_aft = substr(X1, start=71, stop=72)) %>% 
   mutate(H_ID = ifelse(temp==1 & inter_num<=4, paste(H_ID_1, H_ID_2_bef, sep="_"), H_ID)) %>%
   mutate(H_ID = ifelse(temp==1 & inter_num>=5, paste(H_ID_1, H_ID_2_aft, sep="_"), H_ID)) %>%
   select(-H_ID_1, -H_ID_2_bef, -H_ID_2_aft) %>%
-  mutate(age = as.numeric(substr(V1, start=122, stop=123))) %>% #age
+  mutate(age = as.numeric(substr(X1, start=122, stop=123))) %>% #age
   filter(age >=25 & age <=65) %>%
   #filter(age >=16) %>%
-  mutate(gender = as.numeric(substr(V1, start=129, stop=130))) %>% #male: 1; female: 2
+  mutate(gender = as.numeric(substr(X1, start=129, stop=130))) %>% #male: 1; female: 2
   arrange(year, month, H_ID, -age) %>%
   group_by(year, month, H_ID) %>%
   mutate(P_ID = 1:n()) %>%
   ungroup() %>%
-  mutate(employ_status = as.numeric(substr(V1, start=180, stop=181))) %>% #employ status
+  mutate(employ_status = as.numeric(substr(X1, start=180, stop=181))) %>% #employ status
   filter( is.na(employ_status)==FALSE & ((employ_status>=1 & employ_status<=6)|employ_status==7)) %>%
   #mutate(employ_status_back = employ_status) %>%
   mutate(employ_status = as.numeric( recode( as.character(employ_status), '6' ="0", '5' ="0", '7' ="0", '4' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
-  mutate(st_fips = as.numeric(substr(V1, start=93, stop=94))) %>% #state
+  mutate(st_fips = as.numeric(substr(X1, start=93, stop=94))) %>% #state
   filter( is.na(st_fips) == FALSE & (st_fips != 11 & st_fips <= 56)) %>%
   left_join(states_fips, by=c('st_fips' = 'st_fips')) %>% 
   select(-st_fips) %>%
-  mutate(census_sec = ifelse( year < 2003, substr(V1, start = 436, stop = 438), substr(V1, start = 856, stop=858))) %>% #census_sec bef and aft 2003
+  mutate(census_sec = ifelse( year < 2003, substr(X1, start = 436, stop = 438), substr(X1, start = 856, stop=858))) %>% #census_sec bef and aft 2003
   mutate(census_sec = ifelse(employ_status == 0, NA, census_sec)) %>%
   filter((employ_status == 0 & is.na(census_sec) == TRUE)|(employ_status == 1 & is.na(census_sec) == FALSE)) %>%
-  mutate(census_sec = gsub(" ", "", census_sec))
+  mutate(census_sec = gsub(" ", "", census_sec)) %>%
+  select(-X1)
+
+cps_list[[p]] <- CPS_PUMS
+rm(CPS_PUMS)
+print(paste0(yr, ",", mn))
+
+p <- p + 1
+}  
+}
+cps <- rbindlist(cps_list)
+cps <- cps %>%
+  arrange(year, month, H_ID, -age)
+rm(cps_list)
 
 #sectors 
 cps_1 <- cps %>%
@@ -452,17 +465,17 @@ cps_1 <- cps %>%
   left_join(sectors_census1990_final, by=c('census_sec'='census_1990')) %>% #census_sec to final sector
   dplyr::rename(sector = final_sector) %>%
   filter(is.na(sector) == FALSE) %>%
-  select(-V1, -census_sec, -len, -employ_status, -st_num, -temp)
+  select(-census_sec, -len, -employ_status, -st_num, -temp)
   
 cps_2 <- cps %>%
   filter(year >= 2003) %>%
   left_join(sectors_census2003_final, by=c('census_sec'='census_2003')) %>% #census_sec to final sector
   dplyr::rename(sector = final_sector) %>%
   filter(is.na(sector) == FALSE) %>%
-  select(-V1, -census_sec, -len, -employ_status, -st_num, -temp)
+  select(-census_sec, -len, -employ_status, -st_num, -temp)
 
 cps <- rbind(cps_1, cps_2)
-#rm(cps_1, cps_2)
+rm(cps_1, cps_2)
 
 write.table(cps, file = paste("1-Intermediate_Processed_Data//cps_1.csv", sep=""), sep = ",", row.names = FALSE)
 
