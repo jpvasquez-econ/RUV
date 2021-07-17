@@ -202,6 +202,7 @@ print(s_names[c])
 c <- c + 1
 }
 
+
 census <- rbindlist(census_list)
 rm(census_list)
 
