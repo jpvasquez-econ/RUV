@@ -259,8 +259,12 @@ if (yr_c != 2000){ACS_PUMS <- read_csv(paste("0-Raw_Data/ACS/20", yr,"/ss", yr,"
 ACS_PUMS$year <- yr_c
 ACS_PUMS <- ACS_PUMS %>%
   select(year, AGEP, POWSP, MIGSP, ESR, NAICSP, PWGTP) %>%
+  mutate(AGEP = as.numeric(AGEP),
+         POWSP = as.numeric(POWSP),
+         MIGSP = as.numeric(MIGSP),
+         ESR = as.numeric(ESR), 
+         PWGTP = as.numeric(PWGTP)) %>%
   filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% # age
-  #filter( is.na(AGEP) == TRUE  | (AGEP >= 16)) %>% # age
   filter( is.na(ESR) == FALSE & (ESR==1 |ESR==2 | ESR==3 | ESR==6)) %>% #employ status
   mutate(ESR = as.numeric( recode( as.character(ESR), '6' ="0", '3' ="0", '1' = "1", '2' = "1"))) %>%
   filter( is.na(POWSP) == TRUE | (is.na(POWSP) == FALSE & POWSP != 11 & POWSP <= 56 & year>=2003) | (is.na(POWSP) == FALSE & POWSP != 9 & POWSP <= 51 & year<=2002)) %>%
@@ -292,7 +296,6 @@ ACS_PUMS <- ACS_PUMS %>%
 #counting by state and sector, origin and dest
 ACS_PUMS <- ACS_PUMS %>%
   group_by(year, sector_dest, state_dest, state_ori) %>%
-  #mutate(n = n()) %>%
   mutate(n = sum(PWGTP)) %>% #weights (how many the obs represents)
   ungroup() %>%
   distinct(year, sector_dest, state_dest, state_ori, .keep_all = TRUE) %>%
@@ -428,7 +431,6 @@ CPS_PUMS <- CPS_PUMS %>%
   select(-H_ID_1, -H_ID_2_bef, -H_ID_2_aft) %>%
   mutate(age = as.numeric(substr(X1, start=122, stop=123))) %>% #age
   filter(age >=25 & age <=65) %>%
-  #filter(age >=16) %>%
   mutate(gender = as.numeric(substr(X1, start=129, stop=130))) %>% #male: 1; female: 2
   arrange(year, month, H_ID, -age) %>%
   group_by(year, month, H_ID) %>%
@@ -436,7 +438,6 @@ CPS_PUMS <- CPS_PUMS %>%
   ungroup() %>%
   mutate(employ_status = as.numeric(substr(X1, start=180, stop=181))) %>% #employ status
   filter( is.na(employ_status)==FALSE & ((employ_status>=1 & employ_status<=6)|employ_status==7)) %>%
-  #mutate(employ_status_back = employ_status) %>%
   mutate(employ_status = as.numeric( recode( as.character(employ_status), '6' ="0", '5' ="0", '7' ="0", '4' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
   mutate(st_fips = as.numeric(substr(X1, start=93, stop=94))) %>% #state
   filter( is.na(st_fips) == FALSE & (st_fips != 11 & st_fips <= 56)) %>%
@@ -511,7 +512,7 @@ for (mn in mn_list) {
 #print(mn)
 temp_cps <- cps %>%
   filter(month == mn & ( (year == yr & inter_num==5) | (year == yr-1 & inter_num==1) ))
-  #filter(month == mn & ( (year == yr & inter_num>=5) | (year == yr-1 & inter_num<=4) ))
+
 a <- dim(temp_cps)[1]
 temp_cps <- temp_cps %>%
   group_by(H_ID, P_ID) %>%
