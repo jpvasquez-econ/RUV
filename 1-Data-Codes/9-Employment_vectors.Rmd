@@ -55,8 +55,8 @@ $$Z_{is,jk}^{t,t+1}= \hat{\mu_{is,jk}^{t,t+1}} - \sum_{i}\sum_{s}\theta_{is}I_{i
 3. `0-Raw_Data/BEA/BEA_employ_2006_2009.xlsx`
 4. `0-Raw_Data/BLS/state_employ.xlsx`
 5. `1-Intermediate_Processed_Data/distances.csv`
-6. `1-Intermediate_Processed_Data/Options/Op",i,"/L_1999.xlsx`
-7. `1-Intermediate_Processed_Data/Options/Op",i,"/mu_1999.xlsx`
+6. `2-Final_Data/L_1999.xlsx`
+7. `2-Final_Data/mu_1999.xlsx`
 
 
 ## Output files
@@ -178,11 +178,8 @@ distances <- distances %>%
   select(iso_o, iso_d, dist)
 
 #flows
-final <- c()
-for (i in c(1:5)) {
-  
-L_1999 <- read_excel(paste("1-Intermediate_Processed_Data/Options/Op",i,"/L_1999.xlsx", sep=""))
-mu_1999 <- read_excel(paste("1-Intermediate_Processed_Data/Options/Op",i,"/mu_1999.xlsx", sep=""))  
+L_1999 <- read_excel(paste("2-Final_Data/L_1999.xlsx", sep=""))
+mu_1999 <- read_excel(paste("2-Final_Data/mu_1999.xlsx", sep=""))  
 
 L_1999 <- melt(L_1999, id.vars=c("region"), variable.name="sector", value.name = "employ")
 L_1999 <- L_1999 %>% 
@@ -198,7 +195,7 @@ mu_1999 <- mu_1999 %>% select(-year, -state_ori, -sector_ori)
 L_flow <- mu_1999*L_1999
 L_flow$state_ori <- temp$state_ori
 L_flow$sector_ori <- temp$sector_ori
-L_flow <- melt(L_flow, id.vars=c("state_ori", "sector_ori"), variable.name="state_sector", value.name = "employ")
+L_flow <- melt(L_flow, id.vars=c("state_ori", "sector_ori"), variable.name="state_sector", value.name = "L_flow")
 L_flow <- L_flow %>% 
   mutate(len = nchar(as.character(state_sector))) %>%
   mutate(state_dest = substr(state_sector, 1, len-3)) %>%
@@ -206,27 +203,15 @@ L_flow <- L_flow %>%
   select(-len, -state_sector) %>%
   arrange(state_ori, sector_ori, state_dest, sector_dest)
 
-final <- cbind(final, L_flow$employ)
-}
-
-final <- data.frame(final)
-final$state_ori <- L_flow$state_ori
-final$sector_ori <- L_flow$sector_ori
-final$state_dest <- L_flow$state_dest
-final$sector_dest <- L_flow$sector_dest
-
-
-colnames(final) <- c("L_flow_op1", "L_flow_op2", "L_flow_op3", "L_flow_op4", "L_flow_op5", "state_ori", "sector_ori", "state_dest", "sector_dest")
-final <- final %>% select(state_ori, sector_ori, state_dest, sector_dest, everything())
-
 #adding distances
-final <- final %>% 
+L_flow <- L_flow %>% 
+  select(state_ori, sector_ori, state_dest, sector_dest, L_flow) %>% 
   mutate(year = 1999) %>%
   left_join(distances, by=c("state_ori"="iso_o", "state_dest"="iso_d")) %>%
-  select(year, state_ori, sector_ori, state_dest, sector_dest, dist, everything())
+  select(year, state_ori, sector_ori, state_dest, sector_dest, dist, L_flow)
 
 #saving
-write_xlsx(final, path = "2-Final_Data//Gravity_employment.xlsx")
+write_xlsx(L_flow, path = "2-Final_Data//Gravity_employment.xlsx")
 
 ```
 
@@ -241,9 +226,9 @@ gravity_employment <- read_excel("2-Final_Data/Gravity_employment.xlsx")
 #shares instead of levels
 gravity_employment <- gravity_employment %>%
   group_by(state_ori, sector_ori) %>%
-  mutate(tot_ori = sum(L_flow_op5)) %>%
+  mutate(tot_ori = sum(L_flow)) %>%
   ungroup() %>%
-  mutate(L_flow_op5 = L_flow_op5/tot_ori) %>%
+  mutate(L_flow = L_flow/tot_ori) %>%
   select(-tot_ori)
 
 gravity_employment_1 <- gravity_employment %>%
@@ -280,13 +265,15 @@ I_sk_dumm <- I_sk_dumm %>% pull(I_sk)
 I_same_st_sk <- I_same_st_sk %>% pull(I_same_st_sk)
 
 gravity_employment_1 <- gravity_employment_1 %>% 
-  dummy_cols(select_columns = "I_is", ignore_na = TRUE) %>% 
-  dummy_cols(select_columns = "I_jk", ignore_na = TRUE) 
+  dummy_cols(select_columns = "I_is", ignore_na = TRUE)
+gravity_employment_1 <- gravity_employment_1 %>%   
+dummy_cols(select_columns = "I_jk", ignore_na = TRUE) 
 gravity_employment_no_dumm <- gravity_employment_1
 gravity_employment_1 <- gravity_employment_1 %>% 
   dummy_cols(select_columns = "I_sk", ignore_na = TRUE)
+#saveRDS(gravity_employment_1, file = "gravity_bss.rds")
 
-dep_var <- "L_flow_op5"
+dep_var <- "L_flow"
 Sys.time()
 # running regression
 fit <- felm(as.formula(paste(dep_var," ~ -1 + log_dist + I_same_st_sec + I_same_sec +",paste(I_is_dumm, collapse = "+"),"+", paste(I_jk_dumm, collapse = "+"),"+",paste(I_same_st_sk, collapse = "+"))),
@@ -306,7 +293,7 @@ write.table(fitted_val, paste("1-Intermediate_Processed_Data/reg_mig_gravity_fit
 fitted_val <-read.csv(paste("1-Intermediate_Processed_Data/reg_mig_gravity_fitted_",dep_var,".csv", sep=""))
 coefs <-read.csv(paste("1-Intermediate_Processed_Data/reg_mig_gravity_coefs_",dep_var,".csv", sep=""))
 
-gravity_employment_2 <- gravity_employment_no_dumm %>% select(-year, -state_ori, -sector_ori, -state_dest, -sector_dest, -dist, -L_flow_op1, -L_flow_op2, -L_flow_op3, -L_flow_op4, -L_flow_op5, -I_is, -I_jk, -I_sk, -log_dist, -I_same_st_sec, -I_same_st, -I_same_sec)
+gravity_employment_2 <- gravity_employment_no_dumm %>% select(-year, -state_ori, -sector_ori, -state_dest, -sector_dest, -dist, -L_flow, -I_is, -I_jk, -I_sk, -log_dist, -I_same_st_sec, -I_same_st, -I_same_sec)
 col_names <- data.frame(colnames(gravity_employment_2))
 colnames(col_names) <- c("variable")
 col_names <- col_names %>%
