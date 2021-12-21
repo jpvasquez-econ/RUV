@@ -1,0 +1,66 @@
+---
+title: "CDP_L0_L1"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+options( scipen=100, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'fastDummies', 'lfe');
+# Install libraries in case they are not installed
+#for( i in length(libs)){ 
+  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+#};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+
+This codes uses CDP's L0_initial labor allocation (year 2000) and mu_1 (labor transitional matrix from 2000 to 2001-Q1) to compute L_2001_Q1. 
+
+
+## Input files
+
+1. `raw_data/L0_initial.xlsx`
+2. `raw_data/mu_q.xlsx`
+
+
+## Output files
+
+1. `CDP_L0_L1_dif.xlsx`
+
+
+```{r}
+
+#loading
+L_0 <- read_excel("raw_data/L0_initial.xlsx", col_names=FALSE)
+mu_1 <- read_excel("raw_data/mu_1.xlsx", col_names=FALSE)
+
+#L_1
+L_1 <- data.frame( (t(as.matrix(mu_1))) %*% as.matrix(L_0) )
+colnames(L_0) <- c("L_0")
+colnames(L_1) <- c("L_1")
+final <- cbind(L_0, L_1)
+final <- final %>% mutate(rel_dif = (L_1-L_0)*100/L_0 )
+
+#saving
+write_xlsx(final, path = "CDP_L0_L1_dif.xlsx")
+
+```
