@@ -60,6 +60,17 @@ colnames(L_1) <- c("L_1")
 final <- cbind(L_0, L_1)
 final <- final %>% mutate(rel_dif = (L_1-L_0)*100/L_0 )
 
+#adding states and sectors
+sector <- c(1:23)
+sector <- matrix(replicate(50,sector),nrow=23)
+sector <- c(sector)
+state <- c(1:50)
+state <- t(matrix(replicate(23,state),nrow=50))
+state <- c(state)
+
+final$sector <- sector
+final$state <- state
+
 #saving
 write_xlsx(final, path = "CDP_L0_L1_dif.xlsx")
 
