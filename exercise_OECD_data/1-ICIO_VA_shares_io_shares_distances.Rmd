@@ -34,9 +34,9 @@ header-includes:
 ## Input files
 
 1. `0-Raw_Data/regions.csv`
-2. `0-Raw_Data/sectors.csv`
+2. `0-Raw_Data/sectors_icio.csv`
 3. `0-Raw_Data/OECD/ICIO2021_, i,".xlsx`
-4. `Intermediate_Processed_Data/ICIOFixAgg, i,".csv`
+4. `1-Intermediate_Processed_Data/ICIOFixAgg, i,".csv`
 5. `1-Intermediate_Processed_Data/icio_full.csv`
 6. `0-Raw_Data//Population_geography//UN_coordinates.xls`
 7. `0-Raw_Data//Population_geography//Full_population.xlsx`
@@ -49,7 +49,7 @@ header-includes:
 
 ## Output files
 
-1. `Intermediate_Processed_Data/ICIOFixAgg, i,".csv`
+1. `1-Intermediate_Processed_Data/ICIOFixAgg, i,".csv`
 2. `1-Intermediate_Processed_Data/icio_full.csv`
 3. `1-Intermediate_Processed_Data//ICIO_countries.csv`
 4. `1-Intermediate_Processed_Data/country_country_step_.csv`
@@ -93,7 +93,7 @@ lapply( libs, require, character.only=TRUE );
 regions <- read.csv(paste("0-Raw_Data/regions.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 #sector reclassification table
-reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".", fileEncoding="UTF-8-BOM")
+reclass_sectors <- read.csv(paste("0-Raw_Data/sectors_icio.csv", sep=""), header = TRUE, sep = ",", dec = ".", fileEncoding="UTF-8-BOM")
 reclass_sectors <- reclass_sectors %>% 
   select(final_sector, ICIO_sector) %>%
   mutate(ICIO_sector = gsub("D","",ICIO_sector)) %>%
@@ -780,10 +780,10 @@ s_names <- s_names$region
 n_s <- length(s_names)
 n_c <- length(c_names)
 
-reclass_sectors <- read.csv("0-Raw_Data/sectors.csv", fileEncoding="UTF-8-BOM")
+reclass_sectors <- read.csv("0-Raw_Data/sectors_icio.csv", fileEncoding="UTF-8-BOM")
 n_sec <- length(unique(reclass_sectors$final_sector)) -4
 
-reclass_sectors <- read.csv("0-Raw_Data/sectors.csv", fileEncoding="UTF-8-BOM")
+reclass_sectors <- read.csv("0-Raw_Data/sectors_icio.csv", fileEncoding="UTF-8-BOM")
 reclass_sectors <- reclass_sectors %>% 
   select(final_sector, ICIO_sector)
 
