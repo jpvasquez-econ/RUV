@@ -268,11 +268,11 @@ base <- base %>%
   mutate(commodity = as.character(commodity))
 base$origin <- gsub(" ", "", base$origin, fixed = TRUE)
 base$destination <- gsub(" ", "", base$destination, fixed = TRUE)
-base <- base %>%
-  left_join(statefips, by=c('origin'='statename')) %>% 
-  dplyr::rename(origin_fip=statefip) %>%
-  left_join(statefips, by=c('destination'='statename')) %>% 
-  dplyr::rename(destination_fip=statefip)
+# base <- base %>%
+#   left_join(statefips, by=c('origin'='statename')) %>% 
+#   dplyr::rename(origin_fip=statefip) %>%
+#   left_join(statefips, by=c('destination'='statename')) %>% 
+#   dplyr::rename(destination_fip=statefip)
 
 # Get two digit codes
 base <- base %>% 
