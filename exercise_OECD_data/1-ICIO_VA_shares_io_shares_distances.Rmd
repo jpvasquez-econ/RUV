@@ -543,7 +543,7 @@ UN_0 <- UN_0 %>%
 UN_0 <- UN_0 %>%
   left_join(codes, by=c('Country.name'='all_country_names')) %>%
   dplyr::rename(country = all_country_codes) %>%
-  arrange(country)
+  arrange(country) 
 
 city_count <- UN_0 %>% #doesn't include count for RoW
   filter(country %in% c_names) %>%
@@ -647,7 +647,7 @@ state_0 <- coordinates_counties %>%
 # POPULATIONS
 # COUNTRIES
 country_coor <- country_coordinates %>%
-  filter(country.name.original != "United States of America", year == 2018) %>%
+  filter(country.name.original != "United States of America", year == 2016) %>%
   mutate(city.population = ifelse(country == "IRL" & city == "Cork", 124.391, city.population)) %>%  # missing value
   mutate(state = as.integer(factor(country)) + 50) %>% ##ojo RoW y RUS
   mutate(city = ifelse(country == "RoW", paste(country.name.original,city, sep="_"), city)) %>%
@@ -733,7 +733,10 @@ dist <- dist %>%
   mutate(dist = sum(dist)) %>%
   ungroup() %>%
   distinct(state_i, state_j, .keep_all = TRUE) %>%
-  mutate(dist = (dist^(1/theta))) %>%
+  mutate(dist1 = (dist^(1/theta))) %>%
+  mutate(dist1 = ifelse(dist == 0, 0, dist1)) %>%
+  select(-dist) %>%
+  dplyr::rename(dist = dist1) %>%
   mutate(dist = dist/1000)
 
 # Merging back states
