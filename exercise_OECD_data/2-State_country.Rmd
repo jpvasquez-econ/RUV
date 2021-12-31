@@ -24,7 +24,7 @@ header-includes:
 ## Input files
 
 1. `0-Raw_Data/regions.csv`
-2. `0-Raw_Data/sectors.csv`
+2. `0-Raw_Data/sectors_naics.csv`
 3. `0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-i.csv`
 4. `0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-i.csv`
 5. `1-Intermediate_Processed_Data//census_exports.csv`
