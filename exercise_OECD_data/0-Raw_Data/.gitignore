@@ -1,0 +1,12 @@
+.Rhistory
+*.bat
+*.html
+*.log
+*.csv
+*.dta
+*.txt
+*.xlsx
+*.xls
+*.zip
+*.do
+*.dat
