@@ -383,7 +383,7 @@ R <-spread(R, sector, val, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
 Calculating the share of value added in gross output:
 
-$$\alpha_{i,k} = \frac{VA_{i,k}}{R_{i,k}}$$
+$$Labor \; share = \frac{VA_{i,k}}{R_{i,k}}$$
 ```{r value-added-share, warning=FALSE}
 labor_shares <- VA[, 3:dim(VA)[2]] / R[, 3:dim(R)[2]]
 labor_shares[labor_shares>1] <- 1
