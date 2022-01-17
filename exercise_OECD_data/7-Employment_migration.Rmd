@@ -931,8 +931,10 @@ colnames(mu) <- col_names_mu
 mu <- mu %>% mutate(year = yr)
 mu <- reshape2::melt(mu, id.vars=c("year", "state_ori", "sector_ori"), variable.name="dest", value.name = "value")
 mu$value <- as.numeric(mu$value)
+mu$sector_ori <- as.numeric(mu$sector_ori)
+mu <- mu %>% arrange(year, state_ori, sector_ori)
 mu <- spread(mu, dest, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-write.table(mu, file = paste("2-Final_Data/mu_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
+write_xlsx(mu, paste("2-Final_Data//mu_", yr, ".xlsx", sep=""))
 
 }
 
