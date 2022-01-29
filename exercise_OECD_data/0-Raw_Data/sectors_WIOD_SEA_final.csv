@@ -8,8 +8,8 @@ Mining and quarrying,B,4
 "Manufacture of wood and of products of wood and cork, except furniture; manufacture of articles of straw and plaiting materials",C16,3
 Manufacture of paper and paper products,C17,3
 Printing and reproduction of recorded media,C18,3
-Manufacture of coke and refined petroleum products ,C19,4
-Manufacture of chemicals and chemical products ,C20,5
+Manufacture of coke and refined petroleum products,C19,4
+Manufacture of chemicals and chemical products,C20,5
 Manufacture of basic pharmaceutical products and pharmaceutical preparations,C21,5
 Manufacture of rubber and plastic products,C22,6
 Manufacture of other non-metallic mineral products,C23,7
@@ -24,7 +24,7 @@ Manufacture of furniture; other manufacturing,C31_C32,12
 Repair and installation of machinery and equipment,C33,13
 "Electricity, gas, steam and air conditioning supply",D35,
 "Water collection, treatment and supply",E36,
-"Sewerage; waste collection, treatment and disposal activities; materials recovery; remediation activities and other waste management services ",E37-E39,13
+"Sewerage; waste collection, treatment and disposal activities; materials recovery; remediation activities and other waste management services",E37-E39,13
 Construction,F,13
 Wholesale and retail trade and repair of motor vehicles and motorcycles,G45,13
 "Wholesale trade, except of motor vehicles and motorcycles",G46,13
