@@ -27,11 +27,18 @@ bysort year statefip: egen l_st_yremp = total(emp)
 * Employment by sector and year
 bysort year sic87dd: egen l_us_sectemp = total(emp)
 
+* calculate employment share in the state 
+gen emp_share=emp / l_st_yremp 
+
 * Calculate share
-gen l_sh_ipw = emp / (l_st_yremp * l_us_sectemp)
+gen l_sh_ipw = emp_share / l_us_sectemp
 
 * Create lagged share for instrument
 sort statefip sic87dd year
+egen group=group(statefip sic87dd)
+xtset group year, y   delta(10)
+gen asa = l.l_sh_ipw
+
 by statefip sic87dd (year): gen l1_sh_ipw = l_sh_ipw[_n-1]
 
 * Drop year and create treatment variables as in ADH
