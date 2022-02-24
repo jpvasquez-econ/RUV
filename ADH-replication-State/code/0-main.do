@@ -1,5 +1,6 @@
 * Main file ADH (2013) replication at the State Level
 
+/*
 * Prepare the raw CBP 1980
 do clean_cbp_1980
 
@@ -11,6 +12,10 @@ do clean_cbp_2000
 
 * Append CBP datasets
 do append_cbp
+*/
+
+* using David Dorn's data for employment shares
+do append_jp
 
 * Change directory
 cap cd "../../code"
