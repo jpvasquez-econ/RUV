@@ -27,25 +27,15 @@ state and year.
 */
 
 * Import the dataset
-use ../data/0-raw_data/popworkage90_07.dta, clear
+use ../data/0-raw_data/workfile_china.dta, clear
 
-* Reshape the dataset
-reshape long popworkage, i(statefip) j(year)
-
-* Adapt time variable 
-gen t2 = -1
-replace t2 = 0 if year == 2000
-replace t2 = 1 if year == 2007
-
-* Set the dataset as a panel one
-xtset statefip t2
-
-* Calculate log changes in working age population
-gen lnchg_popworkage = log(popworkage) - log(L.popworkage)
-
-* Keep variables and observations of interest
-drop if t2 == -1
-keep statefip t2 lnchg_popworkage
+*aggregating at the state level
+bys yr statefip: egen pop = wtmean(lnchg_popworkage), weight(l_popcount)
+bys yr statefip: gen dup=cond(_N==1,0,_n)
+drop if dup>1
+rename yr year
+keep statefip year pop
+rename pop lnchg_popworkage
 
 * Save the dataset
 save ../data/2-final_data/lnchg_popworkage.dta, replace
