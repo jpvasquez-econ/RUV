@@ -22,7 +22,7 @@ Output files.
 use ../data/2-final_data/emp_shares.dta, clear
 
 * Merge datasets
-merge m:1 t2 sic87dd using "../data/1-intermediate_data/imports_changes.dta", keep(3) nogen
+merge m:1 year sic87dd using "../data/1-intermediate_data/imports_changes.dta", keep(3) nogen
 
 * Create IPW and instrument 1: Multiply shares by changes in imports
 gen d_tradeusch_pw_pre_sum = l_sh_ipw * import_chg_usch
@@ -30,11 +30,7 @@ gen d_tradeotch_pw_lag_pre_sum = l1_sh_ipw * import_chg_otch
 
 * Sum over sectors
 collapse (sum) d_tradeusch_pw=d_tradeusch_pw_pre_sum /// 
-(sum) d_tradeotch_pw_lag=d_tradeotch_pw_lag_pre_sum, by(statefip t2)
-
-* Multiply by 100
-replace d_tradeusch_pw = 100 * d_tradeusch_pw
-replace d_tradeotch_pw_lag = 100 * d_tradeotch_pw_lag
+(sum) d_tradeotch_pw_lag=d_tradeotch_pw_lag_pre_sum, by(statefip year)
 
 * Save the dataset
 save ../data/2-final_data/ipw.dta, replace
