@@ -15,7 +15,7 @@ Input file:
 * Administrative Commands
 ***********************************************
 use ../data/2-final_data/workfile_china_agg.dta, clear
-
+gen t2=(year==2000)
 ******************************************************************************************************************************************************************************************
 * Table 4: Population Change
 ******************************************************************************************************************************************************************************************
@@ -25,6 +25,8 @@ use ../data/2-final_data/workfile_china_agg.dta, clear
 ******************************************************************************************************************************************************************************************
 
 ivregress 2sls lnchg_popworkage (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], robust
+
+ivregress 2sls lnchg_popworkage (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp reg* t2 [aw=timepwt48] 
 
 ******************************************************************************************************************************************************************************************
 * Table 5: Change in Employment, Unemployment and Non-Employment
@@ -36,11 +38,15 @@ ivregress 2sls lnchg_popworkage (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manu
 
 ivregress 2sls d_sh_unempl (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], robust
 
+ivregress 2sls d_sh_unempl (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp reg* t2 [aw=timepwt48] 
+
 ******************************************************************************************************************************************************************************************
 * Column 4
 ******************************************************************************************************************************************************************************************
 
 ivregress 2sls d_sh_nilf (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], robust
+
+ivregress 2sls d_sh_nilf (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp reg* t2 [aw=timepwt48] 
 
 ******************************************************************************************************************************************************************************************
 * Table 7: Manufacturing vs. Non-Manufacturing
@@ -52,8 +58,12 @@ ivregress 2sls d_sh_nilf (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l
 
 ivregress 2sls d_avg_lnwkwage_mfg (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], robust
 
+ivregress 2sls d_avg_lnwkwage_mfg (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp reg* t2 [aw=timepwt48] 
+
 ******************************************************************************************************************************************************************************************
 * Column 4
 ******************************************************************************************************************************************************************************************
 
 ivregress 2sls d_avg_lnwkwage_nmfg (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], robust
+
+ivregress 2sls d_avg_lnwkwage_nmfg (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp reg* t2 [aw=timepwt48] 
