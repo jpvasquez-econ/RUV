@@ -16,48 +16,64 @@
 use "112670-V1/Public-Release-Data/dta/workfile_china.dta", clear
 
 ******************************************************************************************************************************************************************************************
-* Table 4: Population Change
-******************************************************************************************************************************************************************************************
-* Panel C
-******************************************************************************************************************************************************************************************
-* Column 1
+* Table 4. Panel C. Column 1
+* Dependent variables: Ten-year equivalent changes in log population counts (in log pts)
+* All education levels
+* Full controls
 ******************************************************************************************************************************************************************************************
 
 ivregress 2sls lnchg_popworkage (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 
 ******************************************************************************************************************************************************************************************
 * Table 5: Change in Employment, Unemployment and Non-Employment
+* Panel B. Change in population shares All
 ******************************************************************************************************************************************************************************************
-* Panel B
 ******************************************************************************************************************************************************************************************
-* Column 3
+* Table 5. Panel B. Column 3. Unemp
 ******************************************************************************************************************************************************************************************
-
 ivregress 2sls d_sh_unempl (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
-*ivregress 2sls d_sh_unempl_edu_c (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
-*ivregress 2sls d_sh_unempl_edu_nc (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
-
-
 ******************************************************************************************************************************************************************************************
-* Column 4
+* Table 5. Panel B. Column 4. NILF
 ******************************************************************************************************************************************************************************************
-
 ivregress 2sls d_sh_nilf (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
-*ivregress 2sls d_sh_nilf_edu_c (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
-*ivregress 2sls d_sh_nilf_edu_nc (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 
 ******************************************************************************************************************************************************************************************
-* Table 7: Manufacturing vs. Non-Manufacturing
+* Table 7: Dependent variables: Ten-year equivalent changes in log workers and average log weekly wages
+* Panel B. Change in average log wage 
 ******************************************************************************************************************************************************************************************
-* Panel B
+* Table 7. Panel B. Column 1. ALL WORKERS MANUFACTURING
 ******************************************************************************************************************************************************************************************
-* Column 1
-******************************************************************************************************************************************************************************************
-
 ivregress 2sls d_avg_lnwkwage_mfg (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
-
 ******************************************************************************************************************************************************************************************
-* Column 4
+* Table 7. Panel B. Column 4. ALL WORKERS NON-MANUFACTURING
 ******************************************************************************************************************************************************************************************
-
 ivregress 2sls d_avg_lnwkwage_nmfg (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+******************************************************************************************************************************************************************************************
+* Table 9: Dependent variable: Ten-year equivalent percentage change in average annual household income per working-age adult
+* PANEL A: percentage change
+******************************************************************************************************************************************************************************************
+******************************************************************************************************************************************************************************************
+* Table 9. Panel A. Column 1. Total Average HH income/adult
+******************************************************************************************************************************************************************************************
+ivregress 2sls relchg_avg_hhincsum_pc_pw (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+global coeff = _b[d_tradeusch_pw]
+******************************************************************************************************************************************************************************************
+* Table 9. Panel A. Column 2. WAGE SALARY Average HH income/adult
+******************************************************************************************************************************************************************************************
+ivregress 2sls relchg_avg_hhincwage_pc_pw (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+predict temp_delta_income_pc
+
+*let's follow eq 8 in the ADH-persistance paper wuth average HH income
+*tot pop share
+egen pop_share_tot=total(l_popcount)
+replace pop_share= l_popcount/pop_share_tot
+egen diff_CZ=total(pop_share_tot*d_tradeusch_pw)  
+replace diff=${coeff}*(d_tradeusch_pw-diff)
+
+*pop share per CZ
+bys statefip: egen double pop_share_state=total(l_popcount)
+replace pop_share_state=l_popcount/pop_share_state
+gen double delta_income_pc=diff*pop_share_state
+collapse (sum) delta_income_pc pop_share_state, by(statefip)
+
+
