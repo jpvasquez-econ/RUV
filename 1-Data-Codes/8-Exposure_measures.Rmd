@@ -143,6 +143,19 @@ L <- L %>%
   ungroup() %>%
   filter(sector <= 12)
 
+#exposure sector-state level 
+individual_exposure <- L %>%
+  left_join(R_US, by=c("sector"="sector")) %>%
+  left_join(data_reg, by=c("sector"="sector")) %>%
+  mutate(state = tolower(state)) %>%
+  left_join(state_emp_share_2000, by=c("state"="state", "sector"="sector")) %>%
+  mutate(exposure_cons = ( (employ*hat_cons)/(employ_state*sales) ) ) %>%
+  mutate(exposure_nocons = ( (employ*hat_nocons)/(employ_state*sales) ) ) %>%
+  mutate(exposure_cons_bls = ( (share_bls*hat_cons)/(sales) ) ) %>%
+  mutate(exposure_nocons_bls = ( (share_bls*hat_nocons)/(sales) ) )
+
+write_xlsx(individual_exposure, path = "1-Intermediate_Processed_Data/individual_exposure.xlsx")
+
 #exposure
 final <- L %>%
   left_join(R_US, by=c("sector"="sector")) %>%
