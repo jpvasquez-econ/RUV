@@ -22,7 +22,7 @@ use ../data/0-raw_data/workfile_china.dta, clear
 keep statefip yr l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f ///
 l_sh_routine33 l_task_outsource reg* d_sh_unempl d_sh_nilf d_avg_lnwkwage_mfg /// 
 d_avg_lnwkwage_nmfg l_popcount l_no_workers_totcbp timepwt48  /// 
-l_sh_empl_mfg l_sh_empl_nmfg
+l_sh_empl_mfg l_sh_empl_nmfg d_sh_empl lnchg_no_empl
 rename yr year
 
 * Calculate CZ population and employment shares conditional on State
@@ -63,6 +63,26 @@ drop temp dup
 * Merge previous datasets
 merge 1:1 statefip year using ../data/2-final_data/ipw.dta, keep(3) nogen
 merge 1:1 statefip year using ../data/2-final_data/lnchg_popworkage.dta, keep(3) nogen
+
+***
+*** MERGE NET-EXPORTS EXPOSURE FROM MAU
+***
+preserve
+import excel "../data/0-raw_data/NXExposure.xlsx", sheet("Sheet1") firstrow clear
+drop Statenum
+rename State name
+replace name="Rhode Island" if name=="RhodeIsland"
+merge 1:1 name using "../data/0-raw_data/fips.dta"
+drop if _m==2
+drop _m 
+rename fips statefip
+gen year=2000
+tempfile netexports
+save `netexports', replace
+restore
+merge 1:1 statefip year using `netexports'
+drop if _m==2
+drop _m
 
 * Save the dataset
 save ../data/2-final_data/workfile_china_agg.dta, replace

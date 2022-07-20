@@ -6,7 +6,7 @@ set more off
 
 *** INPUT FILES 
 global sector_exposure ""/Users/jpvasquez/Dropbox/0-mycomputer/mydocuments/0-LSE/0-Research/NK_trade/JP/Data_Construction/RUV/1-Data-Codes/1-Intermediate_Processed_Data/individual_exposure.xlsx""
-global welfare ""/Users/jpvasquez/Dropbox/0-mycomputer/mydocuments/0-LSE/0-Research/NK_trade/JP/Data_Construction/Para Mau/WelfareStaSec.xlsx""
+global welfare ""/Users/jpvasquez/Dropbox/0-mycomputer/mydocuments/0-LSE/0-Research/NK_trade/JP/Data_Construction/Para Mau/WelfareStaSec2.xlsx""
 global ADH_exposure_renorm ""/Users/jpvasquez/Dropbox/0-mycomputer/mydocuments/0-LSE/0-Research/NK_trade/JP/Data_Construction/Para Mau/NXExposure.xlsx""
 global ADH_exposure ""/Users/jpvasquez/Dropbox/0-mycomputer/mydocuments/0-LSE/0-Research/NK_trade/JP/Data_Construction/Para Mau/exposures.xlsx""
 
@@ -65,12 +65,14 @@ save `exp', replace
 *import individual expososure 
 ******************************
 import excel ${sector_exposure}, sheet("Sheet1") firstrow clear
+bys state: egen emp_sec=total(employ)
+egen emp_usa=total(employ)
 bys sector: gen dup=cond(_N==1,0,_n)
 rename exposure_nocons sect_state_exp
 rename state State
-keep State sector sect_exp sect_state_exp
-replace sect_state_exp= sect_state_exp * 2.63 /${exp_mean}
-replace sect_exp= sect_exp * 2.63 /${exp_mean}
+keep State sector sect_exp sect_state_exp emp_usa emp_sec
+replace sect_state_exp= emp_usa / emp_sec * sect_state_exp * 2.63 /${exp_mean} 
+replace sect_exp=  sect_exp * 2.63 /${exp_mean}
 *merging back 
 merge 1:m State sector using `exp'
 keep sector sect_exp sect_state_exp State welfare ADHrenorm
@@ -82,21 +84,21 @@ rename welfare welfare_change
 label var sect_exp "Sector-Level Exposure"
 label var ADHrenorm "ADH State-Level Exposure"
 label var sect_state_exp "Sector-State-Level Exposure"
-replace ADHrenorm = ADHrenorm - sect_state_exp
+*replace ADHrenorm = ADHrenorm 
 gen interaction=sect_exp * ADHrenorm
 label var interaction "Interaction"
 estimates clear
 reg welfare ADHrenorm
 estimates store reg_1
-reg welfare sect_state_exp
+reg welfare sect_exp
 estimates store reg_2 
-reg welfare ADHrenorm sect_state_exp
+reg welfare ADHrenorm sect_exp
 estimates store reg_3
-reg welfare sect_state_exp interaction
+reg welfare sect_exp interaction
 estimates store reg_4
 reg welfare interaction
 estimates store reg_5
-reg welfare ADHrenorm sect_state_exp interaction
+reg welfare ADHrenorm sect_exp interaction
 estimates store reg_6
 
 
