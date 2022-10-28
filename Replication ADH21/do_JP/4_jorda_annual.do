@@ -50,12 +50,12 @@ use "${data}/ADH_control_vars"
 preserve 
 keep if year==1990
 drop year
-save temp_`base1', replace
+save temp_${base1}, replace
 restore
 preserve 
 keep if year==2000
 drop year
-save temp_`base2', replace
+save temp_${base2}, replace
 restore
 drop _all
 
@@ -179,6 +179,7 @@ foreach y of var tp1-allpop yi-edt_usd {
 		}
 		drop `y'${x} `y'_${x}
 	}
+/*
 if ${x} == $base2 {
 foreach z in $base3 {
 foreach y of var mp-allpop mw nw yi-edt_usd { 
@@ -193,9 +194,10 @@ foreach y of var mp-allpop mw nw yi-edt_usd {
 		}
 	}
 }
+*/
 
 *MERGE IN CONTROLS FOR BASE YEAR AND THEN RUN REGRESSIONS
-preserve
+*preserve
 merge m:1 czone using temp_${x}
 tab region, gen(reg)
 tab year, gen(yr)
@@ -207,15 +209,15 @@ local control3 "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_r
 local control4 "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9 sh_65up_all sh_4064_all sh_0017_all sh_00up_nw dlnpop7090"  
 foreach y of var mp-dp mw nw {
 	gen wt_`y' = popwk_${x}
-	local control_`y' = "`control3'"
+	global control_`y' = "`control3'"
 	}
 foreach y of var yi-edt_usd li_sh-tc_sh {
 	gen wt_`y' = pop_${x}
-	local control_`y' = "`control3'"
+	global control_`y' = "`control3'"
 	}
 foreach y of var wkpop-allpop lmp-ltp2 {
 	gen wt_`y' = pop_${x}
-	local control_`y' = "`control4'"
+	global control_`y' = "`control4'"
 	}
 
 
@@ -228,24 +230,24 @@ foreach y of var wkpop-allpop lmp-ltp2 {
 ***
 if $sumstats == 1 {
 *DEFINE BASE, END PERIODS
-if ${x} == `base1' {
-	local base=1991
-	local end=2000
-	local fin=2000
+if ${x} == ${base1} {
+	global base=1991
+	global end=2000
+	global fin=2000
 	}
-if ${x} == `base2' {
-	local base=2000
-	local start=2001
-	local end=2012
-	local fin=2019
+if ${x} == ${base2} {
+	global base=2000
+	global start=2001
+	global end=2012
+	global fin=2019
 	}
 *1ST STAGE REGRESSIONS
 disp " "
 disp "1st Stage Regression"
 *Sum stats for trade shock
-sum d_tradeusch_p1_`base'_`end' d_tradeotch_p1_lag_`base'_`end' [aw=pop_${x}] if year==${x}, det
-reg d_tradeusch_p1_`base'_`end' d_tradeotch_p1_lag_`base'_`end' [aw=pop_${x}] if year==${x}, cluster(statefip)
-reg d_tradeusch_p1_`base'_`end' d_tradeotch_p1_lag_`base'_`end' `control1' [aw=pop_${x}] if year==${x}, cluster(statefip)
+sum d_tradeusch_p1_${base}_${end} d_tradeotch_p1_lag_${base}_${end} [aw=pop_${x}] if year==${x}, det
+reg d_tradeusch_p1_${base}_${end} d_tradeotch_p1_lag_${base}_${end} [aw=pop_${x}] if year==${x}, cluster(statefip)
+reg d_tradeusch_p1_${base}_${end} d_tradeotch_p1_lag_${base}_${end} `control1' [aw=pop_${x}] if year==${x}, cluster(statefip)
 *Correlation in trade shocks
 corr d_tradeusch_p1_1991_2000 d_tradeusch_p1_2000_2012 d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_2000_2012 [aw=popwk_${x}] if year==${x}	
 
@@ -268,7 +270,7 @@ foreach varset in ctrls shocks {
 disp " "
 disp "Summary Stats for key outcomes, 19 year time difference"
 foreach y of var tp2 up wkpop yg1pop yg2pop odpop yi ti tc li di pi tc_usd ssa_usd mca_usd mcd_usd inc_usd ssi_usd eit_usd ssi_usd oim_usd edt_usd uot_usd {
-tabstat d`y'_`base2'_`fin' [aw=wt_`y'], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
+tabstat d`y'_${base2}_`fin' [aw=wt_`y'], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
 mat `y' = r(StatTotal)'
 local mats `mats' `y' \
 }
@@ -280,7 +282,7 @@ putexcel A1 = matrix(T), names
 disp " "
 disp "Summary Stats for key outcomes, 18 year time difference"
 foreach y of var mp np tp2 mw nw {
-tabstat d`y'_`base3'_`fin' [aw=wt_`y'], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
+tabstat d`y'_${base3}_`fin' [aw=wt_`y'], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
 mat `y' = r(StatTotal)'
 local mats2 `mats2' `y' \
 }
@@ -309,7 +311,7 @@ putexcel A1 = matrix(T), names
 * (I) EVALUATE DYNAMICS
 ***
 if $dynamics == 1 {
-if ${x} == `base2' {
+if ${x} == ${base2} {
 *CREATE RESIDUAL OF 2000s TRADE SHOCK THAT IS UNCORRELATED WITH 1990s TRADE SHOCK
 reg d_tradeusch_p1_2000_2012 d_tradeusch_p1_1991_2000 [aw=pop_2000] if year==2000
 	predict d_tradeusch_p1_2000_2012_res, resid
@@ -323,8 +325,8 @@ reg d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_2000_2012 [aw=pop_2000] if y
 sum *_res
 }
 foreach y in mp {
-if ${x} == `base2' {
-	local r=`base3'
+if ${x} == ${base2} {
+	local r=${base3}
 foreach u in 0007 0010 0014 0012 {
     if `u'==0007 {
 	   local v=2000
@@ -352,7 +354,7 @@ disp " "
 		global suffix "_`u'_`u'"
 	* regressions
 	foreach z of numlist `start3'(1)2019 {
-	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' `control_`y'' (d_tradeusch_p1_`v'_`w'=d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' ${control_`y'} (d_tradeusch_p1_`v'_`w'=d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`r'_`z' = _b[d_tradeusch_p1_`v'_`w']
 		global se_`y'_`r'_`z' = _se[d_tradeusch_p1_`v'_`w']
 		global estimates "${estimates} `y'_`r'_`z'"
@@ -374,7 +376,7 @@ if `u'==0012 {
 		global w = 2000
 		global suffix "_`u'_9100"
 	foreach z of numlist `start3'(1)2019 {
-	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' `control_`y'' (d_tradeusch_p1_1991_2000=d_tradeotch_p1_lag_1991_2000)  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' ${control_`y'} (d_tradeusch_p1_1991_2000=d_tradeotch_p1_lag_1991_2000)  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`r'_`z' = _b[d_tradeusch_p1_1991_2000]
 		global se_`y'_`r'_`z' = _se[d_tradeusch_p1_1991_2000]
 		global estimates "${estimates} `y'_`r'_`z'"
@@ -393,7 +395,7 @@ if `u'==0012 {
 		global w = `w'
 		global suffix "_`u'_`u'_9100"
 	foreach z of numlist `start3'(1)2019 {
-	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' `control_`y'' (d_tradeusch_p1_1991_2000 d_tradeusch_p1_`v'_`w'=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' ${control_`y'} (d_tradeusch_p1_1991_2000 d_tradeusch_p1_`v'_`w'=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`r'_`z' = _b[d_tradeusch_p1_`v'_`w']
 		global se_`y'_`r'_`z' = _se[d_tradeusch_p1_`v'_`w']
 		global estimates "${estimates} `y'_`r'_`z'"
@@ -410,7 +412,7 @@ if `u'==0012 {
 		global estimates
 		global suffix "_`u'_`u'_9100_res"
 	foreach z of numlist `start3'(1)2019 {
-	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' `control_`y'' (d_tradeusch_p1_1991_2000_res d_tradeusch_p1_`v'_`w'=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' ${control_`y'} (d_tradeusch_p1_1991_2000_res d_tradeusch_p1_`v'_`w'=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`r'_`z' = _b[d_tradeusch_p1_`v'_`w']
 		global se_`y'_`r'_`z' = _se[d_tradeusch_p1_`v'_`w']
 		global estimates "${estimates} `y'_`r'_`z'"
@@ -427,7 +429,7 @@ if `u'==0012 {
 		global estimates
 		global suffix "_`u'_9100_`u'_res"
 	foreach z of numlist `start3'(1)2019 {
-	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' `control_`y'' (d_tradeusch_p1_1991_2000 d_tradeusch_p1_`v'_`w'_res=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`r'_`z' : qui ivreg2 d`y'_`r'_`z' ${control_`y'} (d_tradeusch_p1_1991_2000 d_tradeusch_p1_`v'_`w'_res=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_`v'_`w')  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`r'_`z' = _b[d_tradeusch_p1_`v'_`w'_res]
 		global se_`y'_`r'_`z' = _se[d_tradeusch_p1_`v'_`w'_res]
 		global estimates "${estimates} `y'_`r'_`z'"
@@ -451,9 +453,9 @@ if `u'==0012 {
 if $reis == 1 {
 *2000 T0 2019
 foreach y of varlist wkpop odpop yg2pop yg1pop yi tc li tc_usd ret_usd mcd_usd inc_usd {
-if ${x} == `base2' {
-foreach u in `base2' {
-foreach v in `end2' {    
+if ${x} == ${base2} {
+foreach u in $base2 {
+foreach v in $end2 {    
 	* globals for graphs
 		global estimates
 		global y = "`y'"
@@ -461,7 +463,7 @@ foreach v in `end2' {
 		global w = 2012
 		global suffix "_`u'_`v'"
 	foreach z of numlist `start2'(1)2019 {
-	    eststo `y'_`u'_`z' : qui ivreg2 d`y'_`u'_`z' `control_`y'' (d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012)  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`u'_`z' : qui ivreg2 d`y'_`u'_`z' ${control_`y'} (d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012)  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`u'_`z' = _b[d_tradeusch_p1_2000_2012]
 		global se_`y'_`u'_`z' = _se[d_tradeusch_p1_2000_2012]
 		global estimates "${estimates} `y'_`u'_`z'"
@@ -480,15 +482,15 @@ foreach v in `end2' {
 *2001 T0 2019
 *foreach y of varlist mp-dp yg1pop yg2pop odpop allpop mw nw yi-di {
 foreach y of varlist mp np tp2 {
-if ${x} == `base2' {
-foreach u in `base3' {
-foreach v in `end2' {  
+if ${x} == ${base2} {
+foreach u in $base3 {
+foreach v in $end2 {  
 	* globals for graphs
 		global estimates
 		global y = "`y'"
 		global suffix "_`u'_`v'_2"  
 	foreach z of numlist `start3'(1)2019 {
-	    eststo `y'_`u'_`z' : qui ivreg2 d`y'_`u'_`z'_2 `control_`y'' (d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012)  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`u'_`z' : qui ivreg2 d`y'_`u'_`z'_2 ${control_`y'} (d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012)  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`u'_`z' = _b[d_tradeusch_p1_2000_2012]
 		global se_`y'_`u'_`z' = _se[d_tradeusch_p1_2000_2012]
 		global estimates "${estimates} `y'_`u'_`z'"
@@ -512,9 +514,9 @@ foreach v in `end2' {
 if $gravity == 1 {
 *Outcomes over 2002 to 2019
 foreach y in tp2 mp np {
-if ${x} == `base2' {
-foreach u in `base3' {
-foreach v in `end2' {  
+if ${x} == ${base2} {
+foreach u in $base3 {
+foreach v in $end2 {  
 	* globals for graphs
 		global estimates
 		global y = "`y'"
@@ -522,7 +524,7 @@ foreach v in `end2' {
 		global w = 2012
 		global suffix "local_`y'_`u'_`v'"    
 	foreach z of numlist `start3'(1)2019 {
-	    eststo `y'_`u'_`z' : qui ivreg2 d`y'_`u'_`z'_2 `control_`y'' (d_tradeusch_p1_2000_2012 gr1_d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012 gr1_d_tradeotch_p1_lag_2000_2012)  [aw=wt_`y'], cluster(statefip) 
+	    eststo `y'_`u'_`z' : qui ivreg2 d`y'_`u'_`z'_2 ${control_`y'} (d_tradeusch_p1_2000_2012 gr1_d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012 gr1_d_tradeotch_p1_lag_2000_2012)  [aw=wt_`y'], cluster(statefip) 
 		global b_`y'_`u'_`z' = _b[d_tradeusch_p1_2000_2012]
 		global se_`y'_`u'_`z' = _se[d_tradeusch_p1_2000_2012]
 		global b_gr_`y'_`u'_`z' = _b[gr1_d_tradeusch_p1_2000_2012]
@@ -549,22 +551,22 @@ matrix Pool = J(`matrix_count', 8, .)
 global suffix "_by_"    
 
 foreach y in mp tp2 wkpop yi np lnp {
-if ${x} == `base2' {
-foreach u in `base3' {	
-foreach v in `end2' {
+if ${x} == ${base2} {
+foreach u in $base3 {	
+foreach v in $end2 {
 foreach q in ba_pop hhi_ind_emp /*emp_pop for_pop hhi_occ_emp*/ {
 qui foreach z of numlist `start3'(1)2019 {
 	* identify loop and heterogeneity test
 	loc loop = `loop' + 1
 	loc tests `tests' `y',`z',`q'	
 	* interact all control variables with q
-	qui ds `control_`y''
+	qui ds ${control_`y'}
 	foreach var in `r(varlist)' {
 		local ctrl_int_`y' `ctrl_int_`y'' i.med_`q'##c.`var'
 	}
 	* regressions for czones for above / below median 
 	foreach r of num 0 1 {            
-		eststo `y'_`u'_`z'_`r' : ivreg2 d`y'_`u'_`z' `control_`y'' (d_tradeusch_p1_${x}_`v'=d_tradeotch_p1_lag_${x}_`v')  [aw=wt_`y'] if med_`q'==`r', cluster(statefip) partial(`control_`y'')
+		eststo `y'_`u'_`z'_`r' : ivreg2 d`y'_`u'_`z' ${control_`y'} (d_tradeusch_p1_${x}_`v'=d_tradeotch_p1_lag_${x}_`v')  [aw=wt_`y'] if med_`q'==`r', cluster(statefip) partial(${control_`y'})
 		matrix b = e(b)
 		matrix V = e(V)
 		loc coeff_`r'_`loop' = b[1,1]
@@ -686,13 +688,13 @@ eststo clear
 	noi di "number of false positives in BH procedure: `bh_fp'" 
 	* make coefficient plots
 	global x = ${x}
-	global v = `end2'
+	global v = ${end2}
 	* plot coefficients
 	qui do "${do}/coefplot_area.do"	
 }	
-restore
+*restore
 *}
 	
-erase temp_`base2'.dta
-erase temp_`base1'.dta
+erase temp_${base2}.dta
+erase temp_${base1}.dta
 
