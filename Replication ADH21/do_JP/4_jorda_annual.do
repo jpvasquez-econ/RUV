@@ -368,8 +368,10 @@ disp " "
 	* globals for graphs
 		global estimates
 		global y = "${y}"
-		*global v = ${v}
-		*global w = ${w}
+		global v = ${v}
+		global w = ${w}
+		global v2 = ${v}
+		global w2 = ${w}
 		global suffix "_${u}_${u}"
 	* regressions
 	foreach z of numlist $start3 (1)2019 {	
@@ -412,8 +414,8 @@ if $u ==0012 {
 *2000s outcomes on 2000s and 1990s shock
 	* globals for graphs
 		global estimates
-		*global v = ${v}
-		*global w = ${w}
+		global v = ${v2}
+		global w = ${w2}
 		global suffix "_${u}_${u}_9100"
 	foreach z of numlist $start3 (1)2019 {
 		global z = `z'
