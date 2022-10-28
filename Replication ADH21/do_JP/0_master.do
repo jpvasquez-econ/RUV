@@ -14,6 +14,7 @@ global do		"do"
 global output	"output"
 
 * Packages
+/*
 ssc install ssaggregate
 ssc install blindschemes
 set scheme plotplainblind
@@ -25,7 +26,7 @@ ssc install ivreg2
 ssc install ranktest
 maptile_install using "http://files.michaelstepner.com/geo_cz1990.zip"
 net install grc1leg, from("http://www.stata.com/users/vwiggins/") 
-
+*/
 * Log file
 cap log close
 log using "log.smcl", replace

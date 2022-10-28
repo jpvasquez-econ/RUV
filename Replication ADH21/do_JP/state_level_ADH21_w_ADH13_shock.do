@@ -46,7 +46,7 @@ global heterogeneity 1 	// (IV) RUN SEPARATE REGRESSIONS FOR CZs ABOVE-BELOW MED
 *******************************************************************************
 
 *PREPARE CONTROL VARIABLES (FROM WWD AERi PAPER) FOR LATER MERGE
-use "${data}/ADH_control_vars"
+use "${data}/ADH_control_vars", clear
 preserve 
 keep if year==1990
 drop year
@@ -101,6 +101,7 @@ gen tp1=(Employment/pop_1864_all)
 gen tp2=(Wage_salary_employ/pop_1864_all)
 gen unm=log(Unemploy_insur_comp) - log(pop_1864_all)
 gen up=(unemployment/pop_1864_all)
+gen nilf= 1-tp1 - up
 gen dp=(num_dis_w/pop_1864_all)
 gen lmp=log(mp)
 gen lnp=log(np)
@@ -212,306 +213,47 @@ merge m:1 czone using temp_${x}
 tab region, gen(reg)
 tab year, gen(yr)
 *Define control variable sets
-local control0 "reg2-reg9"  
-local control1 "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9"  
-local control2 "l_shind_manuf_cbp_lag l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9"
-local control3 "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9 sh_65up_all sh_4064_all sh_0017_all sh_00up_nw"  
+global control0 "reg2-reg9"  
+global control1 "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9"  
+global control2 "l_shind_manuf_cbp_lag l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9"
+global control3 "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9 sh_65up_all sh_4064_all sh_0017_all sh_00up_nw"  
 local control4 "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg2-reg9 sh_65up_all sh_4064_all sh_0017_all sh_00up_nw dlnpop7090"  
+***
+*** the first ones are the relevants 
+***
 foreach y of var mp-dp mw nw {
 	global y `y'
 	gen wt_${y} = popwk_${x}
-	global control_${y} = "`control3'"
+	global control_${y} = "${control3}"
 	}
 foreach y of var yi-edt_usd li_sh-tc_sh {
 	global y `y'
 	gen wt_${y} = pop_${x}
-	global control_${y} = "`control3'"
+	global control_${y} = "${control3}"
 	}
 foreach y of var wkpop-allpop lmp-ltp2 {
 	global y `y'
 	gen wt_${y} = pop_${x}
-	global control_${y} = "`control4'"
+	global control_${y} = "${control4}"
 	}
+*******************************************************************************	
 *******************************************************************************
 * REGRESSION ANALYSIS
 *******************************************************************************
-
-***
-* (0) PRELIMINARIES, SUM STATS, 1ST STAGE REGRESSION
-***
-/*
-if $sumstats == 1 {
-*DEFINE BASE, END PERIODS
-if ${x} == ${base1} {
-	global base=1991
-	global end=2000
-	global fin=2000
-	}
-if ${x} == ${base2} {
-	global base=2000
-	global start=2001
-	global end=2012
-	global fin=2019
-	}
-*1ST STAGE REGRESSIONS
-disp " "
-disp "1st Stage Regression"
-*Sum stats for trade shock
-sum d_tradeusch_p1_${base}_${end} d_tradeotch_p1_lag_${base}_${end} [aw=pop_${x}] if year==${x}, det
-reg d_tradeusch_p1_${base}_${end} d_tradeotch_p1_lag_${base}_${end} [aw=pop_${x}] if year==${x}, cluster(statefip)
-reg d_tradeusch_p1_${base}_${end} d_tradeotch_p1_lag_${base}_${end} `control1' [aw=pop_${x}] if year==${x}, cluster(statefip)
-*Correlation in trade shocks
-corr d_tradeusch_p1_1991_2000 d_tradeusch_p1_2000_2012 d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_2000_2012 [aw=popwk_${x}] if year==${x}	
-
-*SUMMARY STATS
-
-disp " "
-disp "Summary Stats for control variables and trade shocks"
-* control variables
-local ctrls l_shind_manuf_cbp l_sh_empl_f l_sh_routine33 l_task_outsource l_sh_popedu_c l_sh_popfborn sh_00up_nw sh_65up_all sh_4064_all sh_0017_all dlnpop7090
-* trade shocks
-local shocks d_tradeusch_p1_1991_2000 d_tradeusch_p1_2000_2007 d_tradeusch_p1_2000_2010 d_tradeusch_p1_2000_2012 d_tradeusch_p1_2000_2014 d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_2000_2007 d_tradeotch_p1_lag_2000_2010 d_tradeotch_p1_lag_2000_2012 d_tradeotch_p1_lag_2000_2014
-* summarize and export to excel file
-foreach varset in ctrls shocks {
-	tabstat ``varset'' [aw=pop_1864_all] if year == 2000, stat(mean sd p25 p50 p75) columns(statistics) format(%7.3f) save
-	mat T = r(StatTotal)'
-	putexcel set "${output}/sumstats.xlsx", modify sheet(`varset', replace)
-	putexcel A1 = matrix(T), names
-}
-
-disp " "
-disp "Summary Stats for key outcomes, 19 year time difference"
-foreach y of var tp2 up wkpop yg1pop yg2pop odpop yi ti tc li di pi tc_usd ssa_usd mca_usd mcd_usd inc_usd ssi_usd eit_usd ssi_usd oim_usd edt_usd uot_usd {
-	global y `y'
-tabstat d${y}_${base2}_${fin} [aw=wt_${y}], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
-mat ${y} = r(StatTotal)'
-local mats `mats' ${y} \
-}
-mat AX = (. , . , . , . , .) 
-mat T = `mats' AX
-putexcel set "${output}/sumstats.xlsx", modify sheet(outcomes19, replace)
-putexcel A1 = matrix(T), names
-
-/* LONG DIFFERENCES (ALSO COMMENTED ABOVE)
-disp " "
-disp "Summary Stats for key outcomes, 18 year time difference"
-foreach y of var mp np tp2 mw nw {
-	global y `y'
-tabstat d${y}_${base3}_${fin} [aw=wt_${y}], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
-mat ${y} = r(StatTotal)'
-local mats2 `mats2' ${y} \
-}
-mat T = `mats2' AX
-putexcel set "${output}/sumstats.xlsx", modify sheet(outcomes18, replace)
-putexcel A1 = matrix(T), names
-*/
-disp " "
-disp "Summary Stats for components of personal income"
-foreach y of var li_sh-tc_sh {
-	global y `y'
-	tabstat ${y} if year==2000 | year ==2019 [aw=wt_${y}], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
-	mat ${y} = r(StatTotal)'	
-	tabstat ${y} if year==2000 [aw=wt_${y}], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
-	mat ${y} = ${y} \ r(StatTotal)'
-	tabstat ${y} if year==2019 [aw=wt_${y}], stat(mean sd p25 p50 p75) col(stat) format(%9.3f) save
-	mat ${y} = ${y} \ r(StatTotal)'
-	local mats3 `mats3' ${y} \
-	}
-mat T = `mats3' AX
-putexcel set "${output}/sumstats.xlsx", modify sheet(persinc, replace)
-putexcel A1 = matrix(T), names	
-
-}
-*/	
-***	
-* (I) EVALUATE DYNAMICS
-***
-if $dynamics == 1 {
-if ${x} == ${base2} {
-*CREATE RESIDUAL OF 2000s TRADE SHOCK THAT IS UNCORRELATED WITH 1990s TRADE SHOCK
-reg d_tradeusch_p1_2000_2012 d_tradeusch_p1_1991_2000 [aw=pop_2000] if year==2000
-	predict d_tradeusch_p1_2000_2012_res, resid
-reg d_tradeotch_p1_lag_2000_2012 d_tradeotch_p1_lag_1991_2000 [aw=pop_2000] if year==2000
-	predict d_tradeotch_p1_lag_2000_2012_res, resid
-*CREATE RESIDUAL OF 1990s TRADE SHOCK THAT IS UNCORRELATED WITH 2000s TRADE SHOCK
-reg d_tradeusch_p1_1991_2000 d_tradeusch_p1_2000_2012 [aw=pop_2000] if year==2000
-	predict d_tradeusch_p1_1991_2000_res, resid
-reg d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_2000_2012 [aw=pop_2000] if year==2000
-	predict d_tradeotch_p1_lag_1991_2000_res, resid
-sum *_res
-}
-*mp IS MANUFACTURING EMPLOYMENT OVER 18-64 YEARS OLD POPULATION
-foreach y in mp {
-	global y `y'
-if ${x} == $base2 {
-	global r=${base3}
-foreach u in 0007 0010 0014 0012 {
-	global u "`u'"
-    if $u ==0007 {
-	   global v=2000
-	   global w=2007
-		}	
-    if $u ==0010 {
-   	  global v=2000
-   	  global w=2010
-		}
-    if $u ==0012 {
-   	  global v=2000
-   	  global w=2012
-		}
-    if $u ==0014 {
-   	  global v=2000
-   	  global w=2014
-		}	
-*1ST, REGRESS CHANGE IN MANUF. EMPLOYMENT 2001-2009 ON 2000-07, 2000-10, 2000-12, 2000-14 TRADE SHOCKS TO COMPARE
-disp " "
-	* globals for graphs
-		global estimates
-		global y = "${y}"
-		global v = ${v}
-		global w = ${w}
-		global v2 = ${v}
-		global w2 = ${w}
-		global suffix "_${u}_${u}"
-	* regressions
-	foreach z of numlist $start3 (1)2019 {	
-		global z = `z'
-	    eststo ${y}_${r}_${z} : qui ivreg2 d${y}_${r}_${z} ${control_${y}} (d_tradeusch_p1_${v}_${w}=d_tradeotch_p1_lag_${v}_${w})  [aw=wt_${y}], cluster(statefip) 
-		global b_${y}_${r}_${z} = _b[d_tradeusch_p1_${v}_${w}]
-		global se_${y}_${r}_${z} = _se[d_tradeusch_p1_${v}_${w}]
-		global estimates "${estimates} ${y}_${r}_${z}"
-	} 
-disp "2000s outcomes on ${u} shock"
-	esttab ${y}_${r}_2002 ${y}_${r}_2003 ${y}_${r}_2004 ${y}_${r}_2005 ${y}_${r}_2006 ${y}_${r}_2007 ${y}_${r}_2008 ${y}_${r}_2009 ${y}_${r}_2010, ar2 nocon keep(d_tradeusch_p1_${v}_${w})
-	esttab ${y}_${r}_2011 ${y}_${r}_2012 ${y}_${r}_2013 ${y}_${r}_2014 ${y}_${r}_2015 ${y}_${r}_2016 ${y}_${r}_2017 ${y}_${r}_2018 ${y}_${r}_2019, ar2 nocon keep(d_tradeusch_p1_${v}_${w})
-	* plot coefficients
-	qui do "${do}/coefplot_area.do"
-	* clear estimates
-	eststo clear
-	
-*2ND, REGRESS CHANGE IN MANUF. EMPLOYMENT 2001-2019 TRADE SHOCK FOR 1991-2000, 2000-2012 PLUS 1991-2000, 2000-2012 PLUS RESIDUALIZED 1991-2000 SHOCK
-if $u ==0012 { 
-*2000s outcomes on 1990 shock
-	* globals for graphs
-		global estimates
-		global v = 1991
-		global w = 2000
-		global suffix "_${u}_9100"
-	foreach z of numlist $start3 (1)2019 {
-		global z = `z'
-	    eststo ${y}_${r}_${z} : qui ivreg2 d${y}_${r}_${z} ${control_${y}} (d_tradeusch_p1_1991_2000=d_tradeotch_p1_lag_1991_2000)  [aw=wt_${y}], cluster(statefip) 
-		global b_${y}_${r}_${z} = _b[d_tradeusch_p1_1991_2000]
-		global se_${y}_${r}_${z} = _se[d_tradeusch_p1_1991_2000]
-		global estimates "${estimates} ${y}_${r}_${z}"
-	} 
-	esttab ${y}_${r}_2002 ${y}_${r}_2003 ${y}_${r}_2004 ${y}_${r}_2005 ${y}_${r}_2006 ${y}_${r}_2007 ${y}_${r}_2008 ${y}_${r}_2009 ${y}_${r}_2010, ar2 nocon keep(d_tradeusch_p1_1991_2000)
-	esttab ${y}_${r}_2011 ${y}_${r}_2012 ${y}_${r}_2013 ${y}_${r}_2014 ${y}_${r}_2015 ${y}_${r}_2016 ${y}_${r}_2017 ${y}_${r}_2018 ${y}_${r}_2019, ar2 nocon keep(d_tradeusch_p1_1991_2000)
-	* plot coefficients
-	qui do "${do}/coefplot_area.do"
-	* clear estimates
-	eststo clear
-	
-*2000s outcomes on 2000s and 1990s shock
-	* globals for graphs
-		global estimates
-		global v = ${v2}
-		global w = ${w2}
-		global suffix "_${u}_${u}_9100"
-	foreach z of numlist $start3 (1)2019 {
-		global z = `z'
-	    eststo ${y}_${r}_${z} : qui ivreg2 d${y}_${r}_${z} ${control_${y}} (d_tradeusch_p1_1991_2000 d_tradeusch_p1_${v}_${w}=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_${v}_${w})  [aw=wt_${y}], cluster(statefip) 
-		global b_${y}_${r}_${z} = _b[d_tradeusch_p1_${v}_${w}]
-		global se_${y}_${r}_${z} = _se[d_tradeusch_p1_${v}_${w}]
-		global estimates "${estimates} ${y}_${r}_${z}"
-	} 
-	esttab ${y}_${r}_2002 ${y}_${r}_2003 ${y}_${r}_2004 ${y}_${r}_2005 ${y}_${r}_2006 ${y}_${r}_2007 ${y}_${r}_2008 ${y}_${r}_2009 ${y}_${r}_2010, ar2 nocon keep(d_tradeusch_p1_1991_2000 d_tradeusch_p1_${v}_${w})
-	esttab ${y}_${r}_2011 ${y}_${r}_2012 ${y}_${r}_2013 ${y}_${r}_2014 ${y}_${r}_2015 ${y}_${r}_2016 ${y}_${r}_2017 ${y}_${r}_2018 ${y}_${r}_2019, ar2 nocon keep(d_tradeusch_p1_1991_2000 d_tradeusch_p1_${v}_${w})
-	* plot coefficients
-	qui do "${do}/coefplot_area.do"
-	* clear estimates
-	eststo clear
-
-*2000s outcomes on 2000s shock and 1990s residualized shock
-	* globals for graphs
-		global estimates
-		global suffix "_${u}_${u}_9100_res"
-	foreach z of numlist $start3 (1)2019 {
-		global z = `z'
-	    eststo ${y}_${r}_${z} : qui ivreg2 d${y}_${r}_${z} ${control_${y}} (d_tradeusch_p1_1991_2000_res d_tradeusch_p1_${v}_${w}=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_${v}_${w})  [aw=wt_${y}], cluster(statefip) 
-		global b_${y}_${r}_${z} = _b[d_tradeusch_p1_${v}_${w}]
-		global se_${y}_${r}_${z} = _se[d_tradeusch_p1_${v}_${w}]
-		global estimates "${estimates} ${y}_${r}_${z}"
-	} 
-	esttab ${y}_${r}_2002 ${y}_${r}_2003 ${y}_${r}_2004 ${y}_${r}_2005 ${y}_${r}_2006 ${y}_${r}_2007 ${y}_${r}_2008 ${y}_${r}_2009 ${y}_${r}_2010, ar2 nocon keep(d_tradeusch_p1_1991_2000_res d_tradeusch_p1_${v}_${w})
-	esttab ${y}_${r}_2011 ${y}_${r}_2012 ${y}_${r}_2013 ${y}_${r}_2014 ${y}_${r}_2015 ${y}_${r}_2016 ${y}_${r}_2017 ${y}_${r}_2018 ${y}_${r}_2019, ar2 nocon keep(d_tradeusch_p1_1991_2000_res d_tradeusch_p1_${v}_${w})
-	* plot coefficients
-	qui do "${do}/coefplot_area.do"
-	* clear estimates
-	eststo clear
-
-*2000s outcomes on 1990s shock and 2000s residualized shock
-	* globals for graphs
-		global estimates
-		global suffix "_${u}_9100_${u}_res"
-	foreach z of numlist $start3 (1)2019 {
-		global z = `z'
-	    eststo ${y}_${r}_${z} : qui ivreg2 d${y}_${r}_${z} ${control_${y}} (d_tradeusch_p1_1991_2000 d_tradeusch_p1_${v}_${w}_res=d_tradeotch_p1_lag_1991_2000 d_tradeotch_p1_lag_${v}_${w})  [aw=wt_${y}], cluster(statefip) 
-		global b_${y}_${r}_${z} = _b[d_tradeusch_p1_${v}_${w}_res]
-		global se_${y}_${r}_${z} = _se[d_tradeusch_p1_${v}_${w}_res]
-		global estimates "${estimates} ${y}_${r}_${z}"
-	} 
-	esttab ${y}_${r}_2002 ${y}_${r}_2003 ${y}_${r}_2004 ${y}_${r}_2005 ${y}_${r}_2006 ${y}_${r}_2007 ${y}_${r}_2008 ${y}_${r}_2009 ${y}_${r}_2010, ar2 nocon keep(d_tradeusch_p1_1991_2000 d_tradeusch_p1_${v}_${w}_res)
-	esttab ${y}_${r}_2011 ${y}_${r}_2012 ${y}_${r}_2013 ${y}_${r}_2014 ${y}_${r}_2015 ${y}_${r}_2016 ${y}_${r}_2017 ${y}_${r}_2018 ${y}_${r}_2019, ar2 nocon keep(d_tradeusch_p1_1991_2000 d_tradeusch_p1_${v}_${w}_res)
-	* plot coefficients
-	qui do "${do}/coefplot_area.do"
-	* clear estimates
-	eststo clear
-
-		}
-	}
-	}
-}
-}
-
-***
-* (II) RESULTS FOR REIS OUTCOMES 
-***
-if $reis == 1 {
-*2000 T0 2019
-foreach y of varlist wkpop odpop yg2pop yg1pop yi tc li tc_usd ret_usd mcd_usd inc_usd {
-	global y `y'
-if ${x} == ${base2} {
-foreach u in $base2 {
-	global u = `u'
-foreach v in $end2 {   
-	global v = `v'
-	* globals for graphs
-		global estimates
-		global y = "${y}"
-		global v = 2000
-		global w = 2012
-		global suffix "_${u}_${v}"
-	foreach z of numlist $start2 (1)2019 {
-		global z = `z'
-	    eststo ${y}_${u}_${z} : qui ivreg2 d${y}_${u}_${z} ${control_${y}} (d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012)  [aw=wt_${y}], cluster(statefip) 
-		global b_${y}_${u}_${z} = _b[d_tradeusch_p1_2000_2012]
-		global se_${y}_${u}_${z} = _se[d_tradeusch_p1_2000_2012]
-		global estimates "${estimates} ${y}_${u}_${z}"
-	} 
-	esttab ${y}_${u}_2001 ${y}_${u}_2002 ${y}_${u}_2003 ${y}_${u}_2004 ${y}_${u}_2005 ${y}_${u}_2006 ${y}_${u}_2007 ${y}_${u}_2008, ar2 nocon keep(d_tradeusch_p1_2000_2012)
-	esttab ${y}_${u}_2009 ${y}_${u}_2010 ${y}_${u}_2011 ${y}_${u}_2012 ${y}_${u}_2013 ${y}_${u}_2014 ${y}_${u}_2015 ${y}_${u}_2016 ${y}_${u}_2017 ${y}_${u}_2018 ${y}_${u}_2019, ar2 nocon keep(d_tradeusch_p1_2000_2012)
-	* plot coefficients
-	qui do "${do}/coefplot_area.do"
-	* clear estimates
-	eststo clear
-			}
-			}
-			}
-}
-
+*******************************************************************************
+*******************************************************************************
+* 	ADH 2021
+*******************************************************************************
 *2001 T0 2019
+*figure names 
+global mp_2001_2012_2	ADH21_manufemp_pop_fig5a
+global np_2001_2012_2	ADH21_nonmanufemp_pop_fig5b
+global tp2_2001_2012_2	ADH21_totwage_pop_fig5c
+global up_2001_2012_2	ADH21_unemp_pop_fig5d
+global tp1_2001_2012_2	ADH21_totemp_pop
+global nilf_2001_2012_2	ADH21_nilf_pop
 *foreach y of varlist mp-dp yg1pop yg2pop odpop allpop mw nw yi-di {
-foreach y of varlist mp np tp2 {
+foreach y of varlist mp np tp2 tp1 up nilf {
 	global y `y'
 if ${x} == ${base2} {
 foreach u in $base3 {
@@ -539,9 +281,270 @@ foreach v in $end2 {
 			}
 			}
 }
+*******************************************************************************
+* 	ADH 2021, state level (controls)
+*******************************************************************************
+preserve 
+*figure names 
+global mp_2001_2012_2	ADH21_manufemp_pop_state_ctrls
+global np_2001_2012_2	ADH21_nonmanufemp_pop_state_ctrls
+global tp2_2001_2012_2	ADH21_totwage_pop_state_ctrls
+global up_2001_2012_2	ADH21_unemp_pop_state_ctrls
+global tp1_2001_2012_2	ADH21_totemp_pop_state_ctrls
+global nilf_2001_2012_2	ADH21_nilf_pop_state_ctrls
+
+keep mp np tp2 tp1 up dmp* nilf dnp* dtp2* dtp1* dup* dnilf* d_tradeusch_* d_tradeotch_* statefip ${control3} popwk_2000 wt_*
+bys statefip: egen state_tot_pop=total(popwk_2000)
+gen cz_pop_share= popwk_2000/ state_tot_pop
+ds mp np tp2 tp1 up dmp* dnp* dtp2* dtp1* dup* d_tradeusch_* d_tradeotch_*  $control3 wt_* nilf dnilf*
+local r `r(varlist)'
+foreach v of local r {
+	replace `v'=`v'*cz_pop_share
+}
+collapse (sum ) `r(varlist)' , by(statefip)
+
+foreach y of varlist mp np tp2 tp1 up nilf {
+	global y `y'
+if ${x} == ${base2} {
+foreach u in $base3 {
+	global u = `u'
+foreach v in $end2 {  
+	global v = `v'
+	* globals for graphs
+		global estimates
+		global y = "${y}"
+		global suffix "_${u}_${v}_2"  
+	foreach z of numlist $start3 (1)2019 {
+		global z = `z'
+	    eststo ${y}_${u}_${z} : qui ivreg2 d${y}_${u}_${z}_2 ${control_${y}} (d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012)  [aw=wt_${y}], cluster(statefip) 
+		global b_${y}_${u}_${z} = _b[d_tradeusch_p1_2000_2012]
+		global se_${y}_${u}_${z} = _se[d_tradeusch_p1_2000_2012]
+		global estimates "${estimates} ${y}_${u}_${z}"
+	} 
+	esttab ${y}_${u}_2002 ${y}_${u}_2003 ${y}_${u}_2004 ${y}_${u}_2005 ${y}_${u}_2006 ${y}_${u}_2007 ${y}_${u}_2008 ${y}_${u}_2009 ${y}_${u}_2010, ar2 nocon keep(d_tradeusch_p1_2000_2012)
+	esttab ${y}_${u}_2011 ${y}_${u}_2012 ${y}_${u}_2013 ${y}_${u}_2014 ${y}_${u}_2015 ${y}_${u}_2016 ${y}_${u}_2017 ${y}_${u}_2018 ${y}_${u}_2019, ar2 nocon keep(d_tradeusch_p1_2000_2012)
+	* plot coefficients
+	qui do "${do}/coefplot_area.do"
+	* clear estimates
+	eststo clear
+			}
+			}
+			}
+}
+restore 
+*******************************************************************************
+* 	ADH 2021, state level (no controls)
+*******************************************************************************
+preserve 
+*figure names 
+global mp_2001_2012_2	ADH21_manufemp_pop_state_noctrls
+global np_2001_2012_2	ADH21_nonmanufemp_pop_state_noctrls
+global tp2_2001_2012_2	ADH21_totwage_pop_state_noctrls
+global up_2001_2012_2	ADH21_unemp_pop_state_noctrls
+global tp1_2001_2012_2	ADH21_totemp_pop_state_noctrls
+global nilf_2001_2012_2	ADH21_nilf_pop_state_noctrls
+
+keep mp np tp2 tp1 up dmp* dnp* dtp2* dtp1* dup* d_tradeusch_* d_tradeotch_* statefip ${control3} popwk_2000 wt_* nilf dnilf*
+bys statefip: egen state_tot_pop=total(popwk_2000)
+gen cz_pop_share= popwk_2000/ state_tot_pop
+ds mp np tp2 tp1 up dmp* dnp* dtp2* dtp1* dup* d_tradeusch_* d_tradeotch_*  $control3 wt_* nilf  dnilf*
+local r `r(varlist)'
+foreach v of local r {
+	replace `v'=`v'*cz_pop_share
+}
+collapse (sum ) `r(varlist)' , by(statefip)
+
+foreach y of varlist mp np tp2 tp1 up nilf {
+	global y `y'
+if ${x} == ${base2} {
+foreach u in $base3 {
+	global u = `u'
+foreach v in $end2 {  
+	global v = `v'
+	* globals for graphs
+		global estimates
+		global y = "${y}"
+		global suffix "_${u}_${v}_2"  
+	foreach z of numlist $start3 (1)2019 {
+		global z = `z'
+	    eststo ${y}_${u}_${z} : qui ivreg2 d${y}_${u}_${z}_2  (d_tradeusch_p1_2000_2012=d_tradeotch_p1_lag_2000_2012)  [aw=wt_${y}], cluster(statefip) 
+		global b_${y}_${u}_${z} = _b[d_tradeusch_p1_2000_2012]
+		global se_${y}_${u}_${z} = _se[d_tradeusch_p1_2000_2012]
+		global estimates "${estimates} ${y}_${u}_${z}"
+	} 
+	esttab ${y}_${u}_2002 ${y}_${u}_2003 ${y}_${u}_2004 ${y}_${u}_2005 ${y}_${u}_2006 ${y}_${u}_2007 ${y}_${u}_2008 ${y}_${u}_2009 ${y}_${u}_2010, ar2 nocon keep(d_tradeusch_p1_2000_2012)
+	esttab ${y}_${u}_2011 ${y}_${u}_2012 ${y}_${u}_2013 ${y}_${u}_2014 ${y}_${u}_2015 ${y}_${u}_2016 ${y}_${u}_2017 ${y}_${u}_2018 ${y}_${u}_2019, ar2 nocon keep(d_tradeusch_p1_2000_2012)
+	* plot coefficients
+	qui do "${do}/coefplot_area.do"
+	* clear estimates
+	eststo clear
+			}
+			}
+			}
+}
+restore 
+*******************************************************************************
+*******************************************************************************
+* 	Adding ADH Data
+*******************************************************************************
+*******************************************************************************
+capture drop _m
+preserve
+*merge ADH 2013 exposure and IV 
+use "workfile_china.dta", clear
+keep if yr==2000
+keep czone d_tradeusch_pw d_tradeotch_pw_lag
+tempfile adh13
+save `adh13' , replace
+restore 
+merge m:1 czone using `adh13'
+drop _m
+
+*******************************************************************************
+* 	ADH 2021 with ADH 2013 shock, CZ-level
+*******************************************************************************
+*figure names 
+global mp_2001_2012_2	ADH13_manufemp_pop_fig5a
+global np_2001_2012_2	ADH13_nonmanufemp_pop_fig5b
+global tp2_2001_2012_2	ADH13_totwage_pop_fig5c
+global up_2001_2012_2	ADH13_unemp_pop_fig5d
+global tp1_2001_2012_2	ADH13_totemp_pop
+global nilf_2001_2012_2	ADH13_nilf_pop
+
+*foreach y of varlist mp-dp yg1pop yg2pop odpop allpop mw nw yi-di {
+foreach y of varlist mp np tp2 tp1 up nilf {
+	global y `y'
+if ${x} == ${base2} {
+foreach u in $base3 {
+	global u = `u'
+foreach v in $end2 {  
+	global v = `v'
+	* globals for graphs
+		global estimates
+		global y = "${y}"
+		global suffix "_${u}_${v}_2"  
+	foreach z of numlist $start3 (1)2019 {
+		global z = `z'
+	    eststo ${y}_${u}_${z} : qui ivreg2 d${y}_${u}_${z}_2 ${control_${y}} (d_tradeusch_pw=d_tradeotch_pw_lag)  [aw=wt_${y}], cluster(statefip) 
+		global b_${y}_${u}_${z} = _b[d_tradeusch_pw]
+		global se_${y}_${u}_${z} = _se[d_tradeusch_pw]
+		global estimates "${estimates} ${y}_${u}_${z}"
+	} 
+	esttab ${y}_${u}_2002 ${y}_${u}_2003 ${y}_${u}_2004 ${y}_${u}_2005 ${y}_${u}_2006 ${y}_${u}_2007 ${y}_${u}_2008 ${y}_${u}_2009 ${y}_${u}_2010, ar2 nocon keep(d_tradeusch_pw)
+	esttab ${y}_${u}_2011 ${y}_${u}_2012 ${y}_${u}_2013 ${y}_${u}_2014 ${y}_${u}_2015 ${y}_${u}_2016 ${y}_${u}_2017 ${y}_${u}_2018 ${y}_${u}_2019, ar2 nocon keep(d_tradeusch_pw)
+	* plot coefficients
+	qui do "${do}/coefplot_area.do"
+	* clear estimates
+	eststo clear
+			}
+			}
+			}
 }
 
-	
+*******************************************************************************
+* 	ADH 2021 with ADH 2013 shock, state-level (controls)
+*******************************************************************************
+preserve 
+*figure names 
+global mp_2001_2012_2	ADH13_manufemp_pop_state_ctrls
+global np_2001_2012_2	ADH13_nonmanufemp_pop_state_ctrls
+global tp2_2001_2012_2	ADH13_totwage_pop_state_ctrls
+global up_2001_2012_2	ADH13_unemp_pop_state_ctrls
+global tp1_2001_2012_2	ADH13_totemp_pop_state_ctrls
+global nilf_2001_2012_2	ADH13_nilf_pop_state_ctrls
+
+keep mp np tp2 tp1 up dmp* dnp* dtp2* dtp1* dup* d_tradeusch_* d_tradeotch_* statefip ${control3} popwk_2000 wt_* nilf dnilf*
+bys statefip: egen state_tot_pop=total(popwk_2000)
+gen cz_pop_share= popwk_2000/ state_tot_pop
+ds mp np tp2 tp1 up dmp* dnp* dtp2* dtp1* dup* d_tradeusch_* d_tradeotch_*  $control3 wt_* nilf  dnilf*
+local r `r(varlist)'
+foreach v of local r {
+	replace `v'=`v'*cz_pop_share
+}
+collapse (sum ) `r(varlist)' , by(statefip)
+
+*foreach y of varlist mp-dp yg1pop yg2pop odpop allpop mw nw yi-di {
+foreach y of varlist mp np tp2 tp1 up nilf {
+	global y `y'
+if ${x} == ${base2} {
+foreach u in $base3 {
+	global u = `u'
+foreach v in $end2 {  
+	global v = `v'
+	* globals for graphs
+		global estimates
+		global y = "${y}"
+		global suffix "_${u}_${v}_2"  
+	foreach z of numlist $start3 (1)2019 {
+		global z = `z'
+	    eststo ${y}_${u}_${z} : qui ivreg2 d${y}_${u}_${z}_2 ${control_${y}} (d_tradeusch_pw=d_tradeotch_pw_lag)  [aw=wt_${y}], cluster(statefip) 
+		global b_${y}_${u}_${z} = _b[d_tradeusch_pw]
+		global se_${y}_${u}_${z} = _se[d_tradeusch_pw]
+		global estimates "${estimates} ${y}_${u}_${z}"
+	} 
+	esttab ${y}_${u}_2002 ${y}_${u}_2003 ${y}_${u}_2004 ${y}_${u}_2005 ${y}_${u}_2006 ${y}_${u}_2007 ${y}_${u}_2008 ${y}_${u}_2009 ${y}_${u}_2010, ar2 nocon keep(d_tradeusch_pw)
+	esttab ${y}_${u}_2011 ${y}_${u}_2012 ${y}_${u}_2013 ${y}_${u}_2014 ${y}_${u}_2015 ${y}_${u}_2016 ${y}_${u}_2017 ${y}_${u}_2018 ${y}_${u}_2019, ar2 nocon keep(d_tradeusch_pw)
+	* plot coefficients
+	qui do "${do}/coefplot_area.do"
+	* clear estimates
+	eststo clear
+			}
+			}
+			}
+}
+restore 
+*******************************************************************************
+* 	ADH 2021 with ADH 2013 shock, state-level (no controls)
+*******************************************************************************
+preserve 
+*figure names 
+global mp_2001_2012_2	ADH13_manufemp_pop_state_noctrls
+global np_2001_2012_2	ADH13_nonmanufemp_pop_state_noctrls
+global tp2_2001_2012_2	ADH13_totwage_pop_state_noctrls
+global up_2001_2012_2	ADH13_unemp_pop_state_noctrls
+global tp1_2001_2012_2	ADH13_totemp_pop_state_noctrls
+global nilf_2001_2012_2	ADH13_nilf_pop_state_noctrls
+
+keep mp np tp2 tp1 up dmp* dnp* dtp2* dtp1* dup* d_tradeusch_* d_tradeotch_* statefip ${control3} popwk_2000 wt_* nilf dnilf*
+bys statefip: egen state_tot_pop=total(popwk_2000)
+gen cz_pop_share= popwk_2000/ state_tot_pop
+ds mp np tp2 tp1 up dmp* dnp* dtp2* dtp1* dup* d_tradeusch_* d_tradeotch_*  $control3 wt_* nilf dnilf*
+local r `r(varlist)'
+foreach v of local r {
+	replace `v'=`v'*cz_pop_share
+}
+collapse (sum ) `r(varlist)' , by(statefip)
+
+foreach y of varlist mp np tp2 tp1 up nilf {
+	global y `y'
+if ${x} == ${base2} {
+foreach u in $base3 {
+	global u = `u'
+foreach v in $end2 {  
+	global v = `v'
+	* globals for graphs
+		global estimates
+		global y = "${y}"
+		global suffix "_${u}_${v}_2"  
+	foreach z of numlist $start3 (1)2019 {
+		global z = `z'
+	    eststo ${y}_${u}_${z} : qui ivreg2 d${y}_${u}_${z}_2 (d_tradeusch_pw=d_tradeotch_pw_lag)  [aw=wt_${y}], cluster(statefip) 
+		global b_${y}_${u}_${z} = _b[d_tradeusch_pw]
+		global se_${y}_${u}_${z} = _se[d_tradeusch_pw]
+		global estimates "${estimates} ${y}_${u}_${z}"
+	} 
+	esttab ${y}_${u}_2002 ${y}_${u}_2003 ${y}_${u}_2004 ${y}_${u}_2005 ${y}_${u}_2006 ${y}_${u}_2007 ${y}_${u}_2008 ${y}_${u}_2009 ${y}_${u}_2010, ar2 nocon keep(d_tradeusch_pw)
+	esttab ${y}_${u}_2011 ${y}_${u}_2012 ${y}_${u}_2013 ${y}_${u}_2014 ${y}_${u}_2015 ${y}_${u}_2016 ${y}_${u}_2017 ${y}_${u}_2018 ${y}_${u}_2019, ar2 nocon keep(d_tradeusch_pw)
+	* plot coefficients
+	qui do "${do}/coefplot_area.do"
+	* clear estimates
+	eststo clear
+			}
+			}
+			}
+}
+restore 
+/*	
 ***
 * (III) RESULTS FOR GRAVITY BASED TRADE SHOCKS
 ***
@@ -734,7 +737,7 @@ eststo clear
 }	
 *restore
 *}
-	
+*/	
 erase temp_${base2}.dta
 erase temp_${base1}.dta
 

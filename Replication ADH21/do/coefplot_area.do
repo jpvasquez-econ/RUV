@@ -83,6 +83,7 @@ local ba_pop_lab "share college-educated"
 local hhi_ind_emp_lab "industry employment HHI"
 
 *SELECT MARKERS FOR VERTICAL AXIS IN GRAPHS
+/*
 foreach y in mp np tp1 tp2 tp3 up dp {
 	local `y'_ylab="-4(1)2"
 	}
@@ -120,11 +121,8 @@ foreach y in ssa med inc unm mca mcd ssi eit snp oim edt {
 foreach y in unm {
 	local `y'_ylab="-30(10)30"
 	}
-   	
+*/   	
 * figure names
-global mp_2001_2012_2	bpea_fig_5a
-global np_2001_2012_2	bpea_fig_5b
-global tp2_2001_2012_2	bpea_fig_5c
 
 global wkpop_2000_2012	bpea_fig_7a
 global odpop_2000_2012	bpea_fig_7b
