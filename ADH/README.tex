@@ -1,0 +1,138 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz,egplot}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{graphicx,ctable}
+\usepackage{longtable}
+\usepackage{hyperref,xcolor}
+\hypersetup{colorlinks=false, linkbordercolor=red,pdfborderstyle={/S/U/W 1}}
+\usepackage[para]{threeparttable}
+\usepackage{tgpagella}
+\usepackage[utf8]{inputenc}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage[T1]{fontenc}
+\setlength{\parindent}{0em}
+\usepackage{forest}
+\usepackage{booktabs,array,tabularx}
+\usepackage{hyperref}
+\newcommand{\tab}{\hspace*{3em}}
+\hypersetup{
+colorlinks = true,
+urlcolor = blue,
+}
+\usepackage{setspace,amsfonts,amssymb,url,booktabs,tabularx,amsmath,amsthm,enumerate}
+
+\title{ReadMe: DNWR and the China Shock}
+\date{February 2023}
+
+\begin{document}
+
+\maketitle
+
+
+\section*{General Description} 
+We used ACS 1 year samples to replicate the ADH13
+regression for the 2006-2020 period. For each year we used the reference year and the two neighbor years (e.g 2007 data is taken from pooled 2006-2008 ACS. We used ADH21 replication package code for presenting the graphs of coefficients through time. The outcome variables characterizing the labor market are simple and ten-year equivalent decadal changes of employment in manufacture, non-manuf employment, unemployment, and NILF. The outcomes are calculated as a share of working-age population. Following
+ADH13, people living in institutional quarters and unpaid family members were dropped. We then created downward nominal wage rigidity measures to interact the effects of China's trade shock on unemployment.
+
+\section{Raw data} 
+
+\begin{itemize}
+   \item \textbf{right2work.dta:} Right-to-work laws by state were taken from \href{https://nrtwc.org/facts/state-right-to-work-timeline-2016/}{here}.
+
+    \item ACS data was taken from \href{https://usa.ipums.org/usa}{here}: We pooled
+    the 2005-2021 ACS 1-year samples for people between 16 and 64 years
+    of age. The name of this file is \textbf{ipums\_2005\_2021.dta} in the data
+    file. A codebook file is available in  \textbf{ipums\_2005\_2021\_query.txt}. This document contains the query requested from the IPUMS USA webpage. A login is
+    necessary to download the data. After an account is created, data can be downloaded from the ``Select Data'' window. The dataset was downloaded as a .dta
+    for STATA.
+
+   \item \textbf{workfile\_china.dta:} data taken from the replication package of
+    ADH13, from the dta folder. This file contains the data to replicate the main         results of the paper.
+
+   \item David Dorn's crosswalk files from PUMAs to CZ taken from his \href{https://www.ddorn.net/}{webpage}. The files
+    are named \textbf{cw\_puma2000\_czone.dta} and \textbf{cw\_puma2010\_czone.dta.}
+
+    \item \textbf{CPS 1986-1990:} data taken from IPUMS CPS \href{https://cps.ipums.org/cps/}{webpage}. The file name is \textit{cps\_86\_90.dta} The query if available in the file \textit{cps86\_90\_query.txt}. We followed Yoon Joo Jo (2021) on the data processing procedures.
+
+    \item \textbf{Merged Outgoing Rotation Groups: 86-90:} this files are taken from \href{https://www.nber.org/research/data/current-population-survey-cps-merged-outgoing-rotation-group-earnings-data}{NBER} webpage, from the ``Stata dta files'' link. This files are merged to the CPS to obtain hourly wage allocation flag variable.
+
+    \item \textbf{Jo\_state\_level\_dnwr.dta}: dataset provided by Ms. Yoon Joo Jo from her paper ``Establishing downward nominal wage rigidity through cyclical changes in the wage distribution'' (2022)
+
+\end{itemize}
+
+\section{Codes}
+
+\begin{itemize}
+
+    \item \textbf{1-ipums\_acs.do} This dofile takes as an input the pooled 2005-2021
+    ACS 1-year samples, subsets 3-year samples, creates intermediate
+    variables, and then merges the information to ADH2013's dataset workfile\_china.dta.
+
+    \item \textbf{2-coef\_graphs\_decadal.do:} This code creates the outcome variables
+    for manufacturing, non-manufacturing, nilf, and
+    unemployment working population ratios. It then creates the coefficient graphs (figure 1 of technote1.pdf) for
+    the period from 2006 to 2020. Outcome changes are in a ten-year equivalent form.
+
+    \item \textbf{3-cps1990\_rigmeasures.do:} creates year-over-year wage change rigidity measures from the CPS 1986-1990 database following Joo-Jo,Y.(2022)
+
+    \item \textbf{4-yjj\_rigidity\_measures.do:} creates year-over-year wage changes rigidity measures from the CPS database of Joo-Jo,Y.(2022). Variables were constructed using the period from 1997 to 2000.
+
+    \item \textbf{5-dnwr\_figures.do:} creates and saves the figures for the rigidity measures coefficient graphs.
+
+    \item \textbf{6-dnwr\_tables.do:} creates and saves the tables of the rigidity measures pdf file.
+    
+    \item \textbf{subfile\_ind1990dd:} This dofile was taken from David Dorn's data \href{https://www.ddorn.net/data.htm}{webpage}. It recodes the ind1990 variable into ind1990dd.
+    This crosswalk code helps replicate the classification of 
+    employment into manufacture and non-manufacture. 
+
+\end{itemize}    
+
+
+\section*{Initial Folder Structure}
+
+
+\begin{forest}
+  for tree={
+    font=\ttfamily,
+    grow'=0,
+    child anchor=west,
+    parent anchor=south,
+    anchor=west,
+    calign=first,
+    edge path={
+      \noexpand\path [draw, \forestoption{edge}]
+      (!u.south west) +(7.5pt,0) |- node[fill,inner sep=1.25pt] {} (.child anchor)\forestoption{edge label};
+    },
+    before typesetting nodes={
+      if n=1
+        {insert before={[,phantom]}}
+        {}
+    },
+    fit=band,
+    before computing xy={l=15pt},
+  }
+[ADH
+  [codes
+    [All the codes detailed in section 2]
+  ]
+  [raw\_data
+   [All \textit{.dta} and \textit{.txt} files detailed in section 1]
+  ]
+  [results
+    [figures]
+    [tables]
+  ]
+  [temp]
+]
+
+
+
+\end{forest}
+    
+
+
+\end{document}
