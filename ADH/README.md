@@ -1,4 +1,4 @@
-# General Description {#general-description .unnumbered}
+# General Description
 
 We used ACS 1 year samples to replicate the ADH13 regression for the 2006-2020 period. For each year we used the reference year and the two neighbor years (e.g 2007 data is taken from pooled 2006-2008 ACS. We used ADH21 replication package code for presenting the graphs of coefficients through time. The outcome variables characterizing the labor market are simple and ten-year equivalent decadal changes of employment in manufacture, non-manuf employment, unemployment, and NILF. The outcomes are calculated as a share of working-age population. Following ADH13, people living in institutional quarters and unpaid family members were dropped. We then created downward nominal wage rigidity measures to interact the effects of China's trade shock on unemployment.
 
