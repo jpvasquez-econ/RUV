@@ -27,28 +27,33 @@ forval i = 1/2 {  //state and CZs
 *Merging ADH datasets and rigidity measures
 ***********************************************
 if `i' == 1 {
-	use "raw_data/workfile_china.dta", clear
+	use "temp/state_workfile_china.dta", clear
 	global unit st
+	tempfile temp1
 	}
 	else{
-	use "temp/state_workfile_china.dta", clear
+	use "raw_data/workfile_china.dta", clear
 	global unit czs
 	}
 
-*Here we merge right2work laws and rigidity measures from Ms. Joo CPS dataset
-
+***	
+*** Rigidity measures from Right-to-work and CPS
+***
+		rename yr year
+		gen yr = 1990 if year == 2000
+		replace yr = 2000 if year > 2000
 		* right-to-work laws
 		merge m:1 statefip using "raw_data/right2work.dta" , nogen
 		* CPS rigidity measures for 2000 from Joo-Jo,Y.(2022)
-		merge m:1 statefip using "temp/Jo_state_level_dnwr_proc.dta", keep(3) nogen
+		merge m:1 statefip yr using "temp/Jo_state_level_dnwr_proc.dta", nogen keep(1 3)
 		* CPS rigidity measures for 1990 (constructed)
 		merge m:1 statefip yr using"temp/cps1990_rigmeasures.dta", update replace 
 		drop if _merge == 2
 		drop _merge
-		cap sort czone yr
+		
 		
 * RIGHT TO WORK DUMMY BY YEAR
-cap drop N_total total_sticky total_nonzero 
+cap drop N_total total_neg total_nonzero 
 gen r2w= (yr>year_r2w)
 replace r2w = 1 if statefip == 40 & yr == 2000  //replace Oklahoma r2w law on 2nd period, since it was introduced in 2001
 	
@@ -95,13 +100,22 @@ global dnwr_nonzero_yjj_dmy2 "Indicator==1 if state neg share in nonzero wage ch
 ********************************************************************************
 order r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 
 
+* save state level temp data for regressions
+if `i' == 1 { 
+	save `temp1', replace
+}
+
+}
+
 *lnchg_popworkage d_avg_lnwkwage_mfg d_avg_lnwkwage_nmfg
 *ds r2w dnwr_yjj-ngtv_ratio_dmy2
-capture log close
-log using "results/log/adh_regressions_${unit}", replace
+global tab = 1
+
 quiet{
-foreach outcome in d_sh_unempl {
+
 foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2  {
+
+global rig_measure `rig_measure'
 capture drop inter_*
 capture gen inter_rigidity = d_tradeusch_pw * `rig_measure'
 capture gen inter_rigidity_iv = d_tradeotch_pw_lag * `rig_measure'
@@ -111,36 +125,56 @@ label var d_tradeusch_pw "Exposure to China"
 
 estimates clear 
 
-ivregress 2sls `outcome' (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+* Regressions at the CZ level
+ivregress 2sls d_sh_unempl (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 estimates store reg1
 
-ivregress 2sls `outcome' d_tradeusch_pw `rig_measure'  inter_rigidity l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+ivregress 2sls d_sh_unempl d_tradeusch_pw `rig_measure' inter_rigidity l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 estimates store reg2
 
-ivregress 2sls `outcome' (d_tradeusch_pw  = d_tradeotch_pw_lag ) inter_rigidity `rig_measure'  l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+ivregress 2sls d_sh_unempl (d_tradeusch_pw  = d_tradeotch_pw_lag ) inter_rigidity `rig_measure'  l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 estimates store reg3
 
-ivregress 2sls `outcome' (d_tradeusch_pw inter_rigidity =d_tradeotch_pw_lag inter_rigidity_iv) `rig_measure'  l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+ivregress 2sls d_sh_unempl (d_tradeusch_pw inter_rigidity =d_tradeotch_pw_lag inter_rigidity_iv) `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 estimates store reg4
 
-	noi display "Dependent variable: ${dep_`outcome'}  All education levels. Full controls"
+* Regressions at the state level
+preserve
+use `temp1', clear
+capture drop inter_*
+capture gen inter_rigidity = d_tradeusch_pw * ${rig_measure}
+capture gen inter_rigidity_iv = d_tradeotch_pw_lag * ${rig_measure}
+label var inter_rigidity "Exposure interac."
+label var d_tradeusch_pw "Exposure to China"
+
+ivregress 2sls d_sh_unempl (d_tradeusch_pw=d_tradeotch_pw_lag) l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48]
+estimates store reg5
+
+ivregress 2sls d_sh_unempl d_tradeusch_pw ${rig_measure} inter_rigidity l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48]
+estimates store reg6
+
+ivregress 2sls d_sh_unempl (d_tradeusch_pw  = d_tradeotch_pw_lag ) inter_rigidity ${rig_measure}  l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48]
+estimates store reg7
+
+ivregress 2sls d_sh_unempl (d_tradeusch_pw inter_rigidity =d_tradeotch_pw_lag inter_rigidity_iv) ${rig_measure}  l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48]
+estimates store reg8
+restore
+
+	noi display "Dependent variable: ${dep_d_sh_unempl}  All education levels. Full controls"
 	noi display "Column 1 is ADH replic. Column 2 adds regidity interaction (no IV for interaction). Column 3 with IV for interaction"
 	noi dis "Regression uses variable `rig_measure' as rigidity measure (see def in next line)"
 	noi dis "${`rig_measure'}"
 
-noi esttab reg*,  ///
- star(* 0.10 ** 0.05 *** 0.01) varwidth(30) modelwidth(7) ///
- cells("b(fmt(3) star )" "se(par fmt(3))" ) ///
-	mlabel("ADH" "Exp/Rig OLS" "Rigidity OLS" "Rigidity IV", depvar) alignment(c) keep(d_tradeusch_pw inter_rigidity) ///
-    replace noconstant label nodepvar collabels(none) compress
 	
-}
+noi esttab reg* using "results/tables/table${tab}.tex", prehead("\begin{table}[htbp] \caption{Employment effects of exposure to China shock: ${rig_measure}}" ///
+"\centering" "\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}" "\large" "\resizebox{\textwidth}{!}{%)" "\begin{tabular}{l*{8}{c}}" "\toprule") ///
+ star(* 0.10 ** 0.05 *** 0.01) varwidth(30) modelwidth(7) ///
+ cells("b(fmt(3) star )" "se(par fmt(3))" ) mgroups("Commuting Zone" "State", pattern(1 0 0 0 1 0 0 0)  prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span}))  ///
+	mlabel("ADH" "Exp/Rig OLS" "Rigidity OLS" "Rigidity IV" "ADH" "Exp/Rig OLS" "Rigidity OLS" "Rigidity IV", depvar) alignment(c) keep(d_tradeusch_pw inter_rigidity) ///
+    replace noconstant label nodepvar collabels(none) booktabs compress ///
+	postfoot("\bottomrule" "\end{tabular}%" "}" "\end{table}")
+	
+	global tab = $tab + 1
 }
 }
 
-capture log close
-capture translate "results/log/adh_regressions_${unit}.smcl" "results/log/adh_regressions_${unit}.txt", replace linesize(250)
-capture erase "results/log/adh_regressions_${unit}.smcl"
-
-
-}

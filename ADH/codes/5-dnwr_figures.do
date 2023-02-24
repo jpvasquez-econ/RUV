@@ -106,7 +106,11 @@ use temp/workfile_china_RUV.dta, clear
 	preserve
 	keep if inlist(yr,2000,2007)
 	drop if statefip == .
+	drop d_sh_unempl
+	rename d_sh_unempl_2007 d_sh_unempl
+	drop d_sh_unempl_*
 	save temp/state_workfile_china, replace
+	
 	restore
 	
 	
@@ -154,9 +158,11 @@ use temp/workfile_china_RUV.dta, clear
 
 *** Generate dta from excel file (right2work) 
 *** from https://nrtwc.org/facts/state-right-to-work-timeline-2016/
+preserve
 import excel "raw_data/right2work.xlsx", sheet("Hoja1") firstrow clear
 destring year_r2w, replace 
 save "raw_data/right2work.dta", replace
+restore
 
 
 ***	
@@ -221,7 +227,7 @@ global count 1
 	forvalues i = 2006(1)2020 {
 
 	* here we estimate the main regressions of adh13 for each outcome
-	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (d_tradeusch_pw inter_rigidity = d_tradeotch_pw_lag inter_rigidity_iv) [aw=timepwt48], cluster(statefip)
+	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (d_tradeusch_pw inter_rigidity = d_tradeotch_pw_lag inter_rigidity_iv) [aw=timepwt48] $cluster
 
 		global b_mp_2000_`i' = _b[d_tradeusch_pw]
 		global se_mp_2000_`i' = _se[d_tradeusch_pw]

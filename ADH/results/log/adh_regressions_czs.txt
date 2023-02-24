@@ -7,84 +7,34 @@
             name:  <unnamed>
              log:  C:\Users\alove\Documents\GitHub\RUV\ADH\results/log/adh_regressions_czs.smcl
         log type:  smcl
-       opened on:  17 Feb 2023, 18:59:18
+       opened on:  22 Feb 2023, 18:03:35
+      
+     1 . quiet{
       Dependent variable:   All education levels. Full controls
       Column 1 is ADH replic. Column 2 adds regidity interaction (no IV for interaction). Column 3 with IV for interaction
       Regression uses variable r2w as rigidity measure (see def in next line)
       Indicator variable ==1 if state has right-to-work laws
-      
-      --------------------------------------------------------------------------
-                                         (1)        (2)        (3)        (4)   
-                                         ADH    Exp/R~S    Rigid~S    Rigid~V   
-      --------------------------------------------------------------------------
-      Exposure to China                0.518**    0.199      0.763***   0.688***
-                                     (0.226)    (0.178)    (0.283)    (0.264)   
-      Exposure interac.                          -0.114     -0.438**   -0.292   
-                                                (0.162)    (0.189)    (0.193)   
-      --------------------------------------------------------------------------
-      Observations                        96         96         96         96   
-      --------------------------------------------------------------------------
+      (output written to results/tables/table1.tex)
       Dependent variable:   All education levels. Full controls
       Column 1 is ADH replic. Column 2 adds regidity interaction (no IV for interaction). Column 3 with IV for interaction
       Regression uses variable dnwr_yjj_dmy1 as rigidity measure (see def in next line)
       Indicator==1 if state dnwr (share of neg changes in pop CPS) is above MEDIAN
-      
-      --------------------------------------------------------------------------
-                                         (1)        (2)        (3)        (4)   
-                                         ADH    Exp/R~S    Rigid~S    Rigid~V   
-      --------------------------------------------------------------------------
-      Exposure to China                0.518**    0.374**    0.893***   0.868***
-                                     (0.226)    (0.186)    (0.282)    (0.261)   
-      Exposure interac.                          -0.330**   -0.637***  -0.596***
-                                                (0.167)    (0.192)    (0.190)   
-      --------------------------------------------------------------------------
-      Observations                        96         96         96         96   
-      --------------------------------------------------------------------------
+      (output written to results/tables/table2.tex)
       Dependent variable:   All education levels. Full controls
       Column 1 is ADH replic. Column 2 adds regidity interaction (no IV for interaction). Column 3 with IV for interaction
       Regression uses variable dnwr_yjj_dmy2 as rigidity measure (see def in next line)
       Indicator==1 if state dnwr (share of neg changes in pop CPS) is above MEAN
-      
-      --------------------------------------------------------------------------
-                                         (1)        (2)        (3)        (4)   
-                                         ADH    Exp/R~S    Rigid~S    Rigid~V   
-      --------------------------------------------------------------------------
-      Exposure to China                0.518**    0.373*     0.911***   0.883***
-                                     (0.226)    (0.195)    (0.290)    (0.265)   
-      Exposure interac.                          -0.331*    -0.661***  -0.614***
-                                                (0.179)    (0.204)    (0.200)   
-      --------------------------------------------------------------------------
-      Observations                        96         96         96         96   
-      --------------------------------------------------------------------------
+      (output written to results/tables/table3.tex)
       Dependent variable:   All education levels. Full controls
       Column 1 is ADH replic. Column 2 adds regidity interaction (no IV for interaction). Column 3 with IV for interaction
       Regression uses variable dnwr_nonzero_yjj_dmy1 as rigidity measure (see def in next line)
       Indicator==1 if state neg share in nonzero wage changes CPS Time-INVARIANT above MEDIAN
-      
-      --------------------------------------------------------------------------
-                                         (1)        (2)        (3)        (4)   
-                                         ADH    Exp/R~S    Rigid~S    Rigid~V   
-      --------------------------------------------------------------------------
-      Exposure to China                0.518**    0.374**    0.893***   0.868***
-                                     (0.226)    (0.186)    (0.282)    (0.261)   
-      Exposure interac.                          -0.330**   -0.637***  -0.596***
-                                                (0.167)    (0.192)    (0.190)   
-      --------------------------------------------------------------------------
-      Observations                        96         96         96         96   
-      --------------------------------------------------------------------------
+      (output written to results/tables/table4.tex)
       Dependent variable:   All education levels. Full controls
       Column 1 is ADH replic. Column 2 adds regidity interaction (no IV for interaction). Column 3 with IV for interaction
       Regression uses variable dnwr_nonzero_yjj_dmy2 as rigidity measure (see def in next line)
       Indicator==1 if state neg share in nonzero wage changes CPS Time-INVARIANT above MEAN
+      (output written to results/tables/table5.tex)
       
-      --------------------------------------------------------------------------
-                                         (1)        (2)        (3)        (4)   
-                                         ADH    Exp/R~S    Rigid~S    Rigid~V   
-      --------------------------------------------------------------------------
-      Exposure to China                0.518**    0.373*     0.911***   0.883***
-                                     (0.226)    (0.195)    (0.290)    (0.265)   
-      Exposure interac.                          -0.331*    -0.661***  -0.614***
-                                                (0.179)    (0.204)    (0.200)   
-      --------------------------------------------------------------------------
-      Observations                        96         96         96         96   
-      --------------------------------------------------------------------------
+     2 . 
+     3 . capture log close

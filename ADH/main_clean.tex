@@ -1,0 +1,189 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz,egplot}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{graphicx,ctable}
+\usepackage{longtable}
+\usepackage{hyperref,xcolor}
+\hypersetup{colorlinks=false, linkbordercolor=red,pdfborderstyle={/S/U/W 1}}
+\usepackage[para]{threeparttable}
+\usepackage{tgpagella}
+\usepackage[utf8]{inputenc}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage[T1]{fontenc}
+\setlength{\parindent}{0em}
+\usepackage{forest}
+\usepackage{booktabs,array,tabularx}
+\usepackage{hyperref}
+\newcommand{\tab}{\hspace*{3em}}
+\hypersetup{
+colorlinks = true,
+urlcolor = blue,
+}
+\usepackage{setspace,amsfonts,amssymb,url,booktabs,tabularx,amsmath,amsthm,enumerate}
+
+\title{DNWR and the China Shock}
+\date{January 2023}
+
+\begin{document}
+
+\maketitle
+
+\section*{General Information}
+
+\begin{itemize}
+    \item We extend the ADH 2013 main regression specification in the following way:
+\begin{equation}
+    \Delta U_{i,t+h} = \gamma_t + \beta_{1,h} \Delta IPW_{i,\tau} + \beta_{2,h} Rigidity_{i,\tau} \times \Delta IPW_{i,\tau} + \beta_3 Rigidity_{i,\tau} +  X_{i,t}'\beta_4 + \varepsilon_{i,t+h}.\label{eq:ADHreg}
+\end{equation}
+Similarly to ADH 2021, $\Delta U_{i,t+h}$ is the change in the unemployment per population ratio in CZ $i$ between the initial year $t$ and later year $t + h$ for $h = 1, 
+\dots, T$, such that we estimate separate regressions for each time difference between 2000–2006 and 2000–2020. In each regression, we include the 1990-2000 period, as in ADH 2013. The term $\Delta IPW_{i,\tau}$ is the same measure of trade exposure to China used in ADH 2013. We keep it fixed for 1990-2000 and 2000-2007 regardless of $h$ (analogously to ADH 2021). Finally, the variable $Rigidity_{i,\tau}$ stands for a proxy for DNWR. We use several proxies, as discussed below. 
+\item We instrument $IPW_{i,\tau}$ with $IPW_{oi,\tau}$, which is constructed using data on contemporaneous industry-level growth of Chinese exports to other high-income markets. This is the same instrument as in ADH 2013. We instrument $Rigidity_{i,\tau} \times \Delta IPW_{i,\tau}$ using $Rigidity_{i,\tau} \times IPW_{oi,\tau}$.
+\item We consider the following proxies for $Rigidity_{i,\tau}$:
+\begin{itemize}
+    \item \ref{sec:r2w}. \textbf{Right-to-work.} Right-to-work laws provide employees the choice not to be a member or to financially support a labor union. Therefore, states with right-to-work laws weakened the role of collective bargaining organizations. The referees expect states with right-to-work laws to see more flexible wages (i.e., less DNWR).  Our first measure of rigidity (state-level) is a dummy variable = 1 if the state has the law by 1990 or 2000. Right-to-work laws by  state were taken from \href{https://nrtwc.org/facts/state-right-to-work-timeline-2016/}{here}. The dta file \textit{right2work.dta} contains the years of implementation by state. 
+    \item \ref{sec:negtotal_yjj}. \textbf{Share of negative wage changes to total wage changes (including no-changes) following Yoon Joo Jo (2022).} This uses year-over-year wage changes from CPS data. A higher share implies more wage flexibility. We use a continuous measure but also split states in above/below median.
+    \item \ref{sec:negnonzero_yjj}. \textbf{Share of negative wage changes to nonzero wage changes following Yoon Joo Jo (2022).} This uses year-over-year wage changes from CPS data. A higher share implies more wage flexibility. We use a continuous measure but also split states in above/below median.
+ 
+\end{itemize}
+
+
+    \item  Rigidity measures \ref{sec:negtotal_yjj} and \ref{sec:negnonzero_yjj} were created with data provided by Yoon Joo Jo from her paper ``Establishing downward nominal wage rigidity through cyclical changes in the wage distribution'', 2022 for the 2000 start of period. The file name is \textit{Jo\_state\_level\_dnwr.dta}, with a sample size of 68,312 wage change observations for between 2007 and 2000. For the 1990 start of period, the IPUMS-CPS data was used, with a sample size of 102,034 observations between 1987-1990. 
+    \item Each page below presents a Figure with four panels and a table with eight columns. The figure panels show results from 2006 to 2020. For each figure, graph (a) regression specification corresponds to column (3) of the respective table. Graph (b) corresponds to column (6). 
+    \item Tables contain coefficients of three specifications at both CZ level and state level. These regressions use the 1990-2000 and 2000-2007 changes in labor market outcomes, as in ADH (2013). Column (1) of each table shows the results of ADH (2013) in their Table 5, Panel B, and Column 3 on unemployment.
+
+\end{itemize}
+
+
+\newpage
+\section{Right-to-work}\label{sec:r2w}
+Right-to-work laws by state are implemented using a dummy variable = 1 if the state has the law by 1990 or 2000. Right-to-work laws by state were taken from \href{https://nrtwc.org/facts/state-right-to-work-timeline-2016/}{here}. The dta file \textit{right2work.dta} contains the years of implementation by state. The referees expect states with right-to-work laws to see more flexible wages (i.e., less DNWR).
+
+\begin{figure}[h]\caption{Right-to-work 2006-2020}
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/r2w_czs.pdf}
+          \caption{CZ-level regression}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/r2w_state.pdf}
+         \caption{State-level regression}
+     \end{subfigure}
+        
+\end{figure}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The figure plots two-stage least squares coefficient estimates for $\beta_{1,h}$ (in blue) and $\beta_{2,h}$ (in red) in equation \eqref{eq:ADHreg} and 95 percent confidence intervals for these estimates. Panels (a) and (b) run the regression at the CZ and state-level, respectively.\end{footnotesize}}
+
+
+\input{results/tables/table1.tex}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The table shows regression coefficients for $\beta_{1,h}$ (Exposure to China) and $\beta_{2,h}$ (Exposure interac) in equation \eqref{eq:ADHreg}. Columns (1)-(4) focus on CZ-level regressions, and Columns (5)-(8) on State-level regressions. Column (1) corresponds to the ADH 2013 results and column (5) is its analogous state-level counterpart. Columns (2) and (6) use OLS. Columns (3) and (7) instrument exposure to China but not the interaction term. Columns (4) and (8) use both instruments. As in ADH 2013, the regression covers the period from 1990-2000 and 2000-2007 with stacked first differences.\end{footnotesize}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+
+
+\section{Share of negative wage changes to total wage changes: CPS} \label{sec:negtotal_yjj}
+Total downward wage adjustments share of total wage changes. Year-over-year changes. A higher share of negative wage changes indicates lower downward nominal wage rigidity.
+
+\subsection{Share of negative wage changes of total wage changes (indicator = 1 if above median): CPS}
+
+\begin{figure}[h]\caption{Negative share of total wage changes (above median dummy) 2006-2020}
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_yjj_dmy1_czs.pdf}
+         \caption{CZ-level regression}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_yjj_dmy1_state.pdf}
+         \caption{State-level regression}
+     \end{subfigure}
+        
+\end{figure}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The figure plots two-stage least squares coefficient estimates for $\beta_{1,h}$ (in blue) and $\beta_{2,h}$ (in red) in equation \eqref{eq:ADHreg} and 95 percent confidence intervals for these estimates. Panels (a) and (b) run the regression at the CZ and state-level, respectively.\end{footnotesize}}
+
+\input{results/tables/table2.tex}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The table shows regression coefficients for $\beta_{1,h}$ (Exposure to China) and $\beta_{2,h}$ (Exposure interac) in equation \eqref{eq:ADHreg}. Columns (1)-(4) focus on CZ-level regressions, and Columns (5)-(8) on State-level regressions. Column (1) corresponds to the ADH 2013 results and column (5) is its analogous state-level counterpart. Columns (2) and (6) use OLS. Columns (3) and (7) instrument exposure to China but not the interaction term. Columns (4) and (8) use both instruments. As in ADH 2013, the regression covers the period from 1990-2000 and 2000-2007 with stacked first differences.\end{footnotesize}}
+
+\newpage
+\subsection{Share of negative wage changes of total wage changes (indicator = 1 if above mean): CPS}
+
+\begin{figure}[h]\caption{Negative share of total wage changes (above mean dummy) 2006-2020}
+
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_yjj_dmy2_czs.pdf}
+         \caption{CZ-level regression}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_yjj_dmy2_state.pdf}
+         \caption{State-level regression}
+     \end{subfigure}
+        
+\end{figure}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The figure plots two-stage least squares coefficient estimates for $\beta_{1,h}$ (in blue) and $\beta_{2,h}$ (in red) in equation \eqref{eq:ADHreg} and 95 percent confidence intervals for these estimates. Panels (a) and (b) run the regression at the CZ and state-level, respectively.\end{footnotesize}}
+
+\input{results/tables/table3.tex}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The table shows regression coefficients for $\beta_{1,h}$ (Exposure to China) and $\beta_{2,h}$ (Exposure interac) in equation \eqref{eq:ADHreg}. Columns (1)-(4) focus on CZ-level regressions, and Columns (5)-(8) on State-level regressions. Column (1) corresponds to the ADH 2013 results and column (5) is its analogous state-level counterpart. Columns (2) and (6) use OLS. Columns (3) and (7) instrument exposure to China but not the interaction term. Columns (4) and (8) use both instruments. As in ADH 2013, the regression covers the period from 1990-2000 and 2000-2007 with stacked first differences.\end{footnotesize}}
+
+\newpage
+
+\section{Share of negative wage changes of nonzero variations: CPS} \label{sec:negnonzero_yjj}
+Total downward wage adjustments share of nonzero wage changes. A higher share of negative wage changes relative to the total nonzero wage changes indicates a lower downward nominal wage rigidity. Year-over-year wage changes.
+
+\subsection{Share of negative wage changes of nonzero variations (indicator = 1 if above median): CPS}
+
+\begin{figure}[h]\caption{Share of negative wage changes of nonzero variations (above median dummy) 2006-2020}
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_nonzero_yjj_dmy1_czs.pdf}
+         \caption{CZ-level regression}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_nonzero_yjj_dmy1_state.pdf}
+         \caption{State-level regression}
+     \end{subfigure}
+        
+\end{figure}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The figure plots two-stage least squares coefficient estimates for $\beta_{1,h}$ (in blue) and $\beta_{2,h}$ (in red) in equation \eqref{eq:ADHreg} and 95 percent confidence intervals for these estimates. Panels (a) and (b) run the regression at the CZ and state-level, respectively.\end{footnotesize}}
+
+\input{results/tables/table4.tex}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The table shows regression coefficients for $\beta_{1,h}$ (Exposure to China) and $\beta_{2,h}$ (Exposure interac) in equation \eqref{eq:ADHreg}. Columns (1)-(4) focus on CZ-level regressions, and Columns (5)-(8) on State-level regressions. Column (1) corresponds to the ADH 2013 results and column (5) is its analogous state-level counterpart. Columns (2) and (6) use OLS. Columns (3) and (7) instrument exposure to China but not the interaction term. Columns (4) and (8) use both instruments. As in ADH 2013, the regressions cover the period from 1990-2000 and 2000-2007 with stacked first differences, with a constant and a dummy for the 2000-2007 period.\end{footnotesize}}
+
+\newpage
+\subsection{Share of negative wage changes of nonzero wage changes (indicator = 1 if above mean): CPS}
+
+\begin{figure}[h]\caption{Share of negative wage changes of nonzero variations (above mean dummy) 2006-2020}
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_nonzero_yjj_dmy2_czs.pdf}
+         \caption{CZ-level regression}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{results/figures/dnwr_nonzero_yjj_dmy2_state.pdf}
+         \caption{State-level regression}
+     \end{subfigure}
+        
+\end{figure}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The figure plots two-stage least squares coefficient estimates for $\beta_{1,h}$ (in blue) and $\beta_{2,h}$ (in red) in equation \eqref{eq:ADHreg} and 95 percent confidence intervals for these estimates. Panels (a) and (b) run the regression at the CZ and state-level, respectively.\end{footnotesize}}
+
+\input{results/tables/table5}
+\setstretch{1.0}{\begin{footnotesize} \vspace{-10pt} \textit{Notes:} The table shows regression coefficients for $\beta_{1,h}$ (Exposure to China) and $\beta_{2,h}$ (Exposure interac) in equation \eqref{eq:ADHreg}. Columns (1)-(4) focus on CZ-level regressions, and Columns (5)-(8) on State-level regressions. Column (1) corresponds to the ADH 2013 results and column (5) is its analogous state-level counterpart. Columns (2) and (6) use OLS. Columns (3) and (7) instrument exposure to China but not the interaction term. Columns (4) and (8) use both instruments. As in ADH 2013, the regression covers the period from 1990-2000 and 2000-2007 with stacked first differences.\end{footnotesize}}
+\newpage
+
+\end{document}

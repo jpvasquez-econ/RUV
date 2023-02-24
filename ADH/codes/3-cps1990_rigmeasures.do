@@ -26,7 +26,7 @@ forvalue i = 86/90 {
 	 destring hhid, replace
 	 
 	 * IPUMS-CPS (16 or older) 1986-1990
-	 use raw_data/cps_00006, clear
+	 use raw_data/cps_86_90, clear
 	 rename (month hrhhid) (intmonth hhid)
 	 * we drop people not in the universe of hourly wages
 	 drop if inlist(hourwage,999.99) 

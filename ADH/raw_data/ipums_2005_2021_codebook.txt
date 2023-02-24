@@ -1,4 +1,4 @@
-Description: ACS 2005-2021 ACS 1 years
+Description: ACS 2005-2021 ACS 1 year samples
 Samples selected:
       2005 ACS
       2006 ACS
