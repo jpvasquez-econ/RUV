@@ -23,13 +23,13 @@ This file explains the general purpose of each code associated with the data con
 
 1) Takes imports and exports data from census and changes the sectors to final relevant sectors 1-14.
 
-2) Calculates the sector-country bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
+2) Calculates the sector-country bilateral trade flows $X_{ij,k}$ when $i\in US \;$ \&  $\;  j \notin US$ (exports from each state to each country) and $i\notin US\;$  \& $\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
 
 ## Code 3:
 
 1) Creates the CFS base, which contains the state to state trade flow.
 
-2) Uses CFS plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;   j \in US$, for all manufacturing sectors (all sectors except services and agriculture).
+2) Uses CFS plus proportionality to calculate $X_{ij,k}$ for $i\in US\;$  \& $\;   j \in US$, for all manufacturing sectors (all sectors except services and agriculture).
 
 ## Code 4:
 
@@ -67,7 +67,7 @@ This file explains the general purpose of each code associated with the data con
 
 1) This code imports WIOD data to create the 2000-2007 change in imports from China to the US, $\Delta X_{C,US,s}^{2007-2000}$, and other advanced economies, $\Delta X_{C,OC,s}^{2007-2000}$ (Australia, Germany, Denmark, Spain, Finland and Japan; New Zealand and Switzerland are not included in the WIOD). Then, runs a linear regression (with and without constant) using the change of sectoral US imports from China as the dependent variable and the change of sectoral  advanced economies' imports from China as the independent variable. Finally, the predicted values are computed, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$.
 
-2) This code computes de exposure measure using i) level el state-sector employment, ii) predicted values of regression in step 1) and iii) total US 2000 sales by sector. The exposure measure for each state $i$ is given by $E_{i} \equiv \sum_{s=1}^{12}\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}$, where $R_{US,s,2000}\equiv\sum_{i\in US}\sum_{j}X_{ij,s,2000}$ is total U.S. sales in sector s in the year 2000, $L_{i,s,2000}$ is the employment of state i in manufacturing sector s in year 2000, $L_{i,2000}\equiv\sum_{s}^{14}L_{i,s,2000}$ is the TOTAL employment of state i. This values of employment come from code 7. Finally, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$ is the predicted 2000-2007 change in U.S. imports in sector s from China (computed in the first step).
+2) This code computes de exposure measure using i) level el state-sector employment, ii) predicted values of regression in step 1) and iii) total US 2000 sales by sector. The exposure measure for each state $i$ is given by $$E_{i} \equiv \sum_{s=1}^{12} \frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}$$, where $R_{US,s,2000}\equiv\sum_{i \in US}\sum_{j} X_{ij,s,2000}$ is total U.S. sales in sector s in the year 2000, $L_{i,s,2000}$ is the employment of state i in manufacturing sector s in year 2000, and  $$L_{i,2000}\equiv\sum_{s}^{14}L_{i,s,2000}$$ is the TOTAL employment of state i. This values of employment come from code 7. Finally, $\widehat{\Delta X_{C,US,s}^{2007-2000}}$ is the predicted 2000-2007 change in U.S. imports in sector s from China (computed in the first step).
 
 ## Code 9:
 
@@ -75,6 +75,5 @@ This file explains the general purpose of each code associated with the data con
 
 2) This code produces the level migration flows for state-sector for options 1-5, including the distances between states. Options 1-4 were old tests that are no longer used. Option 5 are the outputs of code 7-Employment_migration. 
 
-3) This code runs a regression on the shares of mobility matrix 1999. The X variables are: no constant, log distance between origin-destination states, same origin-destination state and sector dummy, same origin-destination state dummy, same origin-destination sector dummy; $$I_{is}^{\delta}$$ dummy equal to one if the origin sector is s and the origin state is i; $$I_{jk}^{\eta}$$ dummy equal to one if the destination sector is k and the destination state is j; $$I_{sk}^{\mu}$$ dummy equal to one if the origin sector is s and the destination sector is k; interaction $$I_{\text{same_st}}*I_{sk}^{\mu}$$. Because of multicollinearity, indicator variable $I_{jk}^{\eta}$ when the destination state j is Wyoming and the destination sector s is the last one of our sectors (sector 14) is dropped, as well as other dummies $$I_{sk}^{\mu}$$. This code's final output is a variant of the predicted values of the regression: 
-$$Z_{is,jk}^{t,t+1}= \hat{\mu_{is,jk}^{t,t+1}} - \sum_{i}\sum_{s}\theta_{is}I_{is}^{\delta}-\sum_{j}\sum_{k}\gamma_{jk}I_{jk}^{\eta}$$.
+3) This code runs a regression on the shares of mobility matrix 1999. The X variables are: no constant, log distance between origin-destination states, same origin-destination state and sector dummy, same origin-destination state dummy, same origin-destination sector dummy; $$I_{is}^{\delta}$$ dummy equal to one if the origin sector is s and the origin state is i; $$I_{jk}^{\eta}$$ dummy equal to one if the destination sector is k and the destination state is j; $$I_{sk}^{\mu}$$ dummy equal to one if the origin sector is s and the destination sector is k; interaction $$I_{\text{same-st}} * I_{sk}^{\mu}$$. Because of multicollinearity, indicator variable $I_{jk}^{\eta}$ when the destination state j is Wyoming and the destination sector s is the last one of our sectors (sector 14) is dropped, as well as other dummies $$I_{sk}^{\mu}$$. This code's final output is a variant of the predicted values of the regression: $$Z_{is,jk}^{t,t+1} = \hat{\mu_{is,jk}^{t,t+1}} - \sum_{i}\sum_{s}\theta_{is}I_{is}^{\delta}-\sum_{j}\sum_{k}\gamma_{jk}I_{jk}^{\eta}$$ 
 
