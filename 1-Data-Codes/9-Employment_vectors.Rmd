@@ -21,7 +21,8 @@ remove(list = ls())
 
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
-options( scipen=100, stringsAsFactors=FALSE );
+set.seed(2023)
+options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 # vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'fastDummies', 'lfe');
 # Install libraries in case they are not installed

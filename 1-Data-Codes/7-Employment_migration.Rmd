@@ -21,13 +21,14 @@ remove(list = ls())
 
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
-options( scipen=100, stringsAsFactors=FALSE );
+set.seed(2023)
+options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 # vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'readr', 'data.table');
 # Install libraries in case they are not installed
-#for( i in length(libs)){ 
-  #if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
-#};
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
 # Carga de bibliotecas
 lapply( libs, require, character.only=TRUE );
 ```
@@ -75,7 +76,7 @@ s_names <- regions %>% filter(status == "state")
 s_names <- s_names$region
 
 n_s <- length(s_names)
-n_c <- length(c_names) -1
+n_c <- length(c_names)-1
 
 #sector reclassification table (NAICS to final)
 sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")

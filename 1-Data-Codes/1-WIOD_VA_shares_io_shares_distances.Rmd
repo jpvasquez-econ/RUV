@@ -66,15 +66,17 @@ remove(list = ls())
 
 ```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
-options( scipen=100, stringsAsFactors=FALSE );
+options( scipen=100, digits = 15, stringsAsFactors=FALSE );
+install.packages("geodist")
 # vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
-# Install libraries in case they are not installed
-#for( i in length(libs)){ 
-#if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
-#};
-# #install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.3.9.zip", repos=NULL)
-# install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.5.0.tar.gz", type="source", repos=NULL)
+ #Install libraries in case they are not installed
+for( i in length(libs)){ 
+if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.3.9.zip", repos=NULL)
+install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.5.0.tar.gz", type="source", repos=NULL)
+
 # load library
 lapply( libs, require, character.only=TRUE );
 ```
@@ -700,7 +702,7 @@ colnames(cities_no_s) <- c("state", "fips", "lat", "lon")
 
 #	2. Calculates distance in km
 # generate distances in km between cities
-dist <- geodist (cities_lat_lon, measure = "geodesic")
+dist <- geodist(cities_lat_lon, measure = "geodesic")
 dist <- data.frame(dist)
 colnames(dist) <- paste(cities$state_s,cities$fips_s, sep="_")
 dist <- cbind(cities, dist)
