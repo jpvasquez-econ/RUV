@@ -66,6 +66,7 @@ remove(list = ls())
 
 ```{r packages, warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
+set.seed(2023)
 options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 install.packages("geodist")
 # vector of libraries to be used
@@ -79,6 +80,8 @@ install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20
 
 # load library
 lapply( libs, require, character.only=TRUE );
+stataexe <- "C:/Users/alove/Desktop/Stata 16/Stata16MP-64.exe"
+knitr::opts_chunk$set(engine.path = list(stata=stataexe))
 ```
 
 

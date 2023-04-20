@@ -1,0 +1,351 @@
+---
+title: "7a-BLS_employment_shares"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+  word_document: default
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+## General Information
+This code creates shares of employment by state-ruv_sector for the 2000 year
+
+## Input Files
+1. `0-Raw_Data/emp_SAEMP25S_BLS.csv`
+
+
+## Output Files
+2. `1-Intermediate_Processed_Data/state_emp_share_2000.dta`
+
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+set.seed(2023)
+options(scipen=100, digits = 8, stringsAsFactors=FALSE );
+# libraries
+options( scipen=100, digits = 15, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'haven','stringr','tidyr');
+# Install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# Carga de bibliotecas
+lapply( libs, require, character.only=TRUE );
+```
+
+
+# Cleaning Employment File
+```{r bls_emp, echo=TRUE, message=FALSE, warning= FALSE}
+# SHARE OF EMPLOYMENT PER SECTOR IN 2000 ACCORDING TO BLS
+
+# JP, May 2020
+
+# 1. BLS employment
+bls <- read.csv("0-Raw_Data/emp_SAEMP25S_BLS.csv", header = TRUE)
+
+# Cleaning employment file
+# dropping footnotes
+bls <- bls[1:6180,]
+bls <- bls %>%
+  mutate(GeoFips = as.character(GeoFips)) %>%
+  mutate(Jobs = as.numeric(Jobs)) %>%
+  filter(!is.na(Jobs)) %>%
+  filter(LineCode > 60 & LineCode != 80)
+
+# number of indents
+bls$indent <- NA
+temp_space <- "  "
+spaces <- c("  ","  ","  ","  ","  ")
+for (i in 2:5) {
+  bef <- i - 1
+  spaces[i] <- paste0(spaces[bef], temp_space)
+}
+
+for (i in 5:1) {
+  bls$indent[grepl(spaces[i], bls$Description) & is.na(bls$indent)] <- i
+}
+
+# keeping sectors (or farm employment) or manuf (disaggregated) or services
+bls <- bls %>%
+  filter(indent == 3 | LineCode == 70 |
+            (LineCode >= 400 & LineCode <= 480) |
+            (LineCode >= 800 & LineCode <= 880) |
+            (LineCode >= 500 & LineCode <= 540) |
+            LineCode == 560 | LineCode ==570 | (LineCode >= 700 & LineCode <= 736) |
+            (LineCode >= 621 & LineCode <= 628) |
+            (LineCode >= 540 & LineCode <= 544))
+
+# dropping total manuf, total durables, total non-durables
+bls <- bls %>%
+  filter(!(LineCode == 410 | LineCode == 450 |
+             LineCode == 400 | LineCode == 800 |
+             LineCode == 500 | LineCode == 700 |
+             LineCode == 730 | LineCode == 620 |
+             LineCode == 540))
+
+
+# check: sum of employment = total employment of USA
+bls <- bls %>%
+  group_by(GeoName) %>%
+  mutate(tot_emp = sum(Jobs)) %>%
+  arrange(GeoFips,LineCode)
+
+if (mean(bls$tot_emp[bls$GeoName == "United States"], na.rm = TRUE) == 165370800) {
+  print("check if sum of employment = total employment of USA: TRUE")
+} else {
+  print("check if sum of employment = total employment of USA: FALSE")
+    stop()
+  }
+#clean
+bls <- bls %>% select(-indent)
+bls$Description <- str_trim(bls$Description)
+
+# ASSIGNING SECTORS
+bls$wiod_sector <- NA
+
+# Agriculture, Hunting, Forestry and Fishing
+bls$wiod_sector[bls$LineCode %in% c(100)] <- 1
+
+# Mining and Quarrying
+bls$wiod_sector[bls$LineCode %in% c(200)] <- 2
+
+# Food, Beverages and Tobacco
+bls$wiod_sector[bls$LineCode %in% c(453, 456)] <- 3
+
+# Textiles and Textile Products
+bls$wiod_sector[bls$LineCode %in% c(459, 462)] <- 4
+
+# Leather, Leather and Footwear
+bls$wiod_sector[bls$LineCode %in% c(480)] <- 5
+
+# Wood and Products of Wood and Cork
+bls$wiod_sector[bls$LineCode %in% c(413)] <- 6
+
+# Pulp, Paper, Paper, Printing and Publishing
+bls$wiod_sector[bls$LineCode %in% c(465, 468)] <- 7
+
+# Coke, Refined Petroleum and Nuclear Fuel
+bls$wiod_sector[bls$LineCode %in% c(474)] <- 8
+
+# Chemicals and Chemical Products
+bls$wiod_sector[bls$LineCode %in% c(471)] <- 9
+
+# Rubber and Plastics
+bls$wiod_sector[bls$LineCode %in% c(477)] <- 10
+
+# Other Non-Metallic Mineral
+bls$wiod_sector[bls$LineCode %in% c(420)] <- 11
+
+# Basic Metals and Fabricated Metal
+bls$wiod_sector[bls$LineCode %in% c(423, 426)] <- 12
+
+# Machinery, Nec
+bls$wiod_sector[bls$LineCode %in% c(429)] <- 13
+
+# Electrical and Optical Equipment
+bls$wiod_sector[bls$LineCode %in% c(432)] <- 14
+
+# Transport Equipment
+bls$wiod_sector[bls$LineCode %in% c(435, 438)] <- 15
+
+# Manufacturing, Nec; Recycling
+bls$wiod_sector[bls$LineCode %in% c(417, 441, 444)] <- 16
+
+# Electricity, Gas and Water Supply
+bls$wiod_sector[bls$LineCode %in% c(570)] <- 17
+
+# Construction
+bls$wiod_sector[bls$LineCode %in% c(300)] <- 18
+
+# Sale, Maintenance and Repair of Motor Vehicles and Motorcycles; Retail Sale of Fuel
+bls$wiod_sector[bls$LineCode %in% c(624)] <- 19
+
+# Wholesale Trade and Commission Trade, Except of Motor Vehicles and Motorcycles
+bls$wiod_sector[bls$LineCode %in% c(610)] <- 20
+
+# Retail Trade, Except of Motor Vehicles and Motorcycles; Repair of Household Goods
+bls$wiod_sector[bls$LineCode %in% c(621, 622, 623, 625, 626, 627, 628)] <- 21
+
+# Hotels and Restaurants
+bls$wiod_sector[bls$LineCode %in% c(805)] <- 22
+
+# Inland Transport
+bls$wiod_sector[bls$LineCode %in% c(510, 520)] <- 23
+
+# Water Transport
+bls$wiod_sector[bls$LineCode %in% c(530)] <- 24
+
+#Air Transport
+bls$wiod_sector[bls$LineCode %in% 542] <- 25
+
+#Other Supporting and Auxiliary Transport Activities; Activities of Travel Agencies
+bls$wiod_sector[bls$LineCode %in% c(541, 543, 544)] <- 26
+#Post and Telecommunications
+bls$wiod_sector[bls$LineCode %in% 560] <- 27
+#Financial Intermediation
+bls$wiod_sector[bls$LineCode %in% c(710, 731, 732, 733, 735, 736)] <- 28
+#Real Estate Activities
+bls$wiod_sector[bls$LineCode %in% 734] <- 29
+#Renting of M&Eq and Other Business Activities
+bls$wiod_sector[bls$LineCode %in% c(820, 825, 830, 875, 880)] <- 30
+#Public Admin and Defence; Compulsory Social Security
+bls$wiod_sector[bls$LineCode %in% c(910, 920, 930)] <- 31
+#Education
+bls$wiod_sector[bls$LineCode %in% 855] <- 32
+#Health and Social Work
+bls$wiod_sector[bls$LineCode %in% c(845, 860)] <- 33
+#Other Community, Social and Personal Services
+bls$wiod_sector[bls$LineCode %in% c(810, 835, 840, 865, 870)] <- 34
+#Private Households with Employed Persons
+bls$wiod_sector[bls$LineCode %in% c(815, 850)] <- 35
+
+
+```
+
+#RUV sectors
+```{r pressure, echo=FALSE}
+# Create a new variable "ruv_sector" with missing values
+bls$ruv_sector <- NA
+
+# 1. (NAICS 311-312) Food Products, Beverage, and Tobacco Products (c3)
+bls$ruv_sector[bls$wiod_sector == 3] <- 1
+
+# 2. (NAICS 313-316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4-c5)
+bls$ruv_sector[bls$wiod_sector == 4 | bls$wiod_sector == 5] <- 2
+
+# 3. (NAICS 321-323) Wood Products, Paper, Printing, and Related Support Activities (c6-c7)
+bls$ruv_sector[bls$wiod_sector == 6 | bls$wiod_sector == 7] <- 3
+
+# 4. (NAICS 211-213, 324) Petroleum and Coal Products (c8)
+# Mining, Quarrying, and Oil and Gas Extraction (c2)
+bls$ruv_sector[bls$wiod_sector == 8 | bls$wiod_sector == 2] <- 4
+
+# 5. (NAICS 325) Chemical (c9)
+bls$ruv_sector[bls$wiod_sector == 9] <- 5
+
+# 6. (NAICS 326) Plastics and Rubber Products (c10)
+bls$ruv_sector[bls$wiod_sector == 10] <- 6
+
+# 7. (NAICS 327) Nonmetallic Mineral Products (c11)
+bls$ruv_sector[bls$wiod_sector == 11] <- 7
+
+# 8. (NAICS 331-332) Primary Metal and Fabricated Metal Products (c12)
+bls$ruv_sector[bls$wiod_sector == 12] <- 8
+
+# 9. (NAICS 333) Machinery (c13)
+bls$ruv_sector[bls$wiod_sector == 13] <- 9
+
+# 10. (NAICS 334-335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14)
+bls$ruv_sector[bls$wiod_sector == 14] <- 10
+
+# 11. (NAICS 336) Transportation Equipment (c15)
+bls$ruv_sector[bls$wiod_sector == 15] <- 11
+
+# 12. (NAICS 337-339) Furniture and Related Products, and Miscellaneous Manufacturing (c16)
+bls$ruv_sector[bls$wiod_sector == 16] <- 12
+
+# 13. (NAICS 23) Construction (c18)
+bls$ruv_sector[bls$wiod_sector == 18] <- 13
+
+# 14. (NAICS 42-45) Wholesale and Retail Trade (c19-c21)
+bls$ruv_sector[bls$wiod_sector == 19 | bls$wiod_sector == 20 | bls$wiod_sector == 21] <- 14
+
+# 15. (NAICS 481-488) Transport Services (c23-c26)
+bls$ruv_sector[bls$wiod_sector == 23 | bls$wiod_sector == 24 | bls$wiod_sector == 25 | bls$wiod_sector == 26] <- 15
+
+# 16. (NAICS 511-518) Information Services (c27)
+bls$ruv_sector[bls$wiod_sector == 27] <- 16
+
+# 17. (NAICS 521-525) Finance and Insurance (c28)
+bls$ruv_sector[bls$wiod_sector == 28] <- 17
+
+#18.	(NAICS 531-533)  Real Estate (c29-c30); 
+bls$ruv_sector[bls$wiod_sector == 29 | bls$wiod_sector == 30] <- 18
+
+#19.	(NAICS 61) Education (c32); 
+bls$ruv_sector[bls$wiod_sector == 32] <- 19
+#20.	(NAICS 621-624) Health Care (c33);
+bls$ruv_sector[bls$wiod_sector == 33] <- 20
+#21.	(NAICS 721-722) Accommodation and Food Services (c22); 
+bls$ruv_sector[bls$wiod_sector == 22] <- 21
+#22.	(NAICS 493, 541, 55, 561, 562, 711-713, 811-814) Other Services (c34).
+bls$ruv_sector[bls$wiod_sector == 34] <- 22
+#23.	(NAICS 111-115) Agriculture, Forestry, Fishing, and Hunting (c1)
+bls$ruv_sector[bls$wiod_sector == 1] <- 23
+#final
+bls$ruv_sector[bls$ruv_sector >=13 & bls$ruv_sector < 23 & !is.na(bls$ruv_sector)] <- 13
+bls$ruv_sector[bls$ruv_sector == 23] <- 14
+
+```
+
+#Regions and Employment Shares (US)
+```{r regions, warning = FALSE}
+# Rename variables
+bls <- bls %>% rename(region = GeoName)
+# Convert region to lower case
+bls$region <- tolower(bls$region)
+
+# Remove spaces in region variable
+bls$region <- str_replace(bls$region," ","")
+
+# Load ADH data
+regions <- read_dta("1-Intermediate_Processed_Data/state_emp_2000.dta")
+regions <- regions %>% 
+  group_by(region) %>%
+  summarize(key = 1)
+  
+# Merge region data with ADH data
+bls <- left_join(bls, regions, by = "region")
+bls <- bls %>% filter(key == 1 | region == "alaska") %>% select(-key)
+
+# COMPUTING EMPLOYMENT SHARES
+
+bls$Jobs[bls$Jobs == "(D)"] <- ""
+bls$Jobs[bls$Jobs == "(NA)"] <- ""
+bls$Jobs <- as.numeric(bls$Jobs)
+
+bls <- bls %>% group_by(region) %>%
+  mutate(emp_state = sum(Jobs)) %>%
+  group_by(region, ruv_sector) %>%
+  mutate(emp_state_sector = sum(Jobs))%>%
+  summarise(emp_state = mean(emp_state), emp_state_sector = mean(emp_state_sector))
+
+tot_US <- sum(bls$emp_state_sector, na.rm = TRUE)
+bls <- bls %>% filter(!is.na(ruv_sector))
+bls$share_sector_state <- bls$emp_state_sector / bls$emp_state
+
+# Keep manufacturing
+bls <- bls %>% filter(ruv_sector <= 12)
+# Share in manuf USA
+sh_manuf_USA <- sum(bls$emp_state_sector, na.rm = TRUE)
+bls$sh_manuf_USA <- sh_manuf_USA / tot_US
+
+#Keeping important variables
+bls <- bls %>% 
+  select(region, ruv_sector, share_sector_state)%>%
+  rename(sector = ruv_sector, share_bls = share_sector_state)
+bls$share_bls[is.na(bls$share_bls)] <- 0
+
+# Balance Panel
+bls <- bls %>%
+  ungroup() %>%
+  complete(region, sector, fill = list(share_bls = 0))
+
+# Save output
+bls <- bls %>% mutate(share_bls = round(share_bls,digits = 8)) 
+haven::write_dta(bls, "1-Intermediate_Processed_Data/state_emp_share_2000.dta")
+
+```

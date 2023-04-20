@@ -43,6 +43,7 @@ lapply( libs, require, character.only=TRUE );
 
 1. `1-Intermediate_Processed_Data/WIOD_countries.csv`
 2. `1-Intermediate_Processed_Data/L_2000.csv`
+3. `1-Intermediate_Processed_Data/state_emp_share_2000.dta`
 
 
 ## Output files
@@ -59,7 +60,6 @@ L_2000 <- read.csv("1-Intermediate_Processed_Data/L_2000.csv", header = TRUE, se
 
 state_emp_share_2000 <- read_dta("1-Intermediate_Processed_Data/state_emp_share_2000.dta")
 state_emp_share_2000 <- state_emp_share_2000 %>%
-  select(-share_adh) %>%
   dplyr::rename(state = region)
 ```
 
