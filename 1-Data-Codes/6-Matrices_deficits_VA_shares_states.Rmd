@@ -21,6 +21,7 @@ remove(list = ls())
 
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
 # libraries
+set.seed(2023)
 options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 # vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
@@ -30,6 +31,8 @@ for( i in length(libs)){
 };
 # Carga de bibliotecas
 lapply( libs, require, character.only=TRUE );
+stataexe <- "C:/Users/alove/Desktop/Stata 16/Stata16MP-64.exe"
+knitr::opts_chunk$set(engine.path = list(stata=stataexe))
 ```
 
 ## General Instructions
@@ -353,8 +356,6 @@ if(abs(sum(cdp_ss$val)/sum(wiot_ss$value) -1)>epsilon)
   stop(paste("states' exports to states != US WIOD exports to US for year", yr))
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 }
 ```
 

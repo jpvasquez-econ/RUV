@@ -47,7 +47,7 @@ remove(list = ls())
 ```
 
 ```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
-
+set.seed(2023)
 # libraries
 options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 # vector of libraries to be used
