@@ -363,8 +363,135 @@ L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_
 
 \end_layout
 
+\begin_layout Section
+New 2023-05-12
+\end_layout
+
+\begin_layout Standard
+Ref 2 said: "The authors use CPS and ACS data to assess sectoral and regional
+ labor mobility.
+ IRS data on county to county mobility would seem to provide a much better
+ data source that the ACS (and less prone to the ACS's classification errors)"
+\end_layout
+
+\begin_layout Standard
+IRS has flows between states but not information about the sector.
+ We will assume
+\end_layout
+
+\begin_layout Enumerate
+that the probability of arriving to a destination sector is proportional
+ to the importance of that sector in the destination according to CPS.
+ 
+\end_layout
+
+\begin_layout Enumerate
+that the probability of departing from an origin sector is proportional
+ to the importance of that sector in the origin according to CPS.
+ 
+\end_layout
+
+\begin_layout Subsection
+Within the State (same as before but adjusting diagonals differently)
+\end_layout
+
+\begin_layout Standard
+*****
+\end_layout
+
 \begin_layout Standard
 
+\series bold
+Zeros in diagonals:
+\end_layout
+
+\begin_layout Standard
+Calculate the diagonal shares by state and sector: “stay-in” share = the
+ number of people stayed in state a sector b both in year t and t-1 / the
+ number of people stayed in state a sector b in year t-1 
+\end_layout
+
+\begin_layout Standard
+Find the non-zero median “stay-in” share by aggregation of rolling window,
+ for example 20% by year and sector.
+ 
+\end_layout
+
+\begin_layout Standard
+Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
+ Alaska sector 10 = min{1 worker, outflow} /0.8 * 0.2 (Q: 80% should represent
+ the flow in and out to Alaska sector 10, but it is possible there are many
+ missing values in terms inflows and outflows.
+ For example, for Alaska sector 10, only have one data point: inflow from
+ sector 13 to sector 10).
+\end_layout
+
+\begin_layout Standard
+This will produce the new 
+\begin_inset Quotes eld
+\end_inset
+
+corrected
+\begin_inset Quotes erd
+\end_inset
+
+ CPS data
+\end_layout
+
+\begin_layout Standard
+*****
+\end_layout
+
+\begin_layout Standard
+We then follow a proportionality assumption so that the total movements
+ within the state coincide with IRS (just the total across sectors but not
+ sector by sector).
+ In this case, we will be prioritizing the CPS when it comes to intra-state
+ movements.
+ This is, let's fix a given state 
+\begin_inset Formula $n$
+\end_inset
+
+ and define: 
+\begin_inset Formula 
+\[
+L^{nj,nk}=L_{IRS}^{n,n}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in US,\:\forall j,k
+\]
+
+\end_inset
+
+Note that 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,nk}=L_{IRS}^{n,n}$
+\end_inset
+
+ (so the total coincides at the movements within the state regardless of
+ the sector but not necessarily sector-by-sector).
+ Also note that 
+\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$
+\end_inset
+
+ by construction.
+\end_layout
+
+\begin_layout Subsection
+Between States
+\end_layout
+
+\begin_layout Standard
+We use 
+\begin_inset Formula 
+\[
+L^{nj,ik}=\frac{L_{CPS}^{nj}}{\sum_{h}L_{CPS}^{nh}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ik}}{\sum_{h}L_{CPS}^{ih}}\quad i\neq n.
+\]
+
+\end_inset
+
+Check that 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
+\end_inset
+
+.
+ 
 \end_layout
 
 \end_body
