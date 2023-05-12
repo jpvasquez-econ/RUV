@@ -419,7 +419,7 @@ Find the non-zero median “stay-in” share by aggregation of rolling window,
 
 \begin_layout Standard
 Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
- Alaska sector 10 = min{1 worker, outflow} /0.8 * 0.2 (Q: 80% should represent
+ Alaska sector 10 = max{1 worker, outflow} /0.8 * 0.2 (Q: 80% should represent
  the flow in and out to Alaska sector 10, but it is possible there are many
  missing values in terms inflows and outflows.
  For example, for Alaska sector 10, only have one data point: inflow from
