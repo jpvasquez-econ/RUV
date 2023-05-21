@@ -516,7 +516,58 @@ L^{nj,ik} & =L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{
 
 \end_inset
 
+Note that it also satisfies 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
+\end_inset
 
+.
+ 
+\end_layout
+
+\begin_layout Standard
+New suggestion: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+L^{nj,ik}=\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{\sum_{h}L_{CPS}^{ih,ik}}{\sum_{h}\sum_{q}L_{CPS}^{ih,iq}}
+\]
+
+\end_inset
+
+The first term tells us how common it is in region 
+\begin_inset Formula $n$
+\end_inset
+
+ to depart sector 
+\begin_inset Formula $j$
+\end_inset
+
+ (among all possible flows in 
+\begin_inset Formula $n$
+\end_inset
+
+).
+ The last term tells us how common it is in region 
+\begin_inset Formula $i$
+\end_inset
+
+ to land in sector 
+\begin_inset Formula $k$
+\end_inset
+
+ (among all possible flows in 
+\begin_inset Formula $i$
+\end_inset
+
+).
+ Note again that the expression above satisfies 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
+\end_inset
+
+.
+ 
 \end_layout
 
 \end_body
