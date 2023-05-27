@@ -30,9 +30,9 @@ options( scipen=100, digits = 15, stringsAsFactors=FALSE ); # no scientific nota
 # vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'haven', 'stringr', 'nleqslv', 'gdata', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'readr', 'data.table');
 # Install libraries in case they are not installed
-# for( i in seq_along(libs)){ 
-    # if( !(libs[i] %in% installed.packages()) ) install.packages( libs[i] ) 
-# };
+ # for( i in seq_along(libs)){ 
+     # if( !(libs[i] %in% installed.packages()) ) install.packages( libs[i] ) 
+ # };
 # Loading libraries
 lapply( libs, require, character.only=TRUE );
 ```
@@ -412,7 +412,7 @@ acs <- acs %>%
   ungroup() %>%
   distinct(year, sector_dest, state_dest, state_ori, .keep_all = TRUE)
 
-#Some check and adjustment (all based on three-year window)
+#Some checks and adjustment (all based on three-year window)
 ##a. use average total migration flow across years to fill in the missing within state migration
 acs <- acs %>%
   mutate(diag = ifelse(state_ori == state_dest, 1, 0)) %>%
@@ -641,21 +641,51 @@ cps  <- base %>%
   distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) #covers all the migration combination but only intra-state migration not equals to zero.
 rm(base, final_base)  
 
+###################################### Modification by Leo #########################################
 #replacing 0 in diag for min non-zero diag value
-temp <- cps %>%
-  mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
-  filter(diag == 1 & n_cps != 0) %>%
-  group_by(year, diag) %>%
-  mutate(min_diag = min(n_cps)) %>% #min non-zero diag value within the same year across all diagonals
-  ungroup() %>%
-  distinct(year, .keep_all = TRUE) %>%
-  select(year, min_diag)  #year 1999, 2000, 2001, the minimum is 264.8371; year 2002, the minimum is 277.1613; year 2003, 2004, 2005, 2006, the minimum is 230.9756. 
-cps <- cps %>%
-  left_join(temp, by=c("year"="year")) %>%
-  mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
-  mutate(n_cps = ifelse(diag == 1 & n_cps == 0 , min_diag, n_cps)) %>% #108 cases
-  select(-min_diag, -diag)
-rm(temp)
+# temp <- cps %>%
+#   mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
+#   filter(diag == 1 & n_cps != 0) %>%
+#   group_by(year, diag) %>%
+#   mutate(min_diag = min(n_cps)) %>% #min non-zero diag value within the same year across all diagonals
+#   ungroup() %>%
+#   distinct(year, .keep_all = TRUE) %>%
+#   select(year, min_diag)  #year 1999, 2000, 2001, the minimum is 264.8371; year 2002, the minimum is 277.1613; year 2003, 2004, 2005, 2006, the minimum is 230.9756. 
+# cps <- cps %>%
+#   left_join(temp, by=c("year"="year")) %>%
+#   mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
+#   mutate(n_cps = ifelse(diag == 1 & n_cps == 0 , min_diag, n_cps)) %>% #108 cases
+#   select(-min_diag, -diag)
+# #n_cps: only have within state movements sector-sector migration flows (all diag missing are filled), across state equals zero
+# rm(temp)
+
+
+#replacing 0 in diag based on median non-zero diag shares within year-sector
+temp <- cps  %>% 
+  mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0))  %>% 
+  group_by(year, state_ori, sector_ori)  %>% 
+  mutate(stock_ori = sum(n_cps))  %>% 
+  mutate(outflow_share = n_cps/stock_ori)  %>% 
+  mutate(outflow_share = ifelse(is.na(outflow_share), 0, outflow_share))  %>% 
+  mutate(stay_in_share = ifelse(diag == 1, outflow_share, 0))  %>% 
+  mutate(stay_in_share = max(stay_in_share))  %>% 
+  ungroup() %>% 
+  group_by(year, sector_ori)  %>% 
+  mutate(stay_in_share_median = median(stay_in_share))  %>% 
+  ungroup()  %>% 
+  group_by(year, state_dest, sector_dest)  %>% 
+  mutate(stock_dest = sum(n_cps))  %>% 
+  mutate(stock_dest_diag = ifelse(diag == 1, stock_dest, 0))  %>% 
+  ungroup()  %>% 
+  group_by(year, state_ori, sector_ori)  %>% 
+  mutate(stock_dest_diag = max(stock_dest_diag))  %>% 
+  ungroup()  %>% 
+  mutate(diag_new = pmax(1, stock_ori, stock_dest_diag)/(1-stay_in_share_median) * stay_in_share_median)  %>%  #If the diagonal flow is missing, then total outflow == stock at the original, total inflow == stock at the destination
+  mutate(flag = ifelse(diag == 1 & n_cps == 0, 1, 0))  %>%  #12 cases in 1999, 108 cases in total
+  mutate(n_cps = ifelse(diag == 1 & n_cps == 0, diag_new, n_cps))  %>% 
+  select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps) 
+cps  <- temp
+##########################################################################################################
 
 
 #filling missing matrix sections as CDP
@@ -663,14 +693,14 @@ cps <- cps %>%
   mutate(n_master = ifelse(state_ori == state_dest, n_cps, 0)) %>%
   select(-n_cps) %>%   #actually, n_master == n_cps......
   group_by(year, state_dest, sector_dest, sector_ori) %>% #based on destination state
-  mutate(n_cps = max(n_master)) %>%  #n_cps:  each entry takes the value of within destination state migration for that sector movement, therefore same value for same (state_dest, sector_dest)
+  mutate(n_cps = max(n_master)) %>%  #n_cps:  each entry takes the value of within destination state migration for that sector-sector movement, therefore same value for same (year, state_dest, sector_dest, sector_ori) across original states
   ungroup() %>%
   select(-n_master) %>%
   arrange(year, state_dest, sector_dest, state_ori, sector_ori)
 
 
 write.table(cps, file = paste("1-Intermediate_Processed_Data//cps_2.csv", sep=""), sep = ",", row.names = FALSE) 
-#cps_2.csv: all migration combinations by (state_ori, state_dest, sector_ori, sector-dest) for 1999-2006; n_cps contains within destination state migration across sectors for each migration combination, repeating within within (year, state_dest, sector_dest)
+#cps_2.csv: all migration combinations by (state_ori, state_dest, sector_ori, sector-dest) for 1999-2006; n_cps contains within destination state migration across sectors for each migration combination, repeating within (year, state_dest, sector_dest)
 
 ```
 
@@ -679,7 +709,7 @@ write.table(cps, file = paste("1-Intermediate_Processed_Data//cps_2.csv", sep=""
 2. mu_1999_prime.csv: all migration combinations; share of people from different state-sector pairs migrated to the same destination state-sector pair
 3. mu_`year'.csv: migration matrices
 
-```{r message=FALSE, warning=FALSE}
+```{r}
 #loading intermediate CPS
 cps <- read.csv(paste("1-Intermediate_Processed_Data//cps_2.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
@@ -704,12 +734,12 @@ acs <- acs %>%
 mobility <- cps %>%
   left_join(acs, by=c('year' = 'year', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori')) %>%
   group_by(year, state_dest, state_ori) %>% 
-  mutate(tot_n_cps_accros_sec = sum(n_cps)) %>% #totol within destination state migration
+  mutate(tot_n_cps_accros_sec = sum(n_cps)) %>% #totol within destination state migration (sum over all sector movements)
   ungroup() %>%
   mutate(n_cps_adj = n_cps/tot_n_cps_accros_sec) %>% #migration share across sectors within state (based on destination state)
   mutate(n_cps_adj = ifelse(is.na(n_cps_adj) == TRUE, 0, n_cps_adj)) %>%
   mutate(n_cps_adj = n_cps_adj*n_acs) %>% #use cps within-state across sector migration share times acs total migration across states
-  select(-tot_n_cps_accros_sec, -n_cps, -n_acs)
+  select(-tot_n_cps_accros_sec, -n_cps, -n_acs) 
 #mobility  <- mobility  %>% arrange(state_ori, sector_ori, state_dest, sector_dest,desc(year))
 
 
@@ -718,9 +748,9 @@ mobility <- cps %>%
 mu_1999_prime <- mobility %>%
   filter(year == 1999) %>%
   group_by(year, state_dest, sector_dest) %>% 
-  mutate(tot_n = sum(n_cps_adj)) %>% #total number of people at destination state-sector
+  mutate(tot_n = sum(n_cps_adj)) %>% # total inflows to destination state-sector
   ungroup() %>%
-  mutate(rel = n_cps_adj/tot_n) %>%  #rel: share of people from original state-sector pairs to the same destination state-sector
+  mutate(rel = n_cps_adj/tot_n) %>%  #(inflow share of destination state-sector across original state-sector)rel: share of people from original state-sector pairs to the same destination state-sector
   select(year, state_dest, state_ori, sector_dest, sector_ori, rel)
 write.table(mu_1999_prime, file = paste("1-Intermediate_Processed_Data/mu_1999_prime.csv", sep=""), sep = ",", row.names = FALSE)
 
@@ -728,9 +758,9 @@ write.table(mu_1999_prime, file = paste("1-Intermediate_Processed_Data/mu_1999_p
 #x's adjusted by y to shares: add that within the total migration flow out of original state-sector pair, the share of migration to different state-sector pairs
 mobility <- mobility %>% 
   group_by(year, state_ori, sector_ori) %>% 
-  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% #total number of people at original state-sector pair
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% #total outflows from original state-sector
   ungroup() %>%
-  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% #rel: share of people moved out from the same original state-sector pair to different destination state-sector pair 
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% #(outflow share of original state-sector across destination state-sector)rel: share of people moved out from the same original state-sector pair to different destination state-sector pair 
   mutate(rel = ifelse(is.na(rel)==TRUE & state_dest==state_ori & sector_dest== sector_ori, 1, rel)) %>% 
   mutate(rel = ifelse(is.na(rel)==TRUE, 0, rel)) %>%
   distinct(year, state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
@@ -747,12 +777,12 @@ temp <- final %>%
   mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
   filter(diag == 1 & rel != 0) %>%
   group_by(diag) %>%
-  mutate(min_diag = min(rel)) %>% #minimum share same year within state migration
+  mutate(min_diag = min(rel)) %>% #minimum outflow share within the same year 
   ungroup()
-a <- temp$min_diag[1] #the share of within state migration (among migration flow share out of the state-sector) is the minimum among all US states in this year
+a <- temp$min_diag[1] 
 final <- final %>%
   mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0)) %>%
-  mutate(rel = ifelse(diag == 1 & rel == 0 , a, rel)) %>%
+  mutate(rel = ifelse(diag == 1 & rel == 0 , a, rel)) %>%  #since already fill in diag 0s, no changes make here
   group_by(year, state_ori, sector_ori) %>% #renormalizing
   mutate(tot_rel = sum(rel)) %>% 
   ungroup() %>%
@@ -1120,7 +1150,4 @@ mu_diag_99 <- mu_1999 %>%
   filter(sector_dest==sector_ori & state_dest==state_ori) %>%
   arrange(rel)
 hist(mu_diag_99$rel)
-
-
-
 ```
