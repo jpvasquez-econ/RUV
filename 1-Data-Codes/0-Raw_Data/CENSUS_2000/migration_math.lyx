@@ -570,5 +570,17 @@ The first term tells us how common it is in region
  
 \end_layout
 
+\begin_layout Standard
+Another suggestion (to combine CPS with ACS and IRS)
+\begin_inset Formula 
+\[
+L^{nj,ik}=\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n?,ik}}{\sum_{q}L_{ACS}^{n?,iq}}
+\]
+
+\end_inset
+
+
+\end_layout
+
 \end_body
 \end_document
