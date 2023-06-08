@@ -504,7 +504,9 @@ Check that
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Itemize
+
+\color red
 Leo's suggestion
 \end_layout
 
@@ -525,17 +527,151 @@ Note that it also satisfies
 \end_layout
 
 \begin_layout Standard
-New suggestion: 
+Some math on this suggestion:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-L^{nj,ik}=\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{\sum_{h}L_{CPS}^{ih,ik}}{\sum_{h}\sum_{q}L_{CPS}^{ih,iq}}
+L^{nj,ik}=L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i,i}}
 \]
 
 \end_inset
 
+
+\begin_inset Formula 
+\[
+\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\quad\forall n
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+My guess: given information set {n,j,i,k}, weird pattern will appear if
+ {n,j} or {i,k}is of no use in the similar expression above.
+ In the following cases, information from {i,k} is not used, thus creates
+ weird pattern.
+\end_layout
+
+\begin_layout Itemize
+
+\color red
+New suggestion: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+L^{nj,ik} & =\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{\sum_{h}L_{CPS}^{ih,ik}}{\sum_{h}\sum_{q}L_{CPS}^{ih,iq}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Some math on this suggestion:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\times L_{IRS}^{n,i}\times\frac{\sum_{j}L_{CPS}^{ij,ik}}{\sum_{j}\sum_{k}L_{CPS}^{ij,ik}}\\
+ & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{n,n}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{i\#,ik}}{L_{CPS}^{i,i}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Therefore, 
+\begin_inset Formula 
+\[
+\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Given destination state-sector, calculate the migration share from different
+ original state-sector, used to back out the migration flow in 1999 conditional
+ on the labour distribution in 2000:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+rel^{nj,ik} & =\frac{L^{nj,ik}}{\sum_{n}\sum_{j}L^{nj,ik}}=\frac{L^{nj,ik}}{L^{\#,ik}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Denote employment by state-sector in 2000 as 
+\begin_inset Formula $E_{2000}^{nj}$
+\end_inset
+
+, thus the migration flow in 1999 is calculated as follows:
+\begin_inset Formula 
+\[
+L_{1999}^{nj,ik}=\frac{L^{nj,ik}}{L^{\#,ik}}\times E_{2000}^{ik}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus, we have 
+\begin_inset Formula 
+\[
+\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}=\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Therefore, the migration share in 1999 is 
+\begin_inset Formula 
+\[
+share^{nj,ik}=\frac{L_{1999}^{nj,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus,
+\begin_inset Formula 
+\begin{align*}
+\frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
+ & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\times\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}=1
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 The first term tells us how common it is in region 
 \begin_inset Formula $n$
 \end_inset
@@ -570,12 +706,49 @@ The first term tells us how common it is in region
  
 \end_layout
 
-\begin_layout Standard
+\begin_layout Itemize
+
+\color red
 Another suggestion (to combine CPS with ACS and IRS)
+\color inherit
+
 \begin_inset Formula 
 \[
 L^{nj,ik}=\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n?,ik}}{\sum_{q}L_{ACS}^{n?,iq}}
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Some math on this suggestion:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n\#,ik}}{\sum_{k}L_{ACS}^{n\#,ik}}\\
+ & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{n,n}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
+ & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\times\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}=1
+\end{align*}
 
 \end_inset
 
