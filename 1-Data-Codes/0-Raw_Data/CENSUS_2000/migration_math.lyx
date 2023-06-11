@@ -638,7 +638,7 @@ L_{1999}^{nj,ik}=\frac{L^{nj,ik}}{L^{\#\#,ik}}\times E_{2000}^{ik}
 Thus, we have 
 \begin_inset Formula 
 \[
-\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}=\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k
+\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}=\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k\quad(*)
 \]
 
 \end_inset
@@ -659,7 +659,10 @@ share^{nj,ik}=\frac{L_{1999}^{nj,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}
 \end_layout
 
 \begin_layout Standard
-Thus,
+Thus
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
 \frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
@@ -694,6 +697,30 @@ Jose: I didn't understand how you go from
 
 ? I don't see a reason for the latter.
  
+\end_layout
+
+\begin_layout Plain Layout
+Leo: Because of (*), then we can have 
+\begin_inset Formula 
+\[
+\frac{L_{1999}^{nj,11}}{L_{1999}^{nm,11}}=\frac{L_{1999}^{nj,12}}{L_{1999}^{nm,12}}=\text{...}=\frac{L_{1999}^{nj,1K}}{L_{1999}^{nm,1K}}=\frac{L_{1999}^{nj,21}}{L_{1999}^{nm,21}}=...=\frac{L_{1999}^{nj,IK}}{L_{1999}^{nm,IK}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+Thus
+\begin_inset Formula 
+\[
+\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}=\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}
+\]
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
