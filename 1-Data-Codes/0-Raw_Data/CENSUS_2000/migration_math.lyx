@@ -610,7 +610,7 @@ Given destination state-sector, calculate the migration share from different
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-rel^{nj,ik} & =\frac{L^{nj,ik}}{\sum_{n}\sum_{j}L^{nj,ik}}=\frac{L^{nj,ik}}{L^{\#,ik}}
+rel^{nj,ik} & =\frac{L^{nj,ik}}{\sum_{n}\sum_{j}L^{nj,ik}}=\frac{L^{nj,ik}}{L^{\#\#,ik}}
 \end{align*}
 
 \end_inset
@@ -626,7 +626,7 @@ Denote employment by state-sector in 2000 as
 , thus the migration flow in 1999 is calculated as follows:
 \begin_inset Formula 
 \[
-L_{1999}^{nj,ik}=\frac{L^{nj,ik}}{L^{\#,ik}}\times E_{2000}^{ik}
+L_{1999}^{nj,ik}=\frac{L^{nj,ik}}{L^{\#\#,ik}}\times E_{2000}^{ik}
 \]
 
 \end_inset
@@ -665,6 +665,36 @@ Thus,
 \frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
  & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\times\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}=1
 \end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Jose: I didn't understand how you go from 
+\begin_inset Formula $\sum_{i}\sum_{k}L_{1999}^{nm,ik}$
+\end_inset
+
+ to 
+\begin_inset Formula $L_{CPS}^{nm,n\#}.$
+\end_inset
+
+ Shouldn't we have 
+\begin_inset Formula $\sum_{i}\sum_{k}L_{1999}^{nm,ik}=\sum_{i}\sum_{k}L_{1999}^{nm,ik}=L_{CPS}^{nm,\#\#}$
+\end_inset
+
+? Or is it that 
+\begin_inset Formula $\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}=\frac{L_{CPS}^{nm,\#\#}}{L_{CPS}^{nj,\#\#}}$
+\end_inset
+
+? I don't see a reason for the latter.
+ 
+\end_layout
 
 \end_inset
 
@@ -753,6 +783,84 @@ L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\tim
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Jose: my same doubt as in the note above applies.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+NEW: June 11th, 2023
+\end_layout
+
+\begin_layout Subsection
+Within the State
+\end_layout
+
+\begin_layout Standard
+Calculate the diagonal shares by state and sector: “stay-in” share = the
+ number of people stayed in state a sector b both in year t and t-1 / the
+ number of people stayed in state a sector b in year t-1.
+ Find the non-zero median “stay-in” share by aggregation of rolling window,
+ for example 20% by year and sector.
+ 
+\end_layout
+
+\begin_layout Standard
+Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
+ Alaska sector 10 = max{1 worker, outflow, stock} /0.8 * 0.2 (Q: 80% should
+ represent the flow in and out to Alaska sector 10, but it is possible there
+ are many missing values in terms inflows and outflows.
+ For example, for Alaska sector 10, only have one data point: inflow from
+ sector 13 to sector 10).
+ This will produce the new 
+\begin_inset Quotes eld
+\end_inset
+
+corrected
+\begin_inset Quotes erd
+\end_inset
+
+ CPS data
+\end_layout
+
+\begin_layout Standard
+Then we will have:
+\begin_inset Formula 
+\[
+L^{nj,nk}=L_{IRS}^{n,n}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in USA,\:\forall j,k
+\]
+
+\end_inset
+
+Note that 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,nk}=L_{IRS}^{n,n}$
+\end_inset
+
+ (so the total coincides at the movements within the state from IRS).
+ Also note that 
+\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$
+\end_inset
+
+ by construction.
+\end_layout
+
+\begin_layout Subsection
+Between States
+\end_layout
+
+\begin_layout Standard
+Note that this part is only relevant when the state of origin is different
+ from the state of destination.
 \end_layout
 
 \end_body
