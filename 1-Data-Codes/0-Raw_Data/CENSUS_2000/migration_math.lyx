@@ -886,8 +886,229 @@ Between States
 \end_layout
 
 \begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+Jose: Consider the 
+\begin_inset Quotes eld
+\end_inset
+
+original
+\begin_inset Quotes erd
+\end_inset
+
+ suggestion when 
+\begin_inset Formula $n\neq i$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+L^{nj,ik}=\sum_{q}L_{ACS}^{n\#,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}\quad\forall n,i\in US;\,\forall j,k
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+What is 
+\begin_inset Formula $\frac{share^{nj,ik}}{share^{nm,ik}}=\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}$
+\end_inset
+
+ in this case?
+\end_layout
+
+\begin_layout Plain Layout
+Some math on the suggestion:
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+L^{nj,ik}=L_{ACS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i\#,i\#}}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\quad\forall n,i,k
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\series bold
+Note that the condition above is the same as in Leo's suggestion.
+ But it is not the same as in the 
+\begin_inset Quotes eld
+\end_inset
+
+new suggestion
+\begin_inset Quotes erd
+\end_inset
+
+, where we get 
+\begin_inset Formula $\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k$
+\end_inset
+
+.
+ In the new suggestion, the distribution of flows depends on what happens
+ in the origin region, not in the destination.
+ I think this is the issue.
+\end_layout
+
+\begin_layout Plain Layout
+Given the way we back out the migration flow in 1999 conditional on the
+ labour distribution in 2000:
+\begin_inset Formula 
+\[
+L_{1999}^{nj,ik}=\frac{L^{nj,ik}}{L^{\#\#,ik}}\times E_{2000}^{ik}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+Thus, we have 
+\begin_inset Formula 
+\[
+\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}=\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\quad\forall i,k
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+Given the migration share 
+\begin_inset Formula 
+\[
+share^{nj,ik}=\frac{L_{1999}^{nj,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+We have
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{align*}
+\frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
+ & =\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\times\frac{L_{CPS}^{nm,\#\#}}{L_{CPS}^{nj,\#\#}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+Given we have 
+\begin_inset Formula $\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}=C\quad\forall i,k$
+\end_inset
+
+, then we have 
+\begin_inset Formula $C=\frac{\sum_{k}\sum_{i}L_{CPS}^{ij,ik}}{\sum_{k}\sum_{i}L_{CPS}^{im,ik}}=\frac{L_{CPS}^{ij,\#\#}}{L_{CPS}^{im,\#\#}}\neq\frac{L_{CPS}^{nm,\#\#}}{L_{CPS}^{nj,\#\#}}$
+\end_inset
+
+, so things don't cancel out.
+ This is why the original suggestion was not giving us the weird pattern.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 Note that this part is only relevant when the state of origin is different
  from the state of destination.
+ Consider the following suggestion when 
+\begin_inset Formula $n\neq i$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+L^{nj,ik}=\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Check that 
+\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
+\end_inset
+
+.
+ 
+\begin_inset Formula 
+\begin{align*}
+\sum_{k}\sum_{j}L^{nj,ik} & =\sum_{k}\sum_{j}\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\\
+ & =L_{IRS}^{n,i}\sum_{k}\left[\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\sum_{j}\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\right]\\
+ & =L_{IRS}^{n,i}\sum_{k}\left[\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\right]\\
+ & =L_{IRS}^{n,i}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Some math on this suggestion:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+L^{nj,ik} & =\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\\
+ & =\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i\#,ik}}
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i\#,ik}}}{\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{im,ik}}{L_{CPS}^{i\#,ik}}}=\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\quad\forall n,i,k
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
+ & =\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\times\frac{L_{CPS}^{nm,\#\#}}{L_{CPS}^{nj,\#\#}}\neq1
+\end{align*}
+
+\end_inset
+
+
 \end_layout
 
 \end_body
