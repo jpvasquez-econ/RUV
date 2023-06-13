@@ -151,7 +151,7 @@ quiet{
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		legend(off) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Regression specification: ADH${adh}" "Unit: Community Zone")
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Regression specification: ADH${adh}" "Unit: Commuting Zone")
 		
 		
 		graph export "results/figures/`outcome'_decadal_adh13.pdf", as(pdf) name("Graph") replace
@@ -327,7 +327,7 @@ quiet{
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Regression specification: ADH${adh}" "Unit: Community Zone") legend(row(1) order(1 "Beta" 2 "Baseline" 3 "Matilde"))
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Regression specification: ADH${adh}" "Unit: Commuting Zone") legend(row(1) order(1 "Beta" 2 "Baseline" 3 "Matilde"))
 		
 		graph export "$main/results/figures/`outcome'_models_coefs.pdf", as(pdf) name("Graph") replace
 

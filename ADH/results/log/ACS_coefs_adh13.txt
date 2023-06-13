@@ -7,7 +7,7 @@
             name:  <unnamed>
              log:  C:\Users\alove\Documents\GitHub\RUV\ADH\results/log/ACS_coefs_adh13.smcl
         log type:  smcl
-       opened on:  13 Jun 2023, 16:35:04
+       opened on:  13 Jun 2023, 16:50:55
       
      1 .         
      2 . 
