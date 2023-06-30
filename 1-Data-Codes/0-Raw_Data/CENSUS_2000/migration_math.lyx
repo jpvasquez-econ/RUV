@@ -980,5 +980,77 @@ Which is what we want for the term not to give a weird pattern.
 
 \end_layout
 
+\begin_layout Section
+NEW: Friday June 30th.
+ 
+\end_layout
+
+\begin_layout Standard
+We want to create the matrices but at the quarterly level instead of the
+ annual level.
+ Let's keep using upper case 
+\begin_inset Formula $L$
+\end_inset
+
+ for annual flows and cursive 
+\begin_inset Formula $\ell$
+\end_inset
+
+ to quarterly flows.
+ So, 
+\begin_inset Formula $L_{IRS}^{n,i}$
+\end_inset
+
+ are the annual flows from IRS.
+ Define the analogous quarterly flow 
+\begin_inset Formula $\ell_{IRS}^{n,i}=L_{IRS}^{n,i}/4$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+We then use CPS and ACS (which are quarterly) to compute a matrix of flows
+ at the quarterly level.
+ We will pool all quarters together (still using the rolling +-2 years).
+ We will keep observations of people who we observe from one quarter to
+ the next regardless of whether we observe them later in other quarters.
+ We then compute:
+\begin_inset Formula 
+\[
+\mu_{q}^{nj,ik}=\frac{\ell^{nj,ik}}{\sum_{p=1}^{N}\sum_{r=0}^{J}\ell^{nj,pr}}
+\]
+
+\end_inset
+
+using the same steps as in the previous section.
+ Denote 
+\begin_inset Formula $\mu_{q}$
+\end_inset
+
+ as the full matrix with entries 
+\begin_inset Formula $\mu_{q}^{nj,ik}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Then we compute the annual matrix 
+\begin_inset Formula $\mu$
+\end_inset
+
+ as the matrix multiplication of the quarterly-level matrix:
+\begin_inset Formula 
+\[
+\mu_{t}=\mu_{q}*\mu_{q}*\mu_{q}*\mu_{q}
+\]
+
+\end_inset
+
+
+\end_layout
+
 \end_body
 \end_document
