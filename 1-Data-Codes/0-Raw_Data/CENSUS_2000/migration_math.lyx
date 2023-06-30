@@ -376,18 +376,6 @@ Ref 2 said: "The authors use CPS and ACS data to assess sectoral and regional
 
 \begin_layout Standard
 IRS has flows between states but not information about the sector.
- We will assume
-\end_layout
-
-\begin_layout Enumerate
-that the probability of arriving to a destination sector is proportional
- to the importance of that sector in the destination according to CPS.
- 
-\end_layout
-
-\begin_layout Enumerate
-that the probability of departing from an origin sector is proportional
- to the importance of that sector in the origin according to CPS.
  
 \end_layout
 
@@ -396,28 +384,32 @@ Within the State (same as before but adjusting diagonals differently)
 \end_layout
 
 \begin_layout Standard
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
 *****
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 
 \series bold
 Zeros in diagonals:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Calculate the diagonal shares by state and sector: “stay-in” share = the
  number of people stayed in state a sector b both in year t and t-1 / the
  number of people stayed in state a sector b in year t-1 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Find the non-zero median “stay-in” share by aggregation of rolling window,
  for example 20% by year and sector.
  
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
  Alaska sector 10 = max{1 worker, outflow, stock} /0.8 * 0.2 (Q: 80% should
  represent the flow in and out to Alaska sector 10, but it is possible there
@@ -426,7 +418,7 @@ Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
  sector 13 to sector 10).
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 This will produce the new 
 \begin_inset Quotes eld
 \end_inset
@@ -438,8 +430,13 @@ corrected
  CPS data
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 *****
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -464,8 +461,7 @@ Note that
 \begin_inset Formula $\sum_{k}\sum_{j}L^{nj,nk}=L_{IRS}^{n,n}$
 \end_inset
 
- (so the total coincides at the movements within the state regardless of
- the sector but not necessarily sector-by-sector).
+.
  Also note that 
 \begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$
 \end_inset
@@ -474,10 +470,14 @@ Note that
 \end_layout
 
 \begin_layout Subsection
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Subsection
 Between States
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 We use 
 \begin_inset Formula 
 \[
@@ -510,7 +510,7 @@ Check that
 Leo's suggestion
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
 L^{nj,ik} & =L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}
@@ -526,11 +526,11 @@ Note that it also satisfies
  
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Some math on this suggestion:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \[
 L^{nj,ik}=L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i,i}}
@@ -549,7 +549,7 @@ L^{nj,ik}=L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i,i}}
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 My guess: given information set {n,j,i,k}, weird pattern will appear if
  {n,j} or {i,k}is of no use in the similar expression above.
  In the following cases, information from {i,k} is not used, thus creates
@@ -562,7 +562,7 @@ My guess: given information set {n,j,i,k}, weird pattern will appear if
 New suggestion: 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
 L^{nj,ik} & =\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{\sum_{h}L_{CPS}^{ih,ik}}{\sum_{h}\sum_{q}L_{CPS}^{ih,iq}}
@@ -573,11 +573,11 @@ L^{nj,ik} & =\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\tim
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Some math on this suggestion:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
 L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\times L_{IRS}^{n,i}\times\frac{\sum_{j}L_{CPS}^{ij,ik}}{\sum_{j}\sum_{k}L_{CPS}^{ij,ik}}\\
@@ -589,7 +589,7 @@ L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\tim
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Therefore, 
 \begin_inset Formula 
 \[
@@ -601,13 +601,13 @@ Therefore,
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Given destination state-sector, calculate the migration share from different
  original state-sector, used to back out the migration flow in 1999 conditional
  on the labour distribution in 2000:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
 rel^{nj,ik} & =\frac{L^{nj,ik}}{\sum_{n}\sum_{j}L^{nj,ik}}=\frac{L^{nj,ik}}{L^{\#\#,ik}}
@@ -618,7 +618,7 @@ rel^{nj,ik} & =\frac{L^{nj,ik}}{\sum_{n}\sum_{j}L^{nj,ik}}=\frac{L^{nj,ik}}{L^{\
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Denote employment by state-sector in 2000 as 
 \begin_inset Formula $E_{2000}^{nj}$
 \end_inset
@@ -634,7 +634,7 @@ L_{1999}^{nj,ik}=\frac{L^{nj,ik}}{L^{\#\#,ik}}\times E_{2000}^{ik}
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Thus, we have 
 \begin_inset Formula 
 \[
@@ -646,7 +646,7 @@ Thus, we have
  
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Therefore, the migration share in 1999 is 
 \begin_inset Formula 
 \[
@@ -658,11 +658,11 @@ share^{nj,ik}=\frac{L_{1999}^{nj,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Thus
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
 \frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
@@ -674,7 +674,7 @@ Thus
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Note Note
 status open
 
@@ -696,7 +696,6 @@ Jose: I didn't understand how you go from
 \end_inset
 
 ? I don't see a reason for the latter.
- 
 \end_layout
 
 \begin_layout Plain Layout
@@ -728,7 +727,7 @@ Thus
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 The first term tells us how common it is in region 
 \begin_inset Formula $n$
 \end_inset
@@ -779,11 +778,11 @@ L^{nj,ik}=\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times 
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Some math on this suggestion:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
 L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n\#,ik}}{\sum_{k}L_{ACS}^{n\#,ik}}\\
@@ -812,12 +811,17 @@ L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\tim
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Note Note
 status open
 
 \begin_layout Plain Layout
 Jose: my same doubt as in the note above applies.
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -834,6 +838,10 @@ Within the State
 \end_layout
 
 \begin_layout Standard
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
 Calculate the diagonal shares by state and sector: “stay-in” share = the
  number of people stayed in state a sector b both in year t and t-1 / the
  number of people stayed in state a sector b in year t-1.
@@ -842,7 +850,7 @@ Calculate the diagonal shares by state and sector: “stay-in” share = the
  
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
  Alaska sector 10 = max{1 worker, outflow, stock} /0.8 * 0.2 (Q: 80% should
  represent the flow in and out to Alaska sector 10, but it is possible there
@@ -860,8 +868,13 @@ corrected
  CPS data
 \end_layout
 
-\begin_layout Standard
-Then we will have:
+\begin_layout Plain Layout
+Then 
+\end_layout
+
+\end_inset
+
+we will have:
 \begin_inset Formula 
 \[
 L^{nj,nk}=L_{IRS}^{n,n}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in USA,\:\forall j,k
@@ -888,17 +901,13 @@ Between States
 \begin_layout Standard
 Note that this part is only relevant when the state of origin is different
  from the state of destination.
- Consider the following suggestion when 
-\begin_inset Formula $n\neq i$
-\end_inset
-
-.
+ 
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-L^{nj,ik}=\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}
+L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}
 \]
 
 \end_inset
@@ -927,6 +936,10 @@ Check that
 \end_layout
 
 \begin_layout Standard
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
 Note that you can write 
 \begin_inset Formula $L^{nj,ik}$
 \end_inset
@@ -934,7 +947,7 @@ Note that you can write
  as:
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Formula 
 \begin{align*}
 L^{nj,ik} & =\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\\
@@ -946,7 +959,7 @@ L^{nj,ik} & =\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\times L_{IRS}^{n,
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Therefore you have:
 \begin_inset Formula 
 \[
@@ -958,8 +971,13 @@ Therefore you have:
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Which is what we want for the term not to give a weird pattern.
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_body
