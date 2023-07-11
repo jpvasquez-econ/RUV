@@ -18,6 +18,9 @@ We used ACS 1 year samples to replicate the ADH13 regression for the 2006-2020 p
 
 -   **Jo_state_level_dnwr.dta**: dataset provided by Ms. Yoon Joo Jo from her paper "Establishing downward nominal wage rigidity through cyclical changes in the wage distribution" (2022)
 
+-   **local_cpi_panel.dta**: dataset from the replication package of “Tax Cuts for Whom? Heterogeneous Effects of Tax Changes on Growth and Employment.” Journal of Political Economy 127.3 (2019): 1437–1472. Available in Owen Zidar's [website](https://zidar.princeton.edu/publications). Once the zip file is downloaded, search the file in "data/prices/cpi_local"
+
+
 # Codes
 
 -   **1-ipums_acs.do** This dofile takes as an input the pooled 2005-2021 ACS 1-year samples, subsets 3-year samples, creates intermediate variables, and then merges the information to ADH2013's dataset workfile_china.dta.
@@ -28,8 +31,8 @@ We used ACS 1 year samples to replicate the ADH13 regression for the 2006-2020 p
 
 -   **4-yjj_rigidity_measures.do:** creates year-over-year wage changes rigidity measures from the CPS database of Joo-Jo,Y.(2022). Variables were constructed using the period from 1997 to 2000.
 
--   **5-dnwr_figures.do:** creates and saves the figures for the rigidity measures coefficient graphs.
+-   **5-dnwr_figures.do:** creates and saves the figures for the rigidity measures and local CPI coefficient graphs.
 
--   **6-dnwr_tables.do:** creates and saves the tables of the rigidity measures pdf file.
+-   **6-dnwr_tables.do:** creates and saves the coefficent tables of the rigidity measures and local CPI regressions. 
 
 -   **subfile_ind1990dd:** This dofile was taken from David Dorn's data [webpage](https://www.ddorn.net/data.htm). It recodes the ind1990 variable into ind1990dd. This crosswalk code helps replicate the classification of employment into manufacture and non-manufacture.

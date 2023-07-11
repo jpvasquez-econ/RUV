@@ -38,7 +38,7 @@ cd $main
 * This dataset has pooled ACS data from 2005 to 2021 for people with ages betweeen 16 and 64
 
 quiet{
-forval yr = 2005(1)2021 { 
+forval yr = 2005(1)2019 { 
 
 use raw_data/ipums_2005_2021.dta, clear
 global yr `yr'
