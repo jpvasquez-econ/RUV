@@ -45,7 +45,7 @@ gen nonzero = pdlhwneg + pdlhwpos
 ****
 **** wage changes (observations/nonzero/negative) and collapse by statefip code
 **** 
-		collapse (sum) N_total=dlhwn total_neg=pdlhwneg total_nonzero=nonzero, by(statefip)
+		collapse (sum) N_total=dlhwn total_neg=pdlhwneg total_nonzero=nonzero pos = pdlhwpos, by(statefip)
 
 ****
 **** creation of rigidity measures describe in ReadMe file
@@ -53,9 +53,12 @@ gen nonzero = pdlhwneg + pdlhwpos
 gen dnwr_yjj = 100* total_neg / N_total 
 gen dnwr_nonzero_yjj = 100* total_neg / total_nonzero
 gen zero = (N_total - total_nonzero)
+gen zeropos = 100 * (zero/(pos+zero))
+gen zeroall = 100 * (zero/N_total)
+gen zeroneg = 100 * (zero/total_neg)
 
 
-		foreach i of varlist dnwr_yjj dnwr_nonzero_yjj {
+		foreach i of varlist dnwr_yjj dnwr_nonzero_yjj zeropos zeroall zeroneg {
 		qui sum `i', detail
 		global p50 = r(p50)
 		global mean = r(mean)

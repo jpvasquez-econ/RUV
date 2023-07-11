@@ -1,4 +1,15 @@
-*
+/*
+"Trade with Nominal Rigidities: Understanding the unemployment and welfare effects of the China Shock" 
+Rodriguez-Clare, A., Ulate, M., Vasquez, J.P.
+
+Author: Alonso Venegas
+General information: Data cleaning of CPS 86-90 and rigidity measures 
+Inputs
+	1. cps_86_90
+	2. morg`i'.dta
+Ouputs:
+	1. cps1990_rigmeasures
+*/
 
 
 clear
@@ -20,7 +31,7 @@ if $alonso == 0{
 cd $main
 
 forvalue i = 86/90 {
-
+	 global i `i'
      tempfile temp`i'
 	 use "raw_data/morg`i'", clear
 	 destring hhid, replace
@@ -30,9 +41,9 @@ forvalue i = 86/90 {
 	 rename (month hrhhid) (intmonth hhid)
 	 * we drop people not in the universe of hourly wages
 	 drop if inlist(hourwage,999.99) 
-	 keep if year == 19`i'
+	 keep if year == 19${i}
 	 * we merge the Outgoing Rotation Groups of CPS to obtain allocation flag of hourly wages (following Joo-Jo, Y.(2022))
-	 merge 1:m year intmont hhid lineno using "raw_data/morg`i'", update keepusing(I25c I25b) keep(3) 
+	 merge 1:m year intmont hhid lineno using "raw_data/morg${i}", update keepusing(I25c I25b)  keep(3)
 	 * we drop imputed wages and paid by hour dummy 
 	 keep if I25c == 0 & I25b == 0
 	 tab I25c I25b
@@ -72,6 +83,9 @@ forvalue i = 86/90 {
 gen total_nonzero = total_pos + total_neg
 gen dnwr_yjj = 100 * total_neg / N_total 
 gen dnwr_nonzero_yjj = 100 * total_neg / total_nonzero
+gen zeropos = 100 * (zero/(total_pos+zero))
+gen zeroall = 100 * (zero/N_total)
+gen zeroneg = 100 * (zero/total_neg)
 
 		foreach i of varlist dnwr_yjj dnwr_nonzero_yjj  {
 		qui sum `i', detail

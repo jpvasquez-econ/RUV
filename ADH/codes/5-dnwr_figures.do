@@ -5,7 +5,6 @@ Date: 18 Nov 2022
 General information: Recreated econometric analysis for each year and creates coefficient graphs with interaction of downward wage rigidity measures. Changes in emp/pop outcomes are in decadal changes. 
 Unit of analysis are define in globals: Statefip (48 obs per year x 2 periods) or Community Zones (722 obs per year x 2 periods). 
 */
-
 clear
 clear all
 macro drop _all
@@ -15,6 +14,7 @@ set matsize 1000
 
 * Directories
 global alonso = 1 // directory
+
 ************************************************************************
 
 if $alonso == 1 {
@@ -32,6 +32,282 @@ if $alonso == 0  {
 	
 ************************************************************************
 cd $main
+
+
+************************************************************************
+************************************************************************
+*                           DEFINE PROGRAMS
+************************************************************************
+************************************************************************
+program cpi_data
+
+* PREPARE INFLATION DATA BY STATE
+	use "raw_data/local_cpi_panel.dta", clear
+	rename (fips_state year) (statefip yr)
+	* adj factor for 10 year equivalent changes
+	gen adj = 1
+	replace adj = 10/(yr - 2000) if yr > 2000
+	* 2000 cpi inflation
+	bys statefip (yr): gen cpi2000 = cpi_final[3]
+	bys statefip (yr): gen d_cpi = cpi_final - cpi_final[_n-1]
+	replace d_cpi = cpi_final - cpi2000 if yr >= 2001
+	replace d_cpi = d_cpi*adj
+	drop if yr == 1980
+	by statefip (yr): gen d_cpi1990 = d_cpi[1]
+	by statefip (yr): gen d_cpi_lag = d_cpi[2]
+	replace d_cpi_lag = d_cpi1990 if yr == 2000
+	drop if yr == 1990
+	* keep vars
+	keep yr statefip d_cpi d_cpi_lag
+	* above/below mean variations
+	
+	foreach var in d_cpi d_cpi_lag {
+	forval yr = 2000(1)2015 {
+	qui sum `var' if yr == `yr', det
+	cap gen `var'_dmy = (`var'>`r(mean)') if yr == `yr'
+	replace `var'_dmy = (`var'>`r(mean)') if yr == `yr'
+	}
+	}
+	
+	
+	* merge key 
+	gen year = yr
+	save temp/cpi_state_4unempl, replace
+
+end
+
+
+
+program dnwr_figures
+
+	foreach outcome in unempl {	
+	* logfile
+	cap log close
+ 	log using "$log"
+	
+	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
+	
+	* create interaction with rigidity measure and trade shock
+	capture drop inter_*
+    capture gen inter_rigidity = (d_tradeusch_pw * `rig_measure')
+    capture gen inter_rigidity_iv = (d_tradeotch_pw_lag * `rig_measure')
+	
+	global estimates
+	global estimates2
+	forvalues i = 2006(1)2020 {
+
+	* here we estimate the main regressions of adh13 for each outcome
+	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (d_tradeusch_pw inter_rigidity = d_tradeotch_pw_lag inter_rigidity_iv) [aw=timepwt48] $cluster
+
+		global b_mp_2000_`i' = _b[d_tradeusch_pw]
+		global se_mp_2000_`i' = _se[d_tradeusch_pw]
+		global b_rm_2000_`i' = _b[inter_rigidity]
+		global se_rm_2000_`i' = _se[inter_rigidity]
+		global estimates "${estimates} mp_2000_`i'"
+		global estimates2 "${estimates2} rm_2000_`i'"
+
+}
+
+ * display coefficientes for log file
+	noi dis "Coefficients for `outcome' variable with `rig_measure' interaction"
+	noi dis "${`rig_measure'}"
+	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , ar2 nocon keep(d_tradeusch_pw inter_rigidity)
+	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, ar2 nocon keep(d_tradeusch_pw inter_rigidity)
+		
+		***
+		*** creates graph
+		***
+		quiet{
+	preserve
+	clear 
+	local k : word count ${estimates}
+	set obs `k'
+	gen estimate = ""
+	gen b = . // coefficient of trade shock
+	gen se = . // se of coefficient
+	gen b_rm = . //intersection
+	gen se_rm = . // se of intersectino coefficient
+	
+	local count 1
+	foreach est in  $estimates {
+		replace estimate = "`est'"		if _n == `count'
+		replace b		 = ${b_`est'}	if _n == `count'
+		replace se		 = ${se_`est'}	if _n == `count'
+		local count		 = `count' + 1
+	}
+	
+	local count 1
+	foreach est in $estimates2 {
+		replace b_rm		 = ${b_`est'}	if _n == `count'
+		replace se_rm		 = ${se_`est'}	if _n == `count'
+		local count		 = `count' + 1
+	}
+	
+	
+	gen ub = b + invnormal(0.975)*se // upper bound of 95% CI
+	gen lb = b - invnormal(0.975)*se // lower bound of 95% CI
+	gen ub_rm = b_rm + invnormal(0.975)*se_rm // upper bound of 95% CI
+	gen lb_rm = b_rm - invnormal(0.975)*se_rm // lower bound of 95% CI
+	gen z = substr(estimate,-4,4) // year variable
+	destring z, replace
+	qui sum z
+
+	* x axis labels
+		foreach x in 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 {
+			local xlabline `xlabline' 20`x' `"`x'"'
+		}
+		
+	global pos = ${b_mp_2000_2007} + (${b_mp_2000_2007}/2)
+	local marker : display %9.3f ${b_mp_2000_2007}
+	
+	
+	* coeffplots	
+	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
+		(rarea lb ub z , vertical col(navy%10)) /// 
+		|| (connected b_rm z, mcolor(cranberry) msymbol (O) lcolor(red%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(red%10)) ///
+		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
+		xline(2007, lpattern(dash) lcolor(red)) ///
+		legend(order(1 "Trade shock" 3 "Interaction")) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
+
+		
+	graph export "$outputs/figures/`rig_measure'_${unit}.pdf", as(pdf) name("Graph") replace
+
+	restore
+	} //quiet
+
+	global count = ${count} + 1
+  } //rigidity measures
+  
+	cap log close 
+	capture translate "$log.smcl" "$log.txt", 	replace linesize(250)
+	capture erase "$log.smcl"
+  
+  
+} //outcomes
+
+end 
+
+program cpi_figures 
+	
+	drop if yr > 2015
+	foreach outcome in unempl {	
+	* logfile
+	cap log close
+ 	log using "$log"
+	
+	foreach rig_measure of varlist d_cpi d_cpi_lag d_cpi_dmy d_cpi_lag_dmy {
+	
+	* create interaction with rigidity measure and trade shock
+	capture drop inter_*
+    capture gen inter_rigidity = (d_tradeusch_pw * `rig_measure')
+    capture gen inter_rigidity_iv = (d_tradeotch_pw_lag * `rig_measure')
+	
+	global estimates
+	global estimates2
+	forvalues i = 2006(1)2015 {
+
+	* here we estimate the main regressions of adh13 for each outcome
+	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (d_tradeusch_pw inter_rigidity = d_tradeotch_pw_lag inter_rigidity_iv) [aw=timepwt48] $cluster
+
+		global b_mp_2000_`i' = _b[d_tradeusch_pw]
+		global se_mp_2000_`i' = _se[d_tradeusch_pw]
+		global b_rm_2000_`i' = _b[inter_rigidity]
+		global se_rm_2000_`i' = _se[inter_rigidity]
+		global estimates "${estimates} mp_2000_`i'"
+		global estimates2 "${estimates2} rm_2000_`i'"
+
+}
+
+ * display coefficientes for log file
+	noi dis "Coefficients for `outcome' variable with `rig_measure' interaction"
+	noi dis "${`rig_measure'}"
+	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 , ar2 nocon keep(d_tradeusch_pw inter_rigidity)
+	noi esttab mp_2000_2011 mp_2000_2012 mp_2000_2013  mp_2000_2014 mp_2000_2015, ar2 nocon keep(d_tradeusch_pw inter_rigidity)
+		
+		***
+		*** creates graph
+		***
+		quiet{
+	preserve
+	clear 
+	local k : word count ${estimates}
+	set obs `k'
+	gen estimate = ""
+	gen b = . // coefficient of trade shock
+	gen se = . // se of coefficient
+	gen b_rm = . //intersection
+	gen se_rm = . // se of intersectino coefficient
+	
+	local count 1
+	foreach est in  $estimates {
+		replace estimate = "`est'"		if _n == `count'
+		replace b		 = ${b_`est'}	if _n == `count'
+		replace se		 = ${se_`est'}	if _n == `count'
+		local count		 = `count' + 1
+	}
+	
+	local count 1
+	foreach est in $estimates2 {
+		replace b_rm		 = ${b_`est'}	if _n == `count'
+		replace se_rm		 = ${se_`est'}	if _n == `count'
+		local count		 = `count' + 1
+	}
+	
+	
+	gen ub = b + invnormal(0.975)*se // upper bound of 95% CI
+	gen lb = b - invnormal(0.975)*se // lower bound of 95% CI
+	gen ub_rm = b_rm + invnormal(0.975)*se_rm // upper bound of 95% CI
+	gen lb_rm = b_rm - invnormal(0.975)*se_rm // lower bound of 95% CI
+	gen z = substr(estimate,-4,4) // year variable
+	destring z, replace
+	qui sum z
+
+	* x axis labels
+		foreach x in 06 07 08 09 10 11 12 13 14 15 {
+			local xlabline `xlabline' 20`x' `"`x'"'
+		}
+		
+	global pos = ${b_mp_2000_2007} + (${b_mp_2000_2007}/2)
+	local marker : display %9.3f ${b_mp_2000_2007}
+	
+	
+	* coeffplots	
+	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
+		(rarea lb ub z , vertical col(navy%10)) /// 
+		|| (connected b_rm z, mcolor(cranberry) msymbol (O) lcolor(red%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(red%10)) ///
+		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
+		xline(2007, lpattern(dash) lcolor(red)) ///
+		legend(order(1 "Trade shock" 3 "Interaction")) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Specification: ADH13 with CPI interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
+
+		
+	graph export "$outputs/figures/`rig_measure'_${unit}.pdf", as(pdf) name("Graph") replace
+
+	restore
+	} //quiet
+
+	global count = ${count} + 1
+  } //rigidity measures
+  
+	cap log close 
+	capture translate "$log.smcl" "$log.txt", 	replace linesize(250)
+	capture erase "$log.smcl"
+  
+  
+} //outcomes
+
+end
+
+
+
+************************************************************************
+************************************************************************
+*         RUN MAIN ITERATIONS OVER CZ AND STATE LEVEL REGRESSIONS
+************************************************************************
+************************************************************************
+* PREPARE CPI DATA
+cpi_data
 
 forval j = 1/2 {  //unit of analysis (state or CZs)
 
@@ -102,6 +378,7 @@ use temp/workfile_china_RUV.dta, clear
 * crete dummy for second period
 	gen t2 = (yr>2000)
 	
+	
 	*save data for log files (tables)
 	preserve
 	keep if inlist(yr,2000,2007)
@@ -110,10 +387,9 @@ use temp/workfile_china_RUV.dta, clear
 	rename d_sh_unempl_2007 d_sh_unempl
 	drop d_sh_unempl_*
 	save temp/state_workfile_china, replace
-	
 	restore
-	
-	
+		
+
 	}
 
 	
@@ -153,6 +429,9 @@ use temp/workfile_china_RUV.dta, clear
 		replace d_sh_unempl_`year' = d_sh_unempl if yr == 2000 
 		} 
 	} //year
+
+	
+	
 } // if
 
 
@@ -179,6 +458,8 @@ restore
 		merge m:1 statefip yr using"temp/cps1990_rigmeasures.dta", update replace 
 		drop if _merge == 2
 		drop _merge
+			* Add data on inflation by state
+		merge m:1 statefip year using "temp/cpi_state_4unempl", nogen keep(1 3)
 		
 		
 * RIGHT TO WORK DUMMY BY YEAR
@@ -208,117 +489,14 @@ order dnwr_yjj dnwr_nonzero_yjj r2w
 *** create estimates and coef graphs
 ***
 
-global count 1
+ *  Rigidity Measures Interaction Graphs
+dnwr_figures
 
-	foreach outcome in unempl {	
-	* logfile
-	cap log close
- 	log using "$log"
-	
-	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2  {
-	
-	* create interaction with rigidity measure and trade shock
-	capture drop inter_*
-    capture gen inter_rigidity = (d_tradeusch_pw * `rig_measure')
-    capture gen inter_rigidity_iv = (d_tradeotch_pw_lag * `rig_measure')
-	
-	global estimates
-	global estimates2
-	forvalues i = 2006(1)2020 {
-
-	* here we estimate the main regressions of adh13 for each outcome
-	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (d_tradeusch_pw inter_rigidity = d_tradeotch_pw_lag inter_rigidity_iv) [aw=timepwt48] $cluster
-
-		global b_mp_2000_`i' = _b[d_tradeusch_pw]
-		global se_mp_2000_`i' = _se[d_tradeusch_pw]
-		global b_rm_2000_`i' = _b[inter_rigidity]
-		global se_rm_2000_`i' = _se[inter_rigidity]
-		global estimates "${estimates} mp_2000_`i'"
-		global estimates2 "${estimates2} rm_2000_`i'"
+ * CPI Interaction Graphs
+cpi_figures
 
 }
-
- * display coefficientes for log file
-	noi dis "Coefficients for `outcome' variable with `rig_measure' interaction"
-	noi dis "${`rig_measure'}"
-	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , ar2 nocon keep(d_tradeusch_pw inter_rigidity)
-	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, ar2 nocon keep(d_tradeusch_pw inter_rigidity)
-	
-		***
-		*** creates graph
-		***
-		quiet{
-	preserve
-	clear 
-	local k : word count ${estimates}
-	set obs `k'
-	gen estimate = ""
-	gen b = . // coefficient of trade shock
-	gen se = . // se of coefficient
-	gen b_rm = . //intersection
-	gen se_rm = . // se of intersectino coefficient
-	
-	local count 1
-	foreach est in  $estimates {
-		replace estimate = "`est'"		if _n == `count'
-		replace b		 = ${b_`est'}	if _n == `count'
-		replace se		 = ${se_`est'}	if _n == `count'
-		local count		 = `count' + 1
-	}
-	
-	local count 1
-	foreach est in $estimates2 {
-		replace b_rm		 = ${b_`est'}	if _n == `count'
-		replace se_rm		 = ${se_`est'}	if _n == `count'
-		local count		 = `count' + 1
-	}
-	
-	
-	gen ub = b + invnormal(0.975)*se // upper bound of 95% CI
-	gen lb = b - invnormal(0.975)*se // lower bound of 95% CI
-	gen ub_rm = b_rm + invnormal(0.975)*se_rm // upper bound of 95% CI
-	gen lb_rm = b_rm - invnormal(0.975)*se_rm // lower bound of 95% CI
-	gen z = substr(estimate,-4,4) // year variable
-	destring z, replace
-	qui sum z
-
-	* x axis labels
-		foreach x in 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 {
-			local xlabline `xlabline' 20`x' `"`x'"'
-		}
-	global pos = ${b_mp_2000_2007} + 0.05
-	local marker : display %9.3f ${b_mp_2000_2007}
-	
-	
-	* coeffplots	
-	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
-		(rarea lb ub z , vertical col(navy%10)) /// 
-		|| (connected b_rm z, mcolor(cranberry) msymbol (O) lcolor(red%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(red%10)) ///
-		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
-		xline(2007, lpattern(dash) lcolor(red)) ///
-		legend(order(1 "Trade shock" 3 "Interaction with DNWR")) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("RM: ${`rig_measure'}", size(*0.65)) 
-
-		
-	graph export "$outputs/figures/`rig_measure'_${unit}.pdf", as(pdf) name("Graph") replace
-
-	restore
-	} //quiet
-
-	global count = ${count} + 1
-  } //rigidity measures
-  
-	cap log close 
-	capture translate "$log.smcl" "$log.txt", 	replace linesize(250)
-	capture erase "$log.smcl"
-  
-  
-} //outcomes
-
-} // unit
 
 *-----------------------------------------------------------------------------
 * end of dofile
 *-----------------------------------------------------------------------------
-
-		

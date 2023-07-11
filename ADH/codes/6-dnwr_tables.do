@@ -30,6 +30,10 @@ if `i' == 1 {
 	use "temp/state_workfile_china.dta", clear
 	global unit st
 	tempfile temp1
+	rename yr year
+	gen yr = 1990 if year == 2000
+	replace yr = 2000 if year > 2000
+	
 	}
 	else{
 	use "raw_data/workfile_china.dta", clear
@@ -37,19 +41,21 @@ if `i' == 1 {
 	}
 
 ***	
-*** Rigidity measures from Right-to-work and CPS
+*** Rigidity measures from Right-to-work and CPS || CPI data at the state level
 ***
-		rename yr year
-		gen yr = 1990 if year == 2000
-		replace yr = 2000 if year > 2000
 		* right-to-work laws
 		merge m:1 statefip using "raw_data/right2work.dta" , nogen
 		* CPS rigidity measures for 2000 from Joo-Jo,Y.(2022)
 		merge m:1 statefip yr using "temp/Jo_state_level_dnwr_proc.dta", nogen keep(1 3)
 		* CPS rigidity measures for 1990 (constructed)
-		merge m:1 statefip yr using"temp/cps1990_rigmeasures.dta", update replace 
+		merge m:1 statefip yr using "temp/cps1990_rigmeasures.dta", update replace 
 		drop if _merge == 2
 		drop _merge
+		* Add data on inflation by state
+		replace yr = 2007 if yr == 2000
+		replace yr = 2000 if yr == 1990
+		
+		merge m:1 statefip yr using "temp/cpi_state_4unempl", nogen keep(1 3)
 		
 		
 * RIGHT TO WORK DUMMY BY YEAR
@@ -113,7 +119,7 @@ global tab = 1
 
 quiet{
 
-foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2  {
+foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 d_cpi d_cpi_dmy d_cpi_lag d_cpi_lag_dmy  {
 
 global rig_measure `rig_measure'
 capture drop inter_*
@@ -161,7 +167,7 @@ estimates store reg8
 restore
 
 	noi display "Dependent variable: ${dep_d_sh_unempl}  All education levels. Full controls"
-	noi display "Column 1 is ADH replic. Column 2 adds regidity interaction (no IV for interaction). Column 3 with IV for interaction"
+	noi display "Column 1 is ADH replic. Column 2 adds interaction (no IV for interaction). Column 3 with IV for interaction"
 	noi dis "Regression uses variable `rig_measure' as rigidity measure (see def in next line)"
 	noi dis "${`rig_measure'}"
 

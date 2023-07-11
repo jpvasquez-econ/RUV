@@ -38,9 +38,9 @@ cd $main
 * This dataset has pooled ACS data from 2005 to 2021 for people with ages betweeen 16 and 64
 
 quiet{
-forval yr = 2005(1)2019 { 
+forval yr = 2005(1)2021 { 
 
-use ipums_2005_2021.dta, clear
+use raw_data/ipums_2005_2021.dta, clear
 global yr `yr'
 global y1 = ${yr} 
 global y2 = ${yr} + 1
@@ -62,8 +62,8 @@ gen empl = (empstat==1)
 gen unempl = (empstat==2)
 gen nilf = (empstat==3)
 
-
-* Define employment in manufacturing using ind1990dd (David Dorn Webpage)
+* 
+* Define employment in manufacturing using ind1990dd (David Dorn Webpage, https://www.ddorn.net/data.htm, [C9] pdf file)
 gen mfg = 0
 replace mfg = 1 if inrange(ind1990dd,100,122) & empl == 1 //employ in manuf
 replace mfg = 1 if ind1990dd == 130 & empl == 1 //employ in manuf
@@ -82,21 +82,9 @@ replace mfg = 1 if inrange(ind1990dd,310,342) & empl == 1 //employ in manuf
 replace mfg = 1 if inrange(ind1990dd,351,372) & empl == 1 //employ in manuf
 replace mfg = 1 if inrange(ind1990dd,390,392) & empl == 1 //employ in manuf
 
-/* Labor supply
-rename (wkswork1 uhrswork) (wkw wkhp)
-
-replace wkhp = . if wkhp == 0 
-replace wkw = . if wkw == 0
-gen labsup = wkw * wkhp
-egen g1 = group(educ occ)
-bys g1: egen ls_g1  = mean(labsup)
-bys educ: egen ls_schl = mean(labsup)
-replace labsup = ls_g1 if labsup == .
-replace labsup = ls_schl if labsup == .
-replace labsup = 1 if empl == 0
-*/
 
 * Define PUMA codes for merging with PUMA-to-CZ crosswalk
+* Check https://www.ddorn.net/data.htm, [E5] and [E6] ReadMe files on the crosswalk implementation and reweighting
 	
 	if ${y3} <= 2011 {
 	
@@ -107,7 +95,7 @@ replace labsup = 1 if empl == 0
 		replace puma = "0" + puma if length == 3
 		gen puma2000 = st + puma
 		destring puma2000, replace
-		joinby puma2000 using cw_puma2000_czone.dta
+		joinby puma2000 using raw_data/cw_puma2000_czone.dta
 		
 	}
 	
@@ -124,8 +112,8 @@ replace labsup = 1 if empl == 0
 		gen puma2010 = st + puma if year >= 2012
 		destring puma2000 puma2010, replace
 		
-		joinby puma2000 using cw_puma2000_czone.dta, unm(master) _merge(m2)
-		joinby puma2010 using cw_puma2010_czone.dta, unm(master) _merge(m1) update
+		joinby puma2000 using raw_data/cw_puma2000_czone.dta, unm(master) _merge(m2)
+		joinby puma2010 using raw_data/cw_puma2010_czone.dta, unm(master) _merge(m1) update
 	
 		
 	}
@@ -140,14 +128,14 @@ replace labsup = 1 if empl == 0
 		replace puma = "0" + puma if length == 4
 		gen puma2010 = st + puma
 		destring puma2010, replace
-		joinby puma2010 using cw_puma2010_czone.dta
+		joinby puma2010 using raw_data/cw_puma2010_czone.dta
 		
 	}
 	
 	qui describe
 	dis "Obs for year ${y2}: `r(N)'"
 
-	* multiply sample weight (perwt) by afactor to map from PUMA's to CZ (check David Dorn's ReadMe of cw_puma2000_czone files from https://www.ddorn.net/data.htm)
+	* multiply sample weight (perwt) by afactor to map from PUMA's to CZ
 	
 	gen weight = perwt * afactor 
 	

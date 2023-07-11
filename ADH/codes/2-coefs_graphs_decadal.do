@@ -9,7 +9,7 @@ General information: Recreated econometric analysis for each year and creates co
 Inputs
 	1. workfile_china_RUV
 Ouputs:
-	1. Figure #
+	1. Figures
 */
 clear
 clear all
