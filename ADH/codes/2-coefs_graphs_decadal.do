@@ -12,29 +12,12 @@ Ouputs:
 	1. Figures
 */
 clear
-clear all
 macro drop _all
 clear mata
 set more off
 set matsize 1000
-global crosswalk 2000
 
-* Directories
-global alonso = 1 // directory
-************************************************************************
-
-if $alonso == 1 {
-	global main "C:/Users/alove/Documents/GitHub/RUV/ADH"
-	}
-if $alonso == 0  {
-	global main "RUV/ADH"
-	}
-	
-	
-************************************************************************
-cd $main
-
-
+* define main program
 prog main
 
 * clean data and prepare variables
@@ -199,8 +182,7 @@ preserve
 	foreach var of varlist bs* mtld* {
 	replace `var' = `var'*adj
 	}
-	tempfile extra_lines
-	save `extra_lines', replace
+	save temp/models_coefs.dta, replace
 restore
 end 
 
@@ -267,7 +249,7 @@ quiet{
 	
 	*** merge baseline and matilde lines
 	gen year = 2005 + _n
-	merge 1:1 year using `extra_lines', nogen keep(3)
+	merge 1:1 year using temp/models_coefs.dta, nogen keep(3)
 	
 	* coeffplots	
 	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///

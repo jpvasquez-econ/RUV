@@ -20,21 +20,6 @@ clear mata
 set more off
 set matsize 1000
 
-* Directories
-global alonso = 1 // directory
-************************************************************************
-
-if $alonso == 1 {
-	global main "C:\Users\alove\Documents\GitHub\RUV\ADH"
-	}
-if $alonso == 0  {
-	global main "RUV\ADH"
-	}
-	
-	
-************************************************************************
-cd $main
-
 * This dataset has pooled ACS data from 2005 to 2021 for people with ages betweeen 16 and 64
 
 quiet{
@@ -191,13 +176,13 @@ save `temp', replace
 	else {
 * Merge and update outcome variables for other years (2007-2020)
 		  *sleep 1000
-		  use "temp/workfile_china_RUV_alt.dta", clear
-		  merge m:1 czone yr using `temp', update 
+		  use "temp/workfile_china_RUV.dta", clear
+		  merge m:1 czone yr using `temp', update
 		  drop if _m == 2
 		  drop _m
 		}
  
-save "temp/workfile_china_RUV_alt.dta", replace
+save "temp/workfile_china_RUV.dta", replace
 
 }
 

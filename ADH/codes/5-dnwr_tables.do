@@ -1,20 +1,7 @@
-
 clear
-clear all
 clear mata
 set more off
 set matsize 1000
-
-global alonso = 1
-
-if $alonso == 1 {
-	global main "C:\Users\alove\Documents\GitHub\RUV\ADH"
-	}
-if $alonso == 0  {
-	global main "RUV/ADH"
-	}
-	
-cd "$main"	
 
 ********************************************************************************
 ********************************************************************************
@@ -45,6 +32,10 @@ if `i' == 1 {
 ***
 		* right-to-work laws
 		merge m:1 statefip using "raw_data/right2work.dta" , nogen
+		
+		* RIGHT TO WORK DUMMY BY YEAR
+		gen r2w= (yr>year_r2w)
+		replace r2w = 1 if statefip == 40 & yr == 2000  //replace Oklahoma r2w law on 2nd period==1, since it was introduced in 2001
 		* CPS rigidity measures for 2000 from Joo-Jo,Y.(2022)
 		merge m:1 statefip yr using "temp/Jo_state_level_dnwr_proc.dta", nogen keep(1 3)
 		* CPS rigidity measures for 1990 (constructed)
@@ -54,14 +45,11 @@ if `i' == 1 {
 		* Add data on inflation by state
 		replace yr = 2007 if yr == 2000
 		replace yr = 2000 if yr == 1990
-		
 		merge m:1 statefip yr using "temp/cpi_state_4unempl", nogen keep(1 3)
 		
 		
 * RIGHT TO WORK DUMMY BY YEAR
 cap drop N_total total_neg total_nonzero 
-gen r2w= (yr>year_r2w)
-replace r2w = 1 if statefip == 40 & yr == 2000  //replace Oklahoma r2w law on 2nd period, since it was introduced in 2001
 	
 /*******************************************************************************
                        ---RIGIDITY MEASURES BY STATE----
@@ -103,10 +91,10 @@ global dnwr_nonzero_yjj_dmy2 "Indicator==1 if state neg share in nonzero wage ch
 order r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 
 
 * save state level temp data for regressions
-if `i' == 1 { 
-	tempfile temp1
-	save `temp1', replace
-}
+	if `i' == 1 { 
+		tempfile temp1
+		save `temp1', replace
+	}
 
 }
 
@@ -136,7 +124,7 @@ estimates store reg2
 ivregress 2sls d_sh_unempl (d_tradeusch_pw  = d_tradeotch_pw_lag ) inter_rigidity `rig_measure'  l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 estimates store reg3
 
-ivregress 2sls d_sh_unempl (d_tradeusch_pw inter_rigidity =d_tradeotch_pw_lag inter_rigidity_iv) `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
+ivregress 2sls d_sh_unempl (d_tradeusch_pw inter_rigidity = d_tradeotch_pw_lag inter_rigidity_iv) `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 [aw=timepwt48], cluster(statefip)
 estimates store reg4
 
 * Regressions at the state level

@@ -18,18 +18,9 @@ clear mata
 set more off
 set matsize 1000
 
-global alonso = 1
-
-if $alonso == 1 {
-	 global main = "C:\Users\alove\Documents\GitHub\RUV\ADH"
-}  
-
-if $alonso == 0{
-	 global main = "RUV\ADH"
-}
-
-cd $main
-
+***
+*** CPS 86-90
+*** 
 forvalue i = 86/90 {
 	 global i `i'
      tempfile temp`i'	 

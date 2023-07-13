@@ -5,33 +5,13 @@ Date: 18 Nov 2022
 General information: Recreated econometric analysis for each year and creates coefficient graphs with interaction of downward wage rigidity measures. Changes in emp/pop outcomes are in decadal changes. 
 Unit of analysis are define in globals: Statefip (48 obs per year x 2 periods) or Community Zones (722 obs per year x 2 periods). 
 */
+program drop _all
 clear
-clear all
-macro drop _all
-clear mata
 set more off
 set matsize 1000
 
-* Directories
-global alonso = 1 // directory
 
 ************************************************************************
-
-if $alonso == 1 {
-
-	global main "C:\Users\alove\Documents\GitHub\RUV\ADH"
-	global outputs "$main/results"	
-	}
-if $alonso == 0  {
-
-	global main "RUV\ADH"
-	global outputs "RUV\ADH\results"
-
-	}
-	
-	
-************************************************************************
-cd $main
 
 
 ************************************************************************
@@ -348,11 +328,8 @@ use temp/workfile_china_RUV.dta, clear
 
 * collapse and keep variables of interest
 	collapse (sum) unempl *_007 popcount (first) *_st, by(statefip yr)
-
-* For simplicity , we adjuste the reference year to the year in the middle of the sample (e.g. 2007 for 2006-2008 sample)
 	rename *_st *
 	rename pop pop_st
-	replace yr = yr - 1 if yr > 2000
 
 * here we create the outcomes as shares of the working pop for 1990-2000 and 2000-2007 period
 	
@@ -410,9 +387,6 @@ use temp/workfile_china_RUV.dta, clear
 
 	* this rename command help us in the loops code
 	rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz) (    d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664)
-
-	* For simplicity , we adjuste the reference year to the year in the middle of the sample (e.g. 2007 for 2006-2008 sample)
-	replace yr = yr - 1 if yr > 2000
 
 	* here we create the outcomes as shares of the working pop
 	gen sh_unempl = 100*(unempl/pop_1664) 
