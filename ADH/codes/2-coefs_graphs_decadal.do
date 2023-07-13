@@ -34,24 +34,38 @@ if $alonso == 0  {
 ************************************************************************
 cd $main
 
+
+prog main
+
+* clean data and prepare variables
+data_cleaning 
+* main figures, effects on outcomes
+coef_graphs
+* prepare model estimates
+models_coefs
+* main figures with model's coefs
+coef_graphs_and_models
+
+end 
+
+
+
+
 ***
 *** create outcome variables for each year
 ***
+prog data_cleaning
 quiet{
 
 use "temp/workfile_china_RUV.dta", clear
 
 * this rename command help us in the loops code
-rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664)
+rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz lnchg_popworkage ) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664 d_sh_lnpop)
 gen nmfg = empl - mfg
 
 * gen log popcount changes for working age population
-rename lnchg_popworkage d_sh_lnpop
 gen sh_lnpop = ln(pop_1664)*100
 gen l_sh_lnpop = ln(l_popcount)*100
-
-* For simplicity , we adjuste the reference year to the year in the middle of the sample (e.g. 2007 for 2006-2008 sample)
-replace yr = yr - 1 if yr > 2000
 
 * here we create the outcomes as shares of the working pop
 foreach var in mfg nmfg nilf unempl {
@@ -83,7 +97,9 @@ foreach var in mfg nmfg unempl nilf lnpop {
 	
 	global controls "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2"
 		
+end 
 
+prog coef_graphs
 ***
 *** create estimates for coef graphs
 *** 
@@ -165,20 +181,17 @@ cap log close
 capture translate "results/log/ACS_coefs_adh13.smcl" "results/log/ACS_coefs_adh13.txt", 	replace linesize(250)
 capture erase "results/log/ACS_coefs_adh13.smcl"
 
-
+end 
 
 *******************************************************************************
 **************************** SECOND SECTION  **********************************
 ********************** COMPARING MODELS AND DATA ******************************
 *******************************************************************************
-clear
-set more off
-global crosswalk 2000
-global adh 13
-
 ***
 *** Prepare matilde and baseline data
 
+prog models_coefs
+preserve
 	import excel "raw_data/ADHCoeffsModel.xlsx", sheet("Sheet1") firstrow clear
 	keep if _n < 26
 	keep year bs* mtld*
@@ -188,79 +201,14 @@ global adh 13
 	}
 	tempfile extra_lines
 	save `extra_lines', replace
-
-	
-***
-*** create outcome variables for each year
-***
-quiet{
-
-use "temp/workfile_china_RUV.dta", clear
-
-* this rename command help us in the loops code
-rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664)
-gen nmfg = empl - mfg
-
-* gen log popcount changes for working age population
-rename lnchg_popworkage d_sh_lnpop
-gen sh_lnpop = ln(pop_1664)*100
-gen l_sh_lnpop = ln(l_popcount)*100
-
-* For simplicity , we adjuste the reference year to the year in the middle of the sample (e.g. 2007 for 2006-2008 sample)
-replace yr = yr - 1 if yr > 2000
-
-* here we create the outcomes as shares of the working pop
-foreach var in mfg nmfg nilf unempl {
-gen sh_`var' = 100*(`var'/pop_1664) 
-}
-
-* here the 10 year differences are created (l_* vars are data of 2000)
-forval year = 2006/2020 {
-foreach var in mfg nmfg unempl nilf lnpop {
-
-	* Add ADH2013 values to 2007
-	if `year' == 2007 {
-	gen d_sh_`var'_`year' = d_sh_`var' if  yr == 2007 | yr == 2000
-	}
-	
-	else {
-   * Gen ten-year equivalent changes in pop shares by employment status
-	gen d_sh_`var'_`year' = (10/(`year'-2000)) * (sh_`var' - l_sh_`var' ) if yr == `year'
-	replace d_sh_`var'_`year' = d_sh_`var' if yr == 2000 
-
-	}
-	
-
-}
-}
-
-}
-
-
-*** 
-*** define control variables for adh13 or adh21 especification
-*** 
-
-*for adh13
-
-	if ${adh} == 13 {
-	
-	global controls "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2"
-		
-}
-
-* for adh21
-	if ${adh} == 21 {
-
-	merge m:1 czone using extra_controls_adh21, nogen
-	global controls "l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource reg* t2 sh_65up_all sh_4064_all sh_0017_all sh_00up_nw"
-	
-	}
+restore
+end 
 
 ***
 *** create estimates for coef graphs
 *** 
 
+prog coef_graphs_and_models
 quiet{
 
 	foreach outcome in mfg nmfg unempl nilf lnpop  {
@@ -335,7 +283,10 @@ quiet{
 
 }
 }
-
+end
 * end of dofile
 
+
+*** run main
+main
 

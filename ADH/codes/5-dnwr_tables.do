@@ -68,14 +68,10 @@ replace r2w = 1 if statefip == 40 & yr == 2000  //replace Oklahoma r2w law on 2n
 1. r2w: dummy = 1 if right-to-work laws are applied. Time-variant.
 2. dnwr: negative changes share of total wage changes. SIPP 96 and SIPP 87 Panel. Time-variant. Quarterly wage changes.
 3. dnwr_nonzero: negative wage changes of total nonzero wage changes. SIPP 96 and SIPP 87 Panel. Time-variant. Quarterly wage changes.
-4. adj_rate: nonzero wage changes of total wage changes. SIPP 96 and SIPP 87 Panel. Time-variant. Quarterly wage changes.
-5. ngtv_ratio: negative-to-zero wage changes ratio. SIPP 96 and SIPP 87 Panel. Time-variant. Quarterly wage changes.
-6. dnwr_yjj: negative changes share of total changes. CPS 1997-2000. Time-invariant. Year-over-year wage changes.
-7. dnwr_nonzero_yjj: negative wage changes of total nonzero changes. CPS 1997-2000. Time-invariant. Year-over-year wage changes.
-8. adj_rate_yjj: nonzero wage change of total changes. CPS 1997-2000. Time-invariant. Year-over-year wage changes.
-9. ngtv_ratio_yjj: negative-to-zero wage changes ratio. CPS 1997-2000. Time-invariant. Year-over-year wage changes.
-10. _dmy1: indicates dummy variable = 1 if values are above median.
-11. _dmy2: indicates dummy variable = 1 if values are above mean.
+4. dnwr_yjj: negative changes share of total changes. CPS 1997-2000. Time-invariant. Year-over-year wage changes.
+5. dnwr_nonzero_yjj: negative wage changes of total nonzero changes. CPS 1997-2000. Time-invariant. year-over-year wage changes.
+6. _dmy1: indicates dummy variable = 1 if values are above median.
+7. _dmy2: indicates dummy variable = 1 if values are above mean.
 
 *** NOTES ***
 1.Time-variant means values change from 1990 to 2000 for each individual. Time-invariant means the same values are used for both periods.	
@@ -108,13 +104,12 @@ order r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy
 
 * save state level temp data for regressions
 if `i' == 1 { 
+	tempfile temp1
 	save `temp1', replace
 }
 
 }
 
-*lnchg_popworkage d_avg_lnwkwage_mfg d_avg_lnwkwage_nmfg
-*ds r2w dnwr_yjj-ngtv_ratio_dmy2
 global tab = 1
 
 quiet{

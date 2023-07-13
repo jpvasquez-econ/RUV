@@ -40,7 +40,7 @@ cd $main
 quiet{
 forval yr = 2005(1)2019 { 
 
-use raw_data/ipums_2005_2021.dta, clear
+use year puma perwt age classwkrd gq empstat ind1990 statefip using raw_data/ipums_2005_2021.dta, clear
 global yr `yr'
 global y1 = ${yr} 
 global y2 = ${yr} + 1
@@ -144,7 +144,7 @@ replace mfg = 1 if inrange(ind1990dd,390,392) & empl == 1 //employ in manuf
 
 tempfile temp
 preserve
-collapse (mean) pop_cz, by(czone)
+gcollapse (mean) pop_cz, by(czone)
 save `temp', replace
 restore
 
@@ -152,12 +152,12 @@ restore
 *** collapse by CZ
 ***	
 
-  collapse (sum) mfg nilf empl unempl [iw=weight] , by(czone)
+  gcollapse (sum) mfg nilf empl unempl [iw=weight] , by(czone)
   merge 1:1 czone using `temp', nogen
   
 
 * Gen variable of year for merge and save temp file
-gen yr = ${y3}
+gen yr = ${y2}
 tempfile temp
 * save temp file to merge with ADH2013 dataset
 save `temp', replace
@@ -178,7 +178,7 @@ save `temp', replace
 	qui sum obs
 	
 	* here we built the year observations
-	global tag ${y3}
+	global tag ${y2}
 		foreach i of num  2/`r(max)' {
 			replace yr = ${tag} if obs == `i'
 			global tag =  ${tag} + 1
@@ -190,13 +190,15 @@ save `temp', replace
 }
 	else {
 * Merge and update outcome variables for other years (2007-2020)
-		  sleep 1000
-		  use "temp/workfile_china_RUV.dta", clear
-		  merge m:1 czone yr using `temp', nogen update
+		  *sleep 1000
+		  use "temp/workfile_china_RUV_alt.dta", clear
+		  merge m:1 czone yr using `temp', update 
+		  drop if _m == 2
+		  drop _m
 		}
+ 
+save "temp/workfile_china_RUV_alt.dta", replace
 
-save "temp/workfile_china_RUV.dta", replace
-clear all 
 }
 
 noi dis "Done!"
