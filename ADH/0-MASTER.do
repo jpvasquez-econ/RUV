@@ -13,22 +13,15 @@ set more off
 set matsize 1000
 
 * Directories
-global alonso = 1 
-************************************************************************
-
-if $alonso == 1 {
+global jose = 1 
+if $jose == 0 {
 	global main "C:/Users/alove/Documents/GitHub/RUV/ADH"
-	global outputs "C:/Users/alove/Documents/GitHub/RUV/ADH/results"
 	}
-if $alonso == 0  {
-	global main "RUV/ADH"
-	global outputs "RUV/ADH/results"
+if $jose == 1  {
+	global main "/Users/jpvasquez/Library/CloudStorage/Dropbox/0-mycomputer/mydocuments/0-LSE/0-Research/NK_trade/JP/Data_Construction/RUV/ADH"
 	}
-	
-	
-************************************************************************
-cd $main
-
+	cd $main
+	global outputs "results"
 
 * Prepare outcomes: manufacruting, non-manufacturing, unemployment, and nilf population counts by CZs 
 do "codes/1-ipums_acs.do"
