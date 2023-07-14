@@ -256,6 +256,29 @@ From the CPS data we get
  
 \end_layout
 
+\begin_deeper
+\begin_layout Itemize
+In the CPS data constructed, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $L_{CPS}^{nj,ik}=L_{CPS}^{ij,ik}$
+\end_inset
+
+, i.e it is the within destination-state migration flows.
+\end_layout
+
+\end_deeper
 \begin_layout Itemize
 From the ACS data we have 
 \begin_inset Formula $L_{ACS}^{n?,ik}\:\forall i,n\in US$
@@ -364,7 +387,7 @@ L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_
 \end_layout
 
 \begin_layout Section
-New 2023-05-12
+NEW: May 12th, 2023
 \end_layout
 
 \begin_layout Standard
@@ -877,7 +900,7 @@ Then
 we will have:
 \begin_inset Formula 
 \[
-L^{nj,nk}=L_{IRS}^{n,n}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in USA,\:\forall j,k
+L^{nj,nk}=L_{IRS}^{n,n}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\text{\,}\forall n\in USA,\:\forall j,k
 \]
 
 \end_inset
@@ -1050,6 +1073,50 @@ Then we compute the annual matrix
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section
+NEW: Friday July 14th.
+\end_layout
+
+\begin_layout Standard
+Here I describe the steps processing ACS data to produce quarterly migration
+ matrix
+\end_layout
+
+\begin_layout Enumerate
+First, I idenfy the movers in the annual ACS data and assign them unique
+ numbers that are drawn from uniform distribution.
+\end_layout
+
+\begin_layout Enumerate
+Second, for quarter one, we assume that first 25% movers from previous steps
+ are the ones that moved in the first quarter.
+ Thus, we keep the one-fourth of the movers and change the third-fourth
+ of movers to non-movers in the first quarter.
+\end_layout
+
+\begin_layout Enumerate
+Reapt step 2 for other quarters, thus we are able to have quarterly migration
+ data where movers in each quarter represents any one-fourth of movers from
+ annual data.
+\end_layout
+
+\begin_layout Standard
+We will produce followings to make comparison
+\end_layout
+
+\begin_layout Itemize
+Annual migration matrix for three cases: original CPS and ACS matrix, CPS
+ and ACS matrix with diagonal modification, IRS matrix
+\end_layout
+
+\begin_layout Itemize
+Quarterly migration matrix for three cases
+\end_layout
+
+\begin_layout Itemize
+Annualised quarterly migration matrix for three cases
 \end_layout
 
 \end_body
