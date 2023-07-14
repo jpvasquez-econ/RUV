@@ -12,10 +12,7 @@ Ouputs:
 	1. Figures
 */
 clear
-macro drop _all
-clear mata
 set more off
-set matsize 1000
 
 * define main program
 prog main

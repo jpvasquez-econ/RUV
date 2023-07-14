@@ -13,10 +13,7 @@ Ouputs:
 
 
 clear
-clear all
-clear mata
 set more off
-set matsize 1000
 
 ***
 *** CPS 86-90
