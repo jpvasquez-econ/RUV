@@ -1119,5 +1119,133 @@ Quarterly migration matrix for three cases
 Annualised quarterly migration matrix for three cases
 \end_layout
 
+\begin_layout Section
+Summary: Wednesday August 9th.
+\end_layout
+
+\begin_layout Standard
+Here I formally list all the files (in xlsx format) for statistical description
+ on migration matrix and also add simple observations.
+\end_layout
+
+\begin_layout Itemize
+Yearly migration matrix: mean, max, min, percentile only for diagonal shares
+ (i.e same state and same sector) for each state (see average_diag)
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Although this yearly statistics are not directly comparable to CDP's quarterly
+ ones, the numbers for same state and same sector are quite low (from my
+ own perspective).
+\end_layout
+
+\begin_layout Itemize
+Under the assumption that we want this within state and sector migration
+ share to be large, case 1 performs better than case 0 only in some states
+ such as Alaska, Hawaii and Maryland.
+ For Alaska, the average of diagonals increases by 5% points in case 1 and
+ the minimum of diagonals increases by 13% points in case 1.
+ Case 2 outperfoms the other two almost in each state.
+ For extreme case, the average of diagonals for Alaska increases by 15%
+ points compared to case 0 and the minimum for Alaska increases by 22% points
+ compared to case 0.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Yearly migration matrix: 
+\begin_inset Formula $\text{\text{\text{pro\_same\_state}}=\ensuremath{\frac{\text{total number of people staying in the original state}}{\text{total number of people in the original state}}}}$
+\end_inset
+
+ (see prob_same_state(at state level))
+\end_layout
+
+\begin_layout Itemize
+Yearly migration matrix: 
+\begin_inset Formula $\text{\text{\text{pro\_same\_sector}}=\ensuremath{\frac{\text{total number of people of the original state staying in the same sector}}{\text{total number of people in the original state}}}}$
+\end_inset
+
+ (see prob_same_sector(at state level))
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Seems a bit low
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Yearly migration matrix: transitiona probability at state level (see transition_
+prob(at state level) and yearly_summary_statistics(at state level))
+\end_layout
+
+\begin_layout Itemize
+Yearly migration matrix: transitiona probability at state-sector level (see
+ transition_prob(at state sector level) and yearly_summary_statistics(at
+ state sector level))
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+One thing to note that the differences among percentiles are more pronounced
+ here than in the state level, which matches the argument in the CDP that
+ there is heterogeneity across labour market.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Quarterly migration matrix: prob_same_state, prob_same_sector, transitiona
+ probability at state level
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+L_{kj,ni,1999}=\frac{\text{people from kj to ni in 1999}}{\text{total people move to ni in 1999}}\times L_{ni,2000}
+\]
+
+\end_inset
+
+Differences between CDP and RUV
+\end_layout
+
+\begin_layout Itemize
+CDP has 23 sectors: 22 industries (12 manuf + 8 service + construction +
+ wholesale and retail trade) + non-employment, no agriculture, mining, utilities
+, and public sectors; RUV has 14 industries (12 manuf + 1 service + 1 agricultur
+e) + non-employment
+\end_layout
+
+\begin_layout Section
+Meeting: Thursday August 24th
+\end_layout
+
+\begin_layout Itemize
+Does the migration share differ a lot across quarters?
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Show the migration share difference excel (migration_share_diff_case2.csv)
+ across quarters: maximum differences are around 23%
+\end_layout
+
+\begin_layout Itemize
+See notes for case study and quarterly statistics comparison
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Show that even with the raw CPS data, the diagonal share (i.e within state-sector
+ migration) statistics are not close to CDP
+\end_layout
+
+\begin_layout Itemize
+Show the final matrix
+\end_layout
+
 \end_body
 \end_document

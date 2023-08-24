@@ -1,0 +1,872 @@
+---
+title: "Quarterly migration matrix"
+author: "Yuanhang(Leo) Yu"
+date: "2023-08-15"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  # pdf_document:
+    # number_sections: yes
+  # html_notebook:
+    # toc: yes
+    # df_print: paged
+    # number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())  
+```
+
+```{r message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
+# Define function
+`%notin%` <- Negate(`%in%`)
+# libraries
+options( scipen=100, digits = 15, stringsAsFactors=FALSE ); # no scientific notation, up to 15 digits 
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'haven', 'stringr', 'nleqslv', 'gdata', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'readr', 'data.table', 'stringr', 'haven');
+# Install libraries in case they are not installed
+for( i in seq_along(libs)){ 
+    if( !(libs[i] %in% installed.packages()) ) install.packages( libs[i] ) 
+};
+# Loading libraries
+lapply( libs, require, character.only=TRUE );
+```
+
+```{r additional data}
+# region: US states and other countries
+regions <- read.csv("0-Raw_Data/regions.csv")  
+c_names <- regions %>% filter(status == "country")
+c_names <- c_names$region
+
+s_names <- regions %>% filter(status == "state") 
+s_names <- s_names$region
+
+# sector reclassification table (NAICS to final)
+sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+sectors_naics_final <- sectors_naics_final %>% 
+  select(final_sector, naics) %>%
+  mutate(naics = as.character(naics)) %>%
+  distinct(final_sector, naics)     #create the mapping table from NAICS to final at sector level
+
+# sectors (CENSUS 1990 to final)
+sectors_census1990_final <- read.csv(paste("0-Raw_Data/sectors_census_1990.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+sectors_census1990_final <- sectors_census1990_final %>%
+  filter(is.na(final_sector) == FALSE) %>%
+  mutate(census_1990 = as.character(census_1990)) %>%
+  select(census_1990, final_sector)
+
+# sectors (CENSUS 2003 to naics)
+sectors_census2003_naics <- read.csv(paste("0-Raw_Data/sectors_census_2003.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+sectors_census2003_naics <- sectors_census2003_naics %>%
+  mutate(naics = as.character(naics)) %>%
+  distinct(census_2003, .keep_all = TRUE)
+
+# sectors (CENSUS 2003 to final)
+sectors_census2003_final <- sectors_census2003_naics %>%
+  left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
+  filter(is.na(final_sector) == FALSE) %>%
+  mutate(census_2003 = as.character(census_2003)) %>%
+  select(census_2003, final_sector)
+
+# state codes
+states_fips <- read_excel("0-Raw_Data/Fips/states_fips_num.xlsx", range = "A1:D53")
+states_fips_mod_ACS <- states_fips %>% 
+  select(st_num, st_name) %>%
+  mutate(st_num = ifelse(st_num > 8, st_num + 1, st_num)) %>%
+  distinct(st_name, .keep_all = TRUE) %>%
+  dplyr::rename(st_name1 = st_name)  #state code that is consistent with used in ACS
+states_fips <- states_fips %>% select(st_fips, st_num, st_name)
+
+```
+
+### Quarterly matrix with IRS, ACS and CPS (Case 2)
+```{r}
+# loading intermediate CPS
+cps <- read.csv(paste("1-Intermediate_Processed_Data/cps_2_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+# within states proportionality
+temp_within  <- cps %>%           # create the cps share for within state expression
+  filter(state_ori == state_dest & year == 1999)  %>% 
+  group_by(year, quarter, state_dest, state_ori)  %>% 
+  mutate(n_cps_two_states_tot = sum(n_cps))  %>% 
+  ungroup()  %>% 
+  mutate(cps_share_wti = n_cps/n_cps_two_states_tot) %>% 
+  select(year, quarter, state_ori, state_dest, sector_ori, sector_dest, cps_share_wti)
+
+# between states proportionality
+temp_between_cps  <- cps  %>%    # create the cps share for between state expression
+  filter(state_ori == state_dest & year == 1999)  %>% 
+  group_by(year, quarter, state_dest, state_ori, sector_dest)  %>% 
+  mutate(n_cps_same_sector_dest = sum(n_cps))  %>% 
+  ungroup()  %>% 
+  mutate(cps_share_btw = n_cps/n_cps_same_sector_dest)  %>% 
+  select(year, quarter, state_ori, state_dest, sector_ori, sector_dest, cps_share_btw)
+
+acs <- read.csv(paste("1-Intermediate_Processed_Data/acs_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+temp_between_acs  <-  acs  %>%  # create the acs share for between state expression
+  filter(year == 1999)  %>% 
+  group_by(year, quarter, state_dest, state_ori)  %>% 
+  mutate(n_acs_two_tot = sum(n_acs))  %>% 
+  ungroup()  %>% 
+  mutate(acs_share = n_acs/n_acs_two_tot)  %>% 
+  mutate(acs_share = ifelse(is.na(acs_share), 0, acs_share))  %>% 
+  select(year, quarter, state_ori, state_dest, sector_dest, acs_share)
+
+# quarterly irs data
+irs  <- read.csv(paste("1-Intermediate_Processed_Data/irs.csv", sep=""), header = TRUE, sep = ",", dec = ".")  %>% 
+  mutate(exemption = exemption/4)
+
+temp <- data.frame(s_names)  
+qr  <- c(1:4)
+temp_qr  <- data.frame(qr)
+combo_st_qr  <- expand.grid(quarter = temp_qr$qr, state_ori = temp$s_names, state_dest = temp$s_names)  %>% 
+  mutate(year = 1999)
+
+irs  <- combo_st_qr  %>% 
+  left_join(irs, by = c('state_ori' = 'state_ori',  'state_dest' = 'state_dest', 'year' = 'year'))
+
+# migration matrix
+mobility  <- cps  %>%   # adjusted migration flows
+  filter(year == 1999)  %>% 
+  left_join(irs, by=c('year' = 'year', 'quarter'='quarter', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori')) %>%
+  left_join(temp_within, by = c('year' = 'year', 'quarter'='quarter', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori', 'sector_dest' = 'sector_dest', 'sector_ori' = 'sector_ori'))  %>% 
+  left_join(temp_between_acs, by = c('year' = 'year', 'quarter'='quarter', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori', 'sector_dest' = 'sector_dest'))  %>% 
+  left_join(temp_between_cps, by = c('year' = 'year', 'quarter'='quarter', 'state_dest' = 'state_dest', 'sector_dest' = 'sector_dest', 'sector_ori' = 'sector_ori'))  %>% 
+  rename(state_ori = state_ori.x)  %>% 
+  mutate(n_cps_adj = exemption * acs_share * cps_share_btw)  %>% 
+  mutate(n_cps_adj = ifelse(state_ori == state_dest, exemption*cps_share_wti, n_cps_adj))  %>% 
+  select(-state_ori.y)
+mu_long_format_quarter_no_adj_case2   <- mobility  %>% 
+  group_by(year, quarter, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(mu = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(year, quarter, state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE)
+write_csv(mobility, file = paste("1-Intermediate_Processed_Data/mobility_case2_quarterly.csv", sep=""))
+
+# mu_1999 prime for L_1999
+# the second part of this calculation is in the next step since there is an additional proportionality that has to be implemented in L_2000 so that it is consistent with WIOD
+mu_1999_prime <- mobility %>%
+  group_by(year, quarter, state_dest, sector_dest) %>% 
+  mutate(tot_n = sum(n_cps_adj)) %>% # total inflows to destination state-sector
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n) %>%  #(inflow share of destination state-sector across original state-sector) rel: share of people from original state-sector pairs to the same destination state-sector
+  select(year, quarter, state_dest, state_ori, sector_dest, sector_ori, rel)
+
+
+mu_1999_prime_q1  <- mu_1999_prime  %>% 
+  filter(quarter == 1)
+mu_1999_prime_q2  <- mu_1999_prime  %>% 
+  filter(quarter == 2)
+mu_1999_prime_q3  <- mu_1999_prime  %>% 
+  filter(quarter == 3)
+mu_1999_prime_q4  <- mu_1999_prime  %>% 
+  filter(quarter == 4)
+
+# mu_1999 prime for L_1999
+L_2000 <- read.csv(paste("1-Intermediate_Processed_Data/L_2000.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+L_2000 <- melt(L_2000, id.vars = c("state"), variable.name = "sector", value.name = "employ")
+L_2000 <- L_2000 %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector)))
+
+mu_1999_prime_q4 <- mu_1999_prime_q4 %>%
+  left_join(L_2000, by=c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q4  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q3 <- mu_1999_prime_q3 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q3  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q2 <- mu_1999_prime_q2 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q2  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q1 <- mu_1999_prime_q1 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+mu_1999_prime <- c()
+mu_1999_prime <- bind_rows(mu_1999_prime_q1, mu_1999_prime_q2)
+mu_1999_prime <- bind_rows(mu_1999_prime, mu_1999_prime_q3)
+mu_1999_prime <- bind_rows(mu_1999_prime, mu_1999_prime_q4)
+  
+write_csv(mu_1999_prime, file = paste("1-Intermediate_Processed_Data/mu_1999_prime_case2_quarterly.csv", sep=""))
+
+# Recalculating mu_1999 and checking flow 1999-2000
+mu_1999_q1 <- mu_1999_prime_q1 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q1  <- mu_1999_q1  %>% 
+  mutate(quarter = 1)
+
+mu_1999_q1 <- mu_1999_q1 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q1 <- spread(mu_1999_q1, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+A  <- mu_1999_q1[,4:ncol(mu_1999_q1)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q1 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q1, path = paste("1-Intermediate_Processed_Data/mu_1999_case2_q1.xlsx", sep=""))
+
+mu_1999_q2 <- mu_1999_prime_q2 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q2  <- mu_1999_q2  %>% 
+  mutate(quarter = 2)
+
+mu_1999_q2 <- mu_1999_q2 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q2 <- spread(mu_1999_q2, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+B  <- mu_1999_q2[,4:ncol(mu_1999_q2)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q2 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q2, path = paste("1-Intermediate_Processed_Data/mu_1999_case2_q2.xlsx", sep=""))
+
+mu_1999_q3 <- mu_1999_prime_q3 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q3  <- mu_1999_q3  %>% 
+  mutate(quarter = 3)
+
+mu_1999_q3 <- mu_1999_q3 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q3 <- spread(mu_1999_q3, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+C  <- mu_1999_q3[,4:ncol(mu_1999_q3)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q3 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q3, path = paste("1-Intermediate_Processed_Data/mu_1999_case2_q3.xlsx", sep=""))
+
+mu_1999_q4 <- mu_1999_prime_q4 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q4  <- mu_1999_q4  %>% 
+  mutate(quarter = 4)
+
+mu_1999_q4 <- mu_1999_q4 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q4 <- spread(mu_1999_q4, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+D  <- mu_1999_q4[,4:ncol(mu_1999_q4)]
+columns  <- mu_1999_q4  %>% 
+  select(year, state_ori, sector_ori)
+
+mu_long_format_quarter_case2  <- long_format_q1  %>% 
+  bind_rows(long_format_q2)  %>% 
+  bind_rows(long_format_q3)  %>% 
+  bind_rows(long_format_q4) 
+
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q4 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q4, path = paste("1-Intermediate_Processed_Data/mu_1999_case2_q4.xlsx", sep=""))
+
+A <- apply(A, c(1, 2), function(x) as.numeric(as.character(x)))
+B <- apply(B, c(1, 2), function(x) as.numeric(as.character(x)))
+C <- apply(C, c(1, 2), function(x) as.numeric(as.character(x)))
+D <- apply(D, c(1, 2), function(x) as.numeric(as.character(x)))
+mu_1999_annualise  <- A %*% B %*% C %*% D
+mu_1999_annualise  <- bind_cols(mu_1999_annualise, columns)
+mu_1999_annualise  <- mu_1999_annualise  %>% 
+  select(year, state_ori, sector_ori, everything())
+
+mu_1999_annualise_long_2  <- mu_1999_annualise  %>% 
+  pivot_longer(cols = 4:ncol(.), names_to = "state_dest_sector_dest", values_to = "rel")  %>% 
+  separate(state_dest_sector_dest, into = c("state_dest", "sector_dest"), sep = "_")   %>% 
+  mutate(sector_dest = recode(as.character(sector_dest), '00' ="0", '01' ="1", '02' ="2", '03' ="3", '04' ="4", '05' ="5", '06' ="6", '07' ="7", '08' ="8", '09' ="9" ))
+
+epsilon <- 0.01
+check <- mu_1999_annualise %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_annualise, path = paste("1-Intermediate_Processed_Data/mu_1999_case2_qr_annualised.xlsx", sep=""))
+
+
+```
+
+### Quarterly matrix with ACS and CPS (Case 1)
+```{r}
+# loading intermediate CPS
+cps <- read.csv(paste("1-Intermediate_Processed_Data/cps_2_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+# loading intermediate ACS
+acs <- read.csv(paste("1-Intermediate_Processed_Data/acs_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+# Mobility matrices
+# disaggregating ACS data using CPS sector_ori info and computation of mobility share
+# origin in rows and destination in columns
+# row shares sum to 1
+acs <- acs %>%
+  group_by(year, quarter, state_ori, state_dest) %>%
+  mutate(n_acs = sum(n_acs)) %>% # n_acs: for (state_ori, state_dest) pair, n_acs is the total migration summed over all destination sectors
+  ungroup() %>%
+  distinct(year, quarter, state_ori, state_dest, .keep_all = TRUE) %>%
+  select(-sector_dest)  # total migration from state i to state j for each (i,j) combination
+
+# adjusting x's to y's: cps migration pair share times total migration from acs
+mobility <- cps %>%
+  left_join(acs, by=c('year' = 'year', 'quarter' = 'quarter', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori')) %>%
+  group_by(year, quarter, state_dest, state_ori) %>% 
+  mutate(tot_n_cps_accros_sec = sum(n_cps)) %>% # totol within destination state migration (sum over all sector movements)
+  ungroup() %>%
+  mutate(n_cps_adj = n_cps/tot_n_cps_accros_sec) %>% # migration share across sectors within state (based on destination state)
+  mutate(n_cps_adj = ifelse(is.na(n_cps_adj) == TRUE, 0, n_cps_adj)) %>%
+  mutate(n_cps_adj = n_cps_adj*n_acs) %>% # use cps within-state across sector migration share times acs total migration across states
+  select(-tot_n_cps_accros_sec, -n_cps, -n_acs) 
+mu_long_format_quarter_no_adj_case1   <- mobility  %>% 
+  group_by(year, quarter, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(mu = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(year, quarter, state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE)
+write_csv(mobility, file = paste("1-Intermediate_Processed_Data/mobility_case1_quarterly.csv", sep=""))  
+
+# mu_1999 prime for L_1999
+# the second part of this calculation is in the next step since there is an additional proportionality that has to be implemented in L_2000 so that it is consistent with WIOD
+mu_1999_prime <- mobility %>%
+  filter(year == 1999) %>%
+  group_by(year, quarter, state_dest, sector_dest) %>% 
+  mutate(tot_n = sum(n_cps_adj)) %>% # total inflows to destination state-sector
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n) %>%  # (inflow share of destination state-sector across original state-sector)rel: share of people from original state-sector pairs to the same destination state-sector
+  select(year, quarter, state_dest, state_ori, sector_dest, sector_ori, rel)
+
+
+mu_1999_prime_q1  <- mu_1999_prime  %>% 
+  filter(quarter == 1)
+mu_1999_prime_q2  <- mu_1999_prime  %>% 
+  filter(quarter == 2)
+mu_1999_prime_q3  <- mu_1999_prime  %>% 
+  filter(quarter == 3)
+mu_1999_prime_q4  <- mu_1999_prime  %>% 
+  filter(quarter == 4)
+
+# mu_1999 prime for L_1999
+L_2000 <- read.csv(paste("1-Intermediate_Processed_Data/L_2000.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+L_2000 <- melt(L_2000, id.vars = c("state"), variable.name = "sector", value.name = "employ")
+L_2000 <- L_2000 %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector)))
+
+mu_1999_prime_q4 <- mu_1999_prime_q4 %>%
+  left_join(L_2000, by=c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q4  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q3 <- mu_1999_prime_q3 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q3  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q2 <- mu_1999_prime_q2 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q2  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q1 <- mu_1999_prime_q1 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+mu_1999_prime <- c()
+mu_1999_prime <- bind_rows(mu_1999_prime_q1, mu_1999_prime_q2)
+mu_1999_prime <- bind_rows(mu_1999_prime, mu_1999_prime_q3)
+mu_1999_prime <- bind_rows(mu_1999_prime, mu_1999_prime_q4)
+write_csv(mu_1999_prime, file = paste("1-Intermediate_Processed_Data/mu_1999_prime_case1_quarterly.csv", sep=""))
+
+# Recalculating mu_1999 and checking flow 1999-2000
+mu_1999_q1 <- mu_1999_prime_q1 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q1  <- mu_1999_q1  %>%  
+  mutate(quarter = 1)
+
+mu_1999_q1 <- mu_1999_q1 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q1 <- spread(mu_1999_q1, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+A  <- mu_1999_q1[,4:ncol(mu_1999_q1)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q1 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q1, path = paste("1-Intermediate_Processed_Data/mu_1999_case1_q1.xlsx", sep=""))
+
+mu_1999_q2 <- mu_1999_prime_q2 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q2  <- mu_1999_q2  %>%  
+  mutate(quarter = 2)
+#write_xlsx(mu_1999, path = paste("1-Intermediate_Processed_Data/mu_1999_irs_4_long_format.xlsx", sep=""))
+mu_1999_q2 <- mu_1999_q2 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q2 <- spread(mu_1999_q2, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+B  <- mu_1999_q2[,4:ncol(mu_1999_q2)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q2 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q2, path = paste("1-Intermediate_Processed_Data/mu_1999_case1_q2.xlsx", sep=""))
+
+mu_1999_q3 <- mu_1999_prime_q3 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q3  <- mu_1999_q3  %>%  
+  mutate(quarter = 3)
+
+mu_1999_q3 <- mu_1999_q3 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q3 <- spread(mu_1999_q3, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+C  <- mu_1999_q3[,4:ncol(mu_1999_q3)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q3 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q3, path = paste("1-Intermediate_Processed_Data/mu_1999_case1_q3.xlsx", sep=""))
+
+mu_1999_q4 <- mu_1999_prime_q4 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q4  <- mu_1999_q4  %>%  
+  mutate(quarter = 4)
+#write_xlsx(mu_1999, path = paste("1-Intermediate_Processed_Data/mu_1999_irs_4_long_format.xlsx", sep=""))
+mu_1999_q4 <- mu_1999_q4 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q4 <- spread(mu_1999_q4, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+D  <- mu_1999_q4[,4:ncol(mu_1999_q4)]
+columns  <- mu_1999_q4  %>% 
+  select(year, state_ori, sector_ori)
+
+mu_long_format_quarter_case1  <- long_format_q1  %>% 
+  bind_rows(long_format_q2)  %>% 
+  bind_rows(long_format_q3)  %>% 
+  bind_rows(long_format_q4) 
+
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q4 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q4, path = paste("1-Intermediate_Processed_Data/mu_1999_case1_q4.xlsx", sep=""))
+
+A <- apply(A, c(1, 2), function(x) as.numeric(as.character(x)))
+B <- apply(B, c(1, 2), function(x) as.numeric(as.character(x)))
+C <- apply(C, c(1, 2), function(x) as.numeric(as.character(x)))
+D <- apply(D, c(1, 2), function(x) as.numeric(as.character(x)))
+mu_1999_annualise  <- A %*% B %*% C %*% D
+mu_1999_annualise  <- bind_cols(mu_1999_annualise, columns)
+mu_1999_annualise  <- mu_1999_annualise  %>% 
+  select(year, state_ori, sector_ori, everything())
+
+mu_1999_annualise_long_1  <- mu_1999_annualise  %>% 
+  pivot_longer(cols = 4:ncol(.), names_to = "state_dest_sector_dest", values_to = "rel")  %>% 
+  separate(state_dest_sector_dest, into = c("state_dest", "sector_dest"), sep = "_")   %>% 
+  mutate(sector_dest = recode(as.character(sector_dest), '00' ="0", '01' ="1", '02' ="2", '03' ="3", '04' ="4", '05' ="5", '06' ="6", '07' ="7", '08' ="8", '09' ="9" ))
+
+epsilon <- 0.01
+check <- mu_1999_annualise %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_annualise, path = paste("1-Intermediate_Processed_Data/mu_1999_case1_qr_annualised.xlsx", sep=""))
+
+```
+
+### Quarterly matrix with ACS and CPS (Case 0)
+```{r}
+# loading intermediate CPS
+cps <- read.csv(paste("1-Intermediate_Processed_Data/cps_2_case0_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+# loading intermediate ACS
+acs <- read.csv(paste("1-Intermediate_Processed_Data/acs_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+
+# Mobility matrices
+# disaggregating ACS data using CPS sector_ori info and computation of mobility share
+# origin in rows and destination in columns
+# row shares sum to 1
+acs <- acs %>%
+  group_by(year, quarter, state_ori, state_dest) %>%
+  mutate(n_acs = sum(n_acs)) %>% # n_acs: for (state_ori, state_dest) pair, n_acs is the total migration summed over all destination sectors
+  ungroup() %>%
+  distinct(year, quarter, state_ori, state_dest, .keep_all = TRUE) %>%
+  select(-sector_dest)  # total migration from state i to state j for each (i,j) combination
+
+# adjusting x's to y's: cps migration pair share times total migration from acs
+mobility <- cps %>%
+  left_join(acs, by = c('year' = 'year','quarter' = 'quarter', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori')) %>%
+  group_by(year, quarter, state_dest, state_ori) %>% 
+  mutate(tot_n_cps_accros_sec = sum(n_cps)) %>% # totol within destination state migration (sum over all sector movements)
+  ungroup() %>%
+  mutate(n_cps_adj = n_cps/tot_n_cps_accros_sec) %>% # migration share across sectors within state (based on destination state)
+  mutate(n_cps_adj = ifelse(is.na(n_cps_adj) == TRUE, 0, n_cps_adj)) %>%
+  mutate(n_cps_adj = n_cps_adj*n_acs) %>% # use cps within-state across sector migration share times acs total migration across states
+  select(-tot_n_cps_accros_sec, -n_cps, -n_acs) 
+mu_long_format_quarter_no_adj_case0   <- mobility  %>% 
+  group_by(year, quarter, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(mu = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(year, quarter, state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE)
+write_csv(mobility, file = paste("1-Intermediate_Processed_Data/mobility_case0_quarterly.csv", sep=""))
+
+# mu_1999 prime for L_1999
+# the second part of this calculation is in the next step since there is an additional proportionality that has to be implemented in L_2000 so that it is consistent with WIOD
+mu_1999_prime <- mobility %>%
+  filter(year == 1999) %>%
+  group_by(year, quarter, state_dest, sector_dest) %>% 
+  mutate(tot_n = sum(n_cps_adj)) %>% # total inflows to destination state-sector
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n) %>%  # (inflow share of destination state-sector across original state-sector)rel: share of people from original state-sector pairs to the same destination state-sector
+  select(year, quarter, state_dest, state_ori, sector_dest, sector_ori, rel)
+
+
+mu_1999_prime_q1  <- mu_1999_prime  %>% 
+  filter(quarter == 1)
+mu_1999_prime_q2  <- mu_1999_prime  %>% 
+  filter(quarter == 2)
+mu_1999_prime_q3  <- mu_1999_prime  %>% 
+  filter(quarter == 3)
+mu_1999_prime_q4  <- mu_1999_prime  %>% 
+  filter(quarter == 4)
+
+# mu_1999 prime for L_1999
+L_2000 <- read.csv(paste("1-Intermediate_Processed_Data/L_2000.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+L_2000 <- melt(L_2000, id.vars = c("state"), variable.name = "sector", value.name = "employ")
+L_2000 <- L_2000 %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector)))
+
+mu_1999_prime_q4 <- mu_1999_prime_q4 %>%
+  left_join(L_2000, by=c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q4  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q3 <- mu_1999_prime_q3 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q3  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q2 <- mu_1999_prime_q2 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+L_2000_temp  <- mu_1999_prime_q2  %>% 
+  group_by(state_ori, sector_ori)  %>% 
+  mutate(employ = sum(level_employ))  %>% 
+  ungroup()  %>% 
+  distinct(year, state_ori, sector_ori, .keep_all = TRUE) %>% 
+  rename(state = state_ori, sector = sector_ori)  %>% 
+  select(state, sector, employ)
+
+mu_1999_prime_q1 <- mu_1999_prime_q1 %>%
+  left_join(L_2000_temp, by = c('state_dest' = 'state', 'sector_dest' = 'sector')) %>% 
+  mutate(level_employ = rel*employ) %>%   # generate the 1999 migration flows based on the 2000 distribution and 1999 migration share
+  select(-rel, -employ)
+
+mu_1999_prime <- c()
+mu_1999_prime <- bind_rows(mu_1999_prime_q1, mu_1999_prime_q2)
+mu_1999_prime <- bind_rows(mu_1999_prime, mu_1999_prime_q3)
+mu_1999_prime <- bind_rows(mu_1999_prime, mu_1999_prime_q4)
+write_csv(mu_1999_prime, file = paste("1-Intermediate_Processed_Data/mu_1999_prime_case0_quarterly.csv", sep=""))
+
+# Recalculating mu_1999 and checking flow 1999-2000
+mu_1999_q1 <- mu_1999_prime_q1 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q1  <- mu_1999_q1  %>%  
+  mutate(quarter = 1)
+
+mu_1999_q1 <- mu_1999_q1 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q1 <- spread(mu_1999_q1, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+A  <- mu_1999_q1[,4:ncol(mu_1999_q1)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q1 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q1, path = paste("1-Intermediate_Processed_Data/mu_1999_case0_q1.xlsx", sep=""))
+
+mu_1999_q2 <- mu_1999_prime_q2 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q2  <- mu_1999_q2  %>%  
+  mutate(quarter = 2)
+
+mu_1999_q2 <- mu_1999_q2 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q2 <- spread(mu_1999_q2, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+B  <- mu_1999_q2[,4:ncol(mu_1999_q2)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q2 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q2, path = paste("1-Intermediate_Processed_Data/mu_1999_case0_q2.xlsx", sep=""))
+
+mu_1999_q3 <- mu_1999_prime_q3 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q3  <- mu_1999_q3  %>%  
+  mutate(quarter = 3)
+
+mu_1999_q3 <- mu_1999_q3 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q3 <- spread(mu_1999_q3, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+C  <- mu_1999_q3[,4:ncol(mu_1999_q3)]
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q3 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q3, path = paste("1-Intermediate_Processed_Data/mu_1999_case0_q3.xlsx", sep=""))
+
+mu_1999_q4 <- mu_1999_prime_q4 %>% 
+  dplyr::rename(n_cps_adj = level_employ) %>%
+  group_by(year, state_ori, sector_ori) %>% 
+  mutate(tot_n_cps_accros_dest = sum(n_cps_adj)) %>% 
+  ungroup() %>%
+  mutate(rel = n_cps_adj/tot_n_cps_accros_dest) %>% # migration (out) share in 1999
+  distinct(state_dest, state_ori, sector_dest, sector_ori, .keep_all = TRUE) %>% 
+  select(year, state_dest, state_ori, sector_dest, sector_ori, rel) %>%
+  arrange(year, state_ori, sector_ori, state_dest, sector_dest)
+long_format_q4  <- mu_1999_q4  %>%  
+  mutate(quarter = 4)
+
+mu_1999_q4 <- mu_1999_q4 %>%
+  mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
+  mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
+  select(-state_dest, -sector_dest)
+mu_1999_q4 <- spread(mu_1999_q4, state_dest_sector_dest, rel, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+D  <- mu_1999_q4[,4:ncol(mu_1999_q4)]
+columns  <- mu_1999_q4  %>% 
+  select(year, state_ori, sector_ori)
+
+mu_long_format_quarter_case0  <- long_format_q1  %>% 
+  bind_rows(long_format_q2)  %>% 
+  bind_rows(long_format_q3)  %>% 
+  bind_rows(long_format_q4)
+
+# check sum(prob)==1
+epsilon <- 0.01
+check <- mu_1999_q4 %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_q4, path = paste("1-Intermediate_Processed_Data/mu_1999_case0_q4.xlsx", sep=""))
+
+A <- apply(A, c(1, 2), function(x) as.numeric(as.character(x)))
+B <- apply(B, c(1, 2), function(x) as.numeric(as.character(x)))
+C <- apply(C, c(1, 2), function(x) as.numeric(as.character(x)))
+D <- apply(D, c(1, 2), function(x) as.numeric(as.character(x)))
+mu_1999_annualise  <- A %*% B %*% C %*% D
+mu_1999_annualise  <- bind_cols(mu_1999_annualise, columns)
+mu_1999_annualise  <- mu_1999_annualise  %>% 
+  select(year, state_ori, sector_ori, everything())
+
+mu_1999_annualise_long_0  <- mu_1999_annualise  %>% 
+  pivot_longer(cols = 4:ncol(.), names_to = "state_dest_sector_dest", values_to = "rel")  %>% 
+  separate(state_dest_sector_dest, into = c("state_dest", "sector_dest"), sep = "_")   %>% 
+  mutate(sector_dest = recode(as.character(sector_dest), '00' ="0", '01' ="1", '02' ="2", '03' ="3", '04' ="4", '05' ="5", '06' ="6", '07' ="7", '08' ="8", '09' ="9" ))
+
+#pro_long_0  <- mu_1999_annualise_long_0  %>% 
+#  group_by(year, state_ori, sector_ori)  %>% 
+#  mutate(chg_state_not_sec_0 = sum(rel[sector_ori == sector_dest & state_ori != state_dest]))  %>% 
+#  mutate(chg_sec_not_state_0 = sum(rel[sector_ori != sector_dest & state_ori == state_dest]))  %>%
+#  mutate(chg_sec_chg_state_0 = sum(rel[sector_ori != sector_dest & state_ori != state_dest]))  %>%
+#  mutate(same_sec_same_state_0 = sum(rel[sector_ori == sector_dest & state_ori == state_dest]))  %>%
+#  ungroup()  %>% 
+#  distinct(year, state_ori, sector_ori, .keep_all = TRUE)  %>% 
+#  select(-state_dest, - sector_dest)
+#
+#column <- pro_long_0$chg_sec_chg_state_0
+#cat("Mean:", mean(column), "\n")
+#cat("Maximum:", max(column), "\n")
+#cat("Minimum:", min(column), "\n")
+#cat("25th Percentile:", quantile(column, 0.25), "\n")
+#cat("50th Percentile (Median):", median(column), "\n")
+#cat("75th Percentile:", quantile(column, 0.75), "\n")
+
+epsilon <- 0.01
+check <- mu_1999_annualise %>% select(-year, -state_ori, -sector_ori)
+if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
+  stop("mobility shares do not add to 1")
+write_xlsx(mu_1999_annualise, path=paste("1-Intermediate_Processed_Data/mu_1999_case0_qr_annualised.xlsx", sep=""))
+
+```
+
+
+
+
+
+
