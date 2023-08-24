@@ -623,24 +623,25 @@ write.table(cps_, file = paste("1-Intermediate_Processed_Data/cps_2_case0_quarte
 ```{r}
 # sectoral mobility from CPS
 ## Quarterly
-cps_test <- read.csv(paste("/Users/yyh/Documents/Github/RUV/1-Data-Codes/1-Intermediate_Processed_Data/cps_2_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+cps_test <- read.csv(paste("1-Intermediate_Processed_Data/cps_2_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 temp_case1   <- cps_test  %>% 
   distinct(year, quarter, state_dest, sector_dest, sector_ori, n_cps)  %>% 
-  filter(year == 1999)
+  filter(year == 1999) %>% 
+  rename(state = state_dest)
 
 temp_case1  <- temp_case1  %>% 
-  group_by(year, quarter, state_dest, sector_ori)  %>%
+  group_by(year, quarter, state, sector_ori)  %>%
   mutate(sum_sec = sum(n_cps))  %>% 
   ungroup()  %>% 
   mutate(share_sec = n_cps/sum_sec)  %>% 
   mutate(flag = ifelse(sector_ori == sector_dest, 1, 0))
-View(temp_case1)
-View(temp_case1[temp_case1$flag == 1,])
+#View(temp_case1)
+#View(temp_case1[temp_case1$flag == 1,])
 
 temp_case1_diag = temp_case1[temp_case1$flag == 1 & temp_case1$quarter == 4,]
-View(temp_case1[temp_case1$flag == 1 & temp_case1$quarter == 4,])
-View(temp_case1[temp_case1$flag == 1 & temp_case1$quarter == 3,])
+#View(temp_case1[temp_case1$flag == 1 & temp_case1$quarter == 4,])
+#View(temp_case1[temp_case1$flag == 1 & temp_case1$quarter == 3,])
 
 column <- temp_case1_diag$share_sec
 cat("Mean:", mean(column) * 100, "\n")
@@ -651,20 +652,21 @@ cat("50th Percentile:", median(column) * 100, "\n")
 cat("75th Percentile:", quantile(column, 0.75) * 100, "\n")
 
 ## Yearly
-cps_test <- read.csv(paste("/Users/yyh/Documents/Github/RUV/1-Data-Codes/1-Intermediate_Processed_Data/cps_2.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+cps_test <- read.csv(paste("1-Intermediate_Processed_Data/cps_2.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 temp_case1   <- cps_test  %>% 
   distinct(year, state_dest, sector_dest, sector_ori, n_cps)  %>% 
-  filter(year == 1999)
+  filter(year == 1999) %>% 
+  rename(state = state_dest) 
 
 temp_case1  <- temp_case1  %>% 
-  group_by(year, state_dest, sector_ori)  %>%
+  group_by(year, state, sector_ori)  %>%
   mutate(sum_sec = sum(n_cps))  %>% 
   ungroup()  %>% 
   mutate(share_sec = n_cps/sum_sec)  %>% 
   mutate(flag = ifelse(sector_ori == sector_dest, 1, 0))
-View(temp_case1)
-View(temp_case1[temp_case1$flag == 1,])
+#View(temp_case1)
+#View(temp_case1[temp_case1$flag == 1,])
 
 temp_case1_diag = temp_case1[temp_case1$flag == 1,]
 
@@ -677,10 +679,12 @@ cat("50th Percentile:", median(column) * 100, "\n")
 cat("75th Percentile:", quantile(column, 0.75) * 100, "\n")
 
 
+# Quarterly
+cps_test <- read.csv(paste("1-Intermediate_Processed_Data/cps_2_quarterly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
 
 # within state changing sector share
-cps_same_state_chg_sec  <- cps  %>%
+cps_same_state_chg_sec  <- cps_test  %>%
   distinct(year, quarter, state_dest, sector_ori, sector_dest, n_cps)  %>% 
   group_by(year, quarter, state_dest, sector_ori)  %>% 
   mutate(n_cps_ori = sum(n_cps))  %>% 
@@ -691,6 +695,7 @@ cps_same_state_chg_sec  <- cps  %>%
   ungroup()  %>% 
   mutate(flag = ifelse(sector_ori == sector_dest, 1, 0))
 
+# average across all states for each origin-destination sector pairs 
 chg_sec_average  <- cps_same_state_chg_sec  %>% 
   distinct(year, quarter, sector_ori, sector_dest, outflow_share_ave)  %>% 
   mutate(flag = ifelse(sector_ori == sector_dest, 1, 0) )
