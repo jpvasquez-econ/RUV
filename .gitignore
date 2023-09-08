@@ -4,3 +4,5 @@
 exercise_OECD_data/0-Raw_Data/*
 ADH/raw_data/cps_86_90.dta
 ADH/raw_data/ipums_2005_2021.dta
+CPS/Inputs
+CPS/Outputs
