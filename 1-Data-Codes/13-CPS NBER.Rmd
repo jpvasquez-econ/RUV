@@ -56,21 +56,28 @@ states_fips_mod_ACS <- states_fips %>%
   mutate(st_num = ifelse(st_num > 8, st_num + 1, st_num)) %>%
   distinct(st_name, .keep_all = TRUE) %>%
   dplyr::rename(st_name1 = st_name)  #state code that is consistent with used in ACS
-states_fips <- states_fips %>% select(st_fips, st_num, st_name)
+states_fips <- states_fips %>% dplyr::select(st_fips, st_num, st_name)
 
 ```
 
 ```{r Generate cps_nber_2_yearly}
 # load CPS data from NBER
-cps_nber  <- haven::read_dta("/Users/yyh/Library/CloudStorage/OneDrive-LondonSchoolofEconomics/RUV_data_no_GitHub/CPS_redone/Outputs/clean_data_new.dta")
-cps_nber <- cps_nber %>%
-  group_by(P_ID) %>%
-  filter( min(inter_num) <=4 & max(inter_num) >=5 ) %>%
-  ungroup()
-write_csv(cps_nber, file = paste("1-Intermediate_Processed_Data/cps_nber_yearly.xlsx", sep = ""))
+#cps_nber  <- haven::read_dta("/Users/yyh/Library/CloudStorage/OneDrive-LondonSchoolofEconomics/RUV_data_no_GitHub/CPS_redone/Outputs/clean_data_new.dta")
+#cps_nber <- cps_nber %>%
+#  group_by(P_ID) %>%
+#  filter( min(inter_num) <=4 & max(inter_num) >=5 ) %>%
+#  ungroup()
+#write_csv(cps_nber, file = paste("1-Intermediate_Processed_Data/cps_nber_yearly.xlsx", sep = ""))
 
-cps_nber  <- read.csv("1-Intermediate_Processed_Data/cps_nber_yearly.xlsx")
-mn_list <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+cps_nber <- read.csv("1-Intermediate_Processed_Data/cps_nber_yearly.xlsx")
+mn_list  <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+# Choose the number of observation for each household
+num_obs_present  <- c(5, 6, 7, 8)   # up to: 1 observation c(5); 2 observations c(5,6); 4 observations c(5,6,7,8)
+num_obs_past  <- c(1, 2, 3, 4)       # up to: 1 observation c(1); 2 observations c(1,2); 4 observations c(1,2,3,4)
+
+# Choose the restriction on the number of respondents (i.e sample size) within (year, state_ori, sector_ori)
+num_sample  <- 0
 
 # matching persons via same month in consecutive years based on H_ID and P_ID
 # keep one observation
@@ -103,15 +110,23 @@ for (yr in 1997:2002) {
 for (mn in mn_list) {
 # print(yr)
 # print(mn)
-temp_cps_nber <- cps_nber %>%
-  filter(month == mn & ( (year == yr & inter_num==5) | (year == yr-1 & inter_num==1) | (year == yr & inter_num==6) | (year == yr-1 & inter_num==2))) 
+  
+# use up to 2 observations
+#temp_cps_nber <- cps_nber %>%
+#  filter(month == mn & ( (year == yr & inter_num==5) | (year == yr-1 & inter_num==1) | (year == yr & inter_num==6) | (year == yr-1 & inter_num==2))) 
+# use up to 4 observations
+#temp_cps_nber <- cps_nber %>%
+#  filter(month == mn & ( (year == yr & inter_num  %in% c(5, 6, 7, 8)) | (year == yr-1 & inter_num  %in% c(1, 2, 3, 4)) ) ) 
+  
+temp_cps_nber  <- cps_nber  %>% 
+  filter(month == mn & (  (year == yr & inter_num  %in% num_obs_present ) | (year == yr-1 & inter_num  %in% num_obs_past ) ))
 
 info_present <- temp_cps_nber %>% 
   filter(year == yr) %>%
   dplyr::rename(sector_dest = sector, state_dest = st_name)
 info_past <- temp_cps_nber %>%
   filter(year == yr-1) %>%
-  select(-year, -month, -wtfinl) %>% 
+  dplyr::select(-year, -month, -wtfinl) %>% 
   dplyr::rename(sector_ori = sector, state_ori = st_name)
 temp <- full_join(info_present, info_past, by=c("P_ID"))  %>%  # after matching, get state info for t and t-1 from CPS
         filter(inter_num.x - inter_num.y == 4) 
@@ -141,7 +156,7 @@ base <- final_base %>%
 
 # counting sector-sector within state movements
 base <- base %>%
-  select(-month, -P_ID, -inter_num.x, -inter_num.y, -st_fips.x, -st_fips.y) %>%
+  dplyr::select(-month, -P_ID, -inter_num.x, -inter_num.y, -st_fips.x, -st_fips.y) %>%
   group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
   mutate(n_cps = sum(wtfinl)) %>%
   ungroup() %>%
@@ -149,7 +164,7 @@ base <- base %>%
   mutate(n_sample = n()) %>%
   ungroup() %>%
   distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) %>%
-  select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps, n_sample)
+  dplyr::select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps, n_sample)
 
 ##base  %>% 
 ##  filter(year == 1999)  %>% 
@@ -159,7 +174,7 @@ base <- base %>%
 ##
 base_temp  <- base  %>% 
   filter(year == 1999)  %>% 
-  filter(n_sample < 10)  %>% 
+  filter(n_sample < num_sample)  %>% 
   mutate(name = paste(state_ori, sector_ori))  %>% 
   arrange(state_ori, sector_ori)
 
@@ -167,12 +182,12 @@ unique(base_temp$name)     # list of dropped cases: 72 (state_ori, sector_ori)
 
 base  %>% 
   filter(year == 1999)  %>% 
-  select(n_sample)  %>% 
+  dplyr::select(n_sample)  %>% 
   summary()    # 1st quntile 37; Median 95; Mean: 824; 3rd quntile 390
 #base_before_drop  <- base  %>% 
 #  arrange(year, state_ori, sector_ori)
 base  <- base  %>% 
-  filter(n_sample >= 10)  # 224 observations dropped
+  filter(n_sample >= num_sample)  # 224 observations dropped
 
 # adding missing combinations
 temp <- data.frame(s_names)
@@ -726,12 +741,44 @@ transition_prob  %>%
 
 ```{r construct cps_nber_2_quarterly}
 # load CPS data from NBER
-cps_nber  <- haven::read_dta("/Users/yyh/Library/CloudStorage/OneDrive-LondonSchoolofEconomics/RUV_data_no_GitHub/CPS_redone/Outputs/clean_data_new.dta")
-write_csv(cps_nber, file = paste("1-Intermediate_Processed_Data/cps_nber_quarterly.xlsx", sep = ""))
+#cps_nber  <- haven::read_dta("/Users/yyh/Library/CloudStorage/OneDrive-LondonSchoolofEconomics/RUV_data_no_GitHub/CPS_redone/Outputs/clean_data_new.dta")
+#write_csv(cps_nber, file = paste("1-Intermediate_Processed_Data/cps_nber_quarterly.xlsx", sep = ""))
 
 cps_nber  <- read.csv("1-Intermediate_Processed_Data/cps_nber_quarterly.xlsx")
+
+cps_nber  <- cps_nber  %>% 
+  group_by(P_ID)  %>% 
+  mutate(indicator = ifelse(any(inter_num  %in%  c(1)), 1, 0))  %>% 
+  ungroup()
+
 mn_list <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 quart_inter  <- c(1, 4, 5, 8)
+
+# choose the number of observations within each household
+num_obs  <- c(1)  # c(1): only keep period 1 and 4; c(1, 2): keep period 1 and 4 as well as period 5 and 8
+
+# choose the restrictions on the sample size
+num_sample  <- 10
+
+#cps_nber <- cps_nber %>%.  # This is to keep HH with 1-8 complete first
+#  group_by(P_ID) %>%
+#  filter(all(c(1,2,3,4,5,6,7,8)  %in% inter_num))  %>%       
+#  ungroup()
+
+cps_nber  <- cps_nber  %>% 
+  filter(inter_num %in% quart_inter)  %>% 
+  mutate(group = ifelse(inter_num %in% c(1,4), 1, 2))
+
+cps_nber  <- cps_nber  %>% 
+  group_by(P_ID, group)  %>% 
+  filter(
+    (all(c(1, 4) %in% inter_num)) |    # keep observation when 1 and 4 both appear
+    (all(c(5, 8) %in% inter_num))      # keep observation when 5 and 8 both appear
+  )  %>% 
+  ungroup() 
+  
+cps_nber  <- cps_nber  %>% 
+  filter(group %in% num_obs)   # keep one or two pair of observations for each HH
 
 # annual matching
 a  <- cps_nber  %>% 
@@ -752,10 +799,10 @@ a  <- cps_nber  %>%
 ##  ungroup()
 
 ## keep only one observation
-cps_nber <- cps_nber %>%
-  group_by(P_ID) %>%
-  filter(any(inter_num == 4) & any(inter_num == 1))  %>% 
-  ungroup()
+#cps_nber <- cps_nber %>%
+#  group_by(P_ID) %>%
+#  filter(any(inter_num == 4) & any(inter_num == 1))  %>% 
+#  ungroup()
 c <- cps_nber  %>% 
   distinct(P_ID)  %>% 
   n_distinct()
@@ -783,7 +830,7 @@ info_past  <- temp_cps  %>%
   dplyr::rename(sector_ori = sector, state_ori = st_name)
   
 temp <- full_join(info_present, info_past, by = c("P_ID"))  %>% # after matching, get state info for t and t-1 from CPS
-  filter( inter_num.x - inter_num.y == 3 )  %>% filter( inter_num.x == 4 | inter_num.x == 8) # keep one observation
+  filter( inter_num.x - inter_num.y == 3 )
   
 temp <- temp %>%
   filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) %>% # only matches
@@ -803,7 +850,6 @@ base <- rbind(base, temp)
 
 base  <- base  %>% 
   distinct(year, month, P_ID, .keep_all = TRUE)
-
 
 base  <- base  %>% 
   mutate(quarter = ifelse(month %in% c("jan", "feb", "mar"), 1, 0) )  %>% 
@@ -856,7 +902,7 @@ base <- base %>%
 
 base_temp  <- base  %>% 
   filter(year == 1999)  %>% 
-  filter(n_sample < 10)  %>% 
+  filter(n_sample < num_sample)  %>% 
   mutate(name = paste(state_ori, sector_ori))  %>% 
   arrange(state_ori, sector_ori)
 
@@ -869,7 +915,7 @@ base  %>%
 
 
 base  <- base  %>% 
-  filter(n_sample >= 10)  # 1450 observations dropped
+  filter(n_sample >= num_sample)  # 1450 observations dropped
 #base  <- base  %>% 
 #  filter(n_sample >= 5)  
 
@@ -890,8 +936,8 @@ cps_nber  <- combo_st_sec_yr  %>%
 
 cps_nber_  <- cps_nber
 
-before  <- cps_nber
-before  ->  cps_nber
+#before  <- cps_nber
+#before  ->  cps_nber
 
 ############################ Modification: proportionality assumption on diagonals ##################################
 # replacing 0 in diag based on median non-zero diag shares within year-sector
