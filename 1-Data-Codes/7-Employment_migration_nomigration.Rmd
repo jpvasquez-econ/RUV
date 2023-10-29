@@ -24,7 +24,7 @@ remove(list = ls())
 set.seed(2023)
 options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'readr', 'data.table');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'data.table');
 # Install libraries in case they are not installed
 for( i in length(libs)){ 
   if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
@@ -123,6 +123,191 @@ colnames(SEA) <- c("country", "variable", "description", "code", "1995", "1996",
 sectors_WIOD_SEA_final <- read.csv(paste("0-Raw_Data/sectors_WIOD_SEA_final.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 colnames(sectors_WIOD_SEA_final) <- c("description", "final_sector") 
 
+#sector-country employment
+SEA_1 <- SEA %>%
+  filter(variable == "EMP") %>%
+  select(-variable, -"2010", -"2011", -code)
+SEA_1 <- reshape2::melt(SEA_1, id.vars=c("country", "description"), variable.name="year", value.name = "employ")
+
+SEA_2 <- SEA_1 %>%
+  mutate(year = as.numeric(as.character(year)), employ = as.numeric(employ)) %>%
+  mutate(employ = ifelse(is.na(employ) == TRUE, 0, employ)) %>%
+  filter(year >= 1999 & year <= 2000) %>%
+  left_join(sectors_WIOD_SEA_final, by=c('description'='description')) %>%
+  select(-description) %>%
+  dplyr::rename(sector = final_sector) %>%
+  filter(is.na(sector) == FALSE) %>%
+  mutate(country = ifelse(country %notin% c_names, "RoW", country)) %>%
+  group_by(year, country, sector) %>%
+  mutate(employ = sum(employ)) %>%
+  ungroup() %>%
+  mutate(region = country) %>%
+  distinct(year, region, sector, .keep_all = TRUE) %>%
+  group_by(year, region) %>%
+  mutate(tot_employ = sum(employ)) %>%
+  ungroup() %>%
+  select(-country,-tot_employ)
+
+#ROW calibration
+bilat <- read_excel("2-Final_Data/bilat_matrix_allyears.xlsx", sheet = "year2000")
+bilat <- reshape2::melt(bilat, id.vars=c("importer", "sector"), variable.name="exporter", value.name = "value")
+bilat <- bilat %>%
+  mutate(exporter = toupper(exporter), sector = sector - 100) %>%
+  mutate(exporter = ifelse(exporter == "ROW", "RoW", exporter)) %>%
+  mutate(exporter = ifelse(exporter %notin% c_names, "USA", exporter)) %>%
+  group_by(exporter, sector) %>%
+  mutate(R = sum(value)) %>%
+  ungroup() %>%
+  group_by(exporter) %>%
+  mutate(R_0 = sum(value)) %>% #all sales
+  ungroup() %>%
+  distinct(exporter, sector, .keep_all = TRUE) %>%
+  select(exporter, sector, R, R_0)
+bilat_0 <- bilat %>%
+  select(exporter, R_0) %>%
+  distinct(exporter, .keep_all = TRUE)
+bilat <- bilat %>% select(exporter, sector, R)
+
+#merge with SEA
+SEA_2 <- SEA_2 %>%
+  left_join(bilat, by=c("region"="exporter", "sector"="sector")) %>%
+  left_join(bilat_0, by=c("region"="exporter")) %>%
+  mutate(R = ifelse(sector == 0, R_0, R)) %>% 
+  mutate(prod_by_employ = ifelse(region != "RoW", R/employ, NA)) %>%
+  group_by(year, sector) %>%
+  mutate(avg_prod_by_employ = mean(prod_by_employ, na.rm=TRUE)) %>%
+  ungroup() %>%
+  mutate(employ = ifelse(region == "RoW", R/avg_prod_by_employ, employ)) %>%
+  select(-R, -R_0, -prod_by_employ, -avg_prod_by_employ)
+
+#saving
+write.table(SEA_2, file = paste("1-Intermediate_Processed_Data//L_1999_2000_countries.csv", sep=""), sep = ",", row.names = FALSE)
+
+#US sector-country employment (WE ARE CHANGING THIS PART TO USE BLS)
+# load CPS data from NBER
+cps_nber  <- haven::read_dta("0-Raw_Data/CPS/CPS_NBER/Outputs/clean_data_new.dta")
+write.table(cps_nber, file = paste("1-Intermediate_Processed_Data/cps_nber_yearly.csv", sep=""), sep = ",", row.names = FALSE)
+
+cps_nber <- read.csv("1-Intermediate_Processed_Data/cps_nber_yearly.csv")
+
+cps_nber2 <- cps_nber %>%
+  filter(year >= 1999 & year <= 2000) %>%
+  group_by(year, st_name, sector) %>%
+  mutate(employment = sum(wtfinl)) %>%
+  ungroup() %>%
+  distinct(year, st_name, sector, .keep_all = TRUE) %>%
+  select(year, st_name, sector, employment)
+
+US_total_2000 <- cps_nber2 %>%
+  filter(year == 2000) %>%
+  mutate(US_total = sum(employment)) %>%
+  distinct(year, .keep_all = TRUE) %>%
+  select(US_total) 
+US_total_2000 <- as.numeric(US_total_2000/1000)
+
+
+cps_nber2 <- cps_nber2 %>%
+  group_by(year) %>%
+  mutate(US_total = sum(employment)) %>%
+  mutate(share_proportionality = US_total_2000/US_total) %>%
+  mutate(employment = employment*share_proportionality) %>%
+  ungroup() %>%
+  select(employment, year, sector, st_name)
+
+# WIOD proportionality (see .lyx file)
+SEA_US_2000 <- SEA_2 %>%
+  filter(region == "USA" & year == 2000) %>%
+  mutate(employ_temp = ifelse(sector == 0, 0, employ)) %>%
+  mutate(sum_SEA_US_2000_not0 = sum(employ_temp))
+sum_SEA_US_2000_not0 <- SEA_US_2000$sum_SEA_US_2000_not0[1]
+
+#here we want to apply proportionality so that things add up to US - WIOD sector by sector
+L_2000 <- read.csv("1-Intermediate_Processed_Data/L_2000_base.csv", header = TRUE, sep = ",", dec = ".")
+L_2000 <- melt(L_2000, id.vars=c("state"), variable.name="sector", value.name = "employ")
+L_2000 <- L_2000 %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector))) %>%
+  arrange(state, sector) %>%
+  mutate(employ_temp = ifelse(sector == 0, 0, employ)) %>%
+  mutate(sum_L_data_not0 = sum(employ_temp)) 
+sum_L_data_not0 <- L_2000$sum_L_data_not0[1]
+  
+L_2000 <- L_2000 %>%
+  select(-sum_L_data_not0, -employ_temp) %>%
+  mutate(employ2 = (sum_SEA_US_2000_not0/sum_L_data_not0)*employ)
+L_2000 <- spread(L_2000, sector, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+
+#saving
+write.table(cps_nber2, file = paste("1-Intermediate_Processed_Data//L_1999_2000_states.csv", sep=""), sep = ",", row.names = FALSE)
+
+  
+mn_list  <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+# Choose the number of observation for each household
+num_obs_present  <- c(5, 6, 7, 8)   # up to: 1 observation c(5); 2 observations c(5,6); 4 observations c(5,6,7,8)
+num_obs_past  <- c(1, 2, 3, 4)       # up to: 1 observation c(1); 2 observations c(1,2); 4 observations c(1,2,3,4)
+
+# Choose the restriction on the number of respondents (i.e sample size) within (year, state_ori, sector_ori)
+num_sample  <- 0
+
+# matching persons via same month in consecutive years based on H_ID and P_ID
+# keep one observation
+##base <- c()
+##for (yr in 1997:2002) {
+##for (mn in mn_list) {
+### print(yr)
+### print(mn)
+##temp_cps_nber <- cps_nber %>%
+##  filter(month == mn & ( (year == yr & inter_num==5) | (year == yr-1 & inter_num==1) ))
+##
+##info_present <- temp_cps_nber %>% 
+##  filter(year == yr) %>%
+##  dplyr::rename(sector_dest = sector, state_dest = st_name)
+##info_past <- temp_cps_nber %>%
+##  filter(year == yr-1) %>%
+##  select(-year, -month, -wtfinl) %>% 
+##  dplyr::rename(sector_ori = sector, state_ori = st_name)
+##temp <- full_join(info_present, info_past, by=c("P_ID")) # after matching, get state info for t and t-1 from CPS
+##temp <- temp %>%
+##  filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) %>% # only matches
+##  distinct( P_ID, .keep_all = TRUE)
+##base <- rbind(base, temp)
+##}
+##}
+
+# keep two observations
+base <- c()
+for (yr in 1997:2002) {
+for (mn in mn_list) {
+# print(yr)
+# print(mn)
+  
+# use up to 2 observations
+#temp_cps_nber <- cps_nber %>%
+#  filter(month == mn & ( (year == yr & inter_num==5) | (year == yr-1 & inter_num==1) | (year == yr & inter_num==6) | (year == yr-1 & inter_num==2))) 
+# use up to 4 observations
+#temp_cps_nber <- cps_nber %>%
+#  filter(month == mn & ( (year == yr & inter_num  %in% c(5, 6, 7, 8)) | (year == yr-1 & inter_num  %in% c(1, 2, 3, 4)) ) ) 
+  
+temp_cps_nber  <- cps_nber  %>% 
+  filter(month == mn & (  (year == yr & inter_num  %in% num_obs_present ) | (year == yr-1 & inter_num  %in% num_obs_past ) ))
+
+info_present <- temp_cps_nber %>% 
+  filter(year == yr) %>%
+  dplyr::rename(sector_dest = sector, state_dest = st_name)
+info_past <- temp_cps_nber %>%
+  filter(year == yr-1) %>%
+  dplyr::select(-year, -month, -wtfinl) %>% 
+  dplyr::rename(sector_ori = sector, state_ori = st_name)
+temp <- full_join(info_present, info_past, by=c("P_ID"))  %>%  # after matching, get state info for t and t-1 from CPS
+        filter(inter_num.x - inter_num.y == 4) 
+temp <- temp %>%
+  filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) %>% # only matches
+  distinct( P_ID, .keep_all = TRUE)
+base <- rbind(base, temp)
+}
+}
+
+
 #Labor force participation rate
 LFP <- read_excel("0-Raw_Data/Labor_force_participation.xlsx", range = "A1:C89")
 LFP <- LFP %>% 
@@ -174,7 +359,7 @@ c <- 1
 census_list <- vector("list", length = n_s)
 
 for (i in list){
-CENSUS_PUMS <- read_csv(paste("0-Raw_Data/CENSUS_2000/PUMS5_", i,".txt", sep=""), col_names = FALSE, col_types = cols())
+CENSUS_PUMS <- read_csv(paste("0-Raw_Data/CENSUS_2000/PUMS5/PUMS5_", i,".txt", sep=""), col_names = FALSE, col_types = cols())
 CENSUS_PUMS$state <- s_names[c]
 
 #creating variables
