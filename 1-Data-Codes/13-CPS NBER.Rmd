@@ -77,7 +77,7 @@ num_obs_present  <- c(5, 6, 7, 8)   # up to: 1 observation c(5); 2 observations 
 num_obs_past  <- c(1, 2, 3, 4)       # up to: 1 observation c(1); 2 observations c(1,2); 4 observations c(1,2,3,4)
 
 # Choose the restriction on the number of respondents (i.e sample size) within (year, state_ori, sector_ori)
-num_sample  <- 0
+num_sample  <- 10
 
 # matching persons via same month in consecutive years based on H_ID and P_ID
 # keep one observation
@@ -660,7 +660,7 @@ epsilon <- 0.01
 check <- mu_1999_prime %>% select(-year, -state_ori, -sector_ori)
 if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
   stop("mobility shares do not add to 1")
-write.table(mu_1999_prime, file = paste("2-Final_Data/mu_1999_nber_case3_yearly.xlsx", sep=""), sep = ",", row.names = FALSE)
+write.table(mu_1999_prime, file = paste("2-Final_Data/mu_1999_nber_case3_yearly.csv", sep=""), sep = ",", row.names = FALSE)
 
 ```
 
@@ -737,7 +737,7 @@ epsilon <- 0.01
 check <- mu_1999_prime %>% select(-year, -state_ori, -sector_ori)
 if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
   stop("mobility shares do not add to 1")
-write.table(mu_1999_prime, file = paste("2-Final_Data/mu_1999_nber_case4_yearly.xlsx", sep=""), sep = ",", row.names = FALSE)
+write.table(mu_1999_prime, file = paste("2-Final_Data/mu_1999_nber_case4_yearly.csv", sep=""), sep = ",", row.names = FALSE)
 
 ```
 
