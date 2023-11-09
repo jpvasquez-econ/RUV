@@ -222,7 +222,7 @@ census <- rbindlist(census_list)
 rm(census_list)
 
 # computing employment and unemployment, by sector and state
-census <- census %>%
+censustest2 <- census %>%
   group_by(state, sector) %>%
   mutate(num_employ = n()) %>%
   ungroup() %>%

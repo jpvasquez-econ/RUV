@@ -1,0 +1,583 @@
+---
+title: "L_1999&L_2000"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  pdf_document:
+    number_sections: yes
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
+# libraries
+options( scipen=100, digits = 15, stringsAsFactors=FALSE ); # no scientific notation, up to 15 digits 
+
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readxl', 'writexl', 'readr', 'data.table', "openxlsx", "readxl");
+# Install libraries in case they are not installed
+for( i in seq_along(libs)) { 
+     if( !(libs[i] %in% installed.packages()) ) install.packages( libs[i] ) 
+};
+# Loading libraries
+lapply( libs, require, character.only=TRUE );
+```
+
+## General Instructions
+
+1) **Task 1**: This code computes the employment level for each state and sector in year 2000 using CBS data.
+2) **Task 2**: This code computes the employment level for each state and sector in year 2000 and year 1999 using BLS data.
+3) **Task 3**:  This code computes the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data. 
+4) **Task 4**: This code reshapes the outputs of step 1, step 2 and step 3, and binds them. It also applies a proportionality rule to step 1 and step 2 for consistency with SEA (and with zero population growth too in BLS' case). 
+
+
+## Input files
+
+1. `0-Raw_Data/sectors.csv`
+2. `0-Raw_Data/regions.csv`
+3. `0-Raw_Data/CENSUS_2000/REVISEDPUMS5/REVISEDPUMS5_.txt`
+4. `0-Raw_Data/CENSUS_2000/employment_2000.xls`
+5. `0-Raw_Data\L_1999\Sectors\sector_\1999.annual_.csv`
+6. `0-Raw_Data\L_2000\Sectors\sector_\2000.annual_.csv`
+7. `0-Raw_Data\staadata.xlsx`
+8. `0-Raw_Data/CENSUS_2000/L_1999_2000_countries.csv`
+9. `0-Raw_Data/CENSUS_2000/EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv`
+10. `0-Raw_Data/CENSUS_2000/P_World unemployment rates.xlsx`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data//L_`2000CENSUS`.csv`   
+2. `1-Intermediate_Processed_Data//L_`1999BLS`.csv`
+3. `1-Intermediate_Processed_Data//L_`2000BLS`.csv`
+
+## Importing general datasets to R
+
+1. Construct table for sector classifications.
+2. Construct list of US states.
+
+
+```{r message=FALSE, warning=FALSE}
+
+#US states
+regions <- read.csv("0-Raw_Data/regions.csv")  
+s_names <- regions %>% filter(status == "state") 
+s_names <- s_names$region
+n_s <- length(s_names)
+
+# sector reclassification table (NAICS to final)
+sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+sectors_naics_final <- sectors_naics_final %>% 
+  select(final_sector, naics) %>%
+  mutate(naics = as.character(naics)) %>%
+  distinct(final_sector, naics)
+
+```
+
+## Task 1
+
+1. Construct employment levels for each US state from Census 2000: distribute total employment between our 14 sectors using a proportionality rule.
+2. Take CBS total non-participants for each state directly as the sector 0 value.
+
+```{r message=FALSE, warning=FALSE}
+# employment statistics in year 2000, by state
+employment_pop <- read_excel("0-Raw_Data/CENSUS_2000/employment_2000.xls", skip = 12)
+employment_pop <- employment_pop %>%
+  dplyr::rename(state = ...1, Not_LF = ...8, employed = Employed, unemployed = Unemployed) %>%
+  filter(is.na(state) == FALSE) %>%
+  mutate(state = gsub(" ", "", state)) %>% #taking out spaces
+  filter(state %in% s_names) %>%
+  select(state, employed, Not_LF) %>%
+  mutate(Not_LF = Not_LF/1000, employed = employed/1000) #units in thousands (as WIOD)
+
+# loading Census PUMS 2000
+list <- c("01", "02", "04", "05", "06", "08", "09", setdiff(10:56, c(11,14,43,52)))
+c <- 1
+census_list <- vector("list", length = n_s)
+
+for (i in list){
+CENSUS_PUMS <- read_csv(paste("0-Raw_Data/CENSUS_2000/REVISEDPUMS5/REVISEDPUMS5_", i,".txt", sep=""), col_names = FALSE)
+CENSUS_PUMS$state <- s_names[c]
+
+# creating variables: age, employment status, person weight, and industry info for each US state
+CENSUS_PUMS <- CENSUS_PUMS %>%
+  mutate(len = nchar(X1)) %>% #only two len: Households and Persons; len matches with dictionary
+  mutate(type = substr(X1, start=1, stop=1)) %>%  #identify Households and Persons
+  filter(type=="P") %>% #keeping only Persons and NOT Households
+  mutate(personweight = substr(X1, start=13, stop=16)) %>%
+  mutate(age = as.numeric(substr(X1, start=25, stop=26))) %>% 
+  filter(age >=25 & age <=65) %>%
+  mutate(employ_status = as.numeric(substr(X1, start=154, stop=154))) %>%
+  filter(is.na(employ_status) == FALSE & ((employ_status>=1 & employ_status<=3)|employ_status==6)) %>%
+  mutate(employ_status = as.numeric(recode( as.character(employ_status), '6' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>% 
+  mutate(naics = substr(X1, start=215, stop=217)) %>% #industry information
+  mutate(naics = ifelse(employ_status == 0, NA, naics)) %>%
+  filter((employ_status == 0 & is.na(naics) == TRUE)|(employ_status == 1 & is.na(naics) == FALSE)) %>%
+  mutate(naics = ifelse(naics == "23 ", "230", naics)) %>%
+  mutate(naics = ifelse(naics == "31M", "313", naics)) %>%
+  mutate(naics = ifelse(naics == "4MS", "423", naics)) %>%
+  left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
+  dplyr::rename(sector = final_sector) %>%
+  filter(is.na(sector) == FALSE) %>% #NAICS that are not in final sectors
+  select(-X1)
+census_list[[c]] <- CENSUS_PUMS #each list in census_list contains all the micro-info for each US state
+rm(CENSUS_PUMS)
+print(s_names[c])
+c <- c + 1
+}
+census <- rbindlist(census_list)
+census$personweight <- as.numeric(census$personweight)
+rm(census_list)
+
+# computing employment, by sector and state
+census <- census %>%
+  group_by(state, sector) %>%
+  mutate(num_employ = sum(personweight)) %>%
+  ungroup() %>%
+  distinct(state, sector, .keep_all = TRUE) %>%
+  select(state, sector, num_employ) %>%
+  arrange(state, sector) %>%
+  mutate(num_employ = ifelse(sector == 0, 0, num_employ)) %>% #non-participants total (not sample) will be added directly
+  group_by(state) %>%
+  mutate(tot = sum(num_employ)) %>%
+  ungroup() %>%
+  mutate(rel = num_employ/tot) %>% #employment share for each sector
+  left_join(employment_pop, by=c('state'='state')) %>% #total employed people
+  mutate(employ = rel*employed) %>% #total employed people by sector (not sample)
+  mutate(employ = ifelse(sector == 0, Not_LF, employ)) %>% #total non-participants
+  select(state, sector, employ)
+```
+
+## Task 2
+
+1. Calculate employment by sector and state directly from BLS, for sectors 1-14.
+2. Take BLS total non-participants for each state directly as the sector 0 value.
+```{r message=FALSE, warning=FALSE}
+################################
+### US-sectors 1-14 for 1999 ###
+################################
+# Main directory
+mainpath <- "0-Raw_Data/L_1999/Sectors"
+
+#Load every NAICS sub-sector and append them according to our sectors.
+for (i in 1:14) {
+  current_sector <- paste0("sector", i)
+  current_sector_file <- file.path(mainpath, current_sector)
+  files <- list.files(path = current_sector_file, pattern = "\\.csv", full.names = TRUE)
+  concat <- data.frame()
+  for (file in files) {
+    data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+    concat <- rbind(concat, data)
+  }
+  assign(paste0("sector_", i), concat)
+}
+#Select states only (no counties).
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector)[substr(get(sector)$area_title, nchar(get(sector)$area_title) - 8, nchar(get(sector)$area_title)) == "Statewide", , drop = FALSE])
+}
+#Sum over NAICS sub-sectors for each state to get our sectors.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector) %>%
+           group_by(area_title) %>%
+           mutate(employment = sum(annual_avg_emplvl, na.rm = TRUE)) %>%
+           ungroup()
+  )
+}
+#Leave only one observation for each state for each of our sectors.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, select(get(sector), employment, area_title) %>%
+           distinct()
+  )
+}
+#Leave only each state's name.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector) %>%
+           mutate(state = substr(area_title, 1, nchar(area_title) - 13))
+  )
+}
+#Drop Puerto Rico and Virgin Islands.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector) %>%
+           filter(state != "Puerto Rico" & state != "Virgin Islands") %>%
+           select(-area_title)
+  )
+}
+#Add columns to indicate year and sector.
+for (i in 1:14) {
+  namesector <- paste0("sector_", i)
+  assign(namesector, get(namesector) %>%
+           mutate(sector = ifelse(i < 10, sprintf("%02d", i), as.character(i))) %>%
+           mutate(year = 1999)
+  )
+}
+#Add missing states.
+sector_4 <- rbind(sector_4, data.frame(state = c("Vermont", "Rhode Island"),
+                                       year = 1999,
+                                       employment = c(0, 0),
+                                       sector = rep("04", 2)))
+sectorsmissingstates <- 5:8
+for (i in sectorsmissingstates) {
+  sector <- paste0("sector_", i)
+  assign(sector, rbind(get(sector), data.frame(state = "Alaska", year = 1999, employment = 0, sector = sprintf("%02d", i))))
+}
+sector_10 <- rbind(sector_10, data.frame(state = c("Alaska", "Hawaii"),
+                                         year = 1999,
+                                         employment = c(0, 0),
+                                         sector = rep("10", 2)))
+#Put together all the sectors.
+states_1999BLS <- bind_rows(mget(paste0("sector_", 1:14)))
+
+################################
+### US-sectors 1-14 for 2000 ###
+################################
+# Main directory
+mainpath <- "0-Raw_Data/L_2000/Sectors"
+#Load every NAICS sub-sector and append them according to our sectors.
+for (i in 1:14) {
+  current_sector <- paste0("sector", i)
+  current_sector_file <- file.path(mainpath, current_sector)
+  files <- list.files(path = current_sector_file, pattern = "\\.csv", full.names = TRUE)
+  concat <- data.frame()
+  for (file in files) {
+    data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+    concat <- rbind(concat, data)
+  }
+  assign(paste0("sector_", i), concat)
+}
+#Select states only (no counties).
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector)[substr(get(sector)$area_title, nchar(get(sector)$area_title) - 8, nchar(get(sector)$area_title)) == "Statewide", , drop = FALSE])
+}
+#Sum over NAICS sub-sectors for each state to get our sectors.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector) %>%
+           group_by(area_title) %>%
+           mutate(employment = sum(annual_avg_emplvl, na.rm = TRUE)) %>%
+           ungroup()
+  )
+}
+#Leave only one observation for each state for each of our sectors.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, select(get(sector), employment, area_title) %>%
+           distinct()
+  )
+}
+#Leave only each state's name.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector) %>%
+           mutate(state = substr(area_title, 1, nchar(area_title) - 13))
+  )
+}
+#Drop Puerto Rico and Virgin Islands.
+for (i in 1:14) {
+  sector <- paste0("sector_", i)
+  assign(sector, get(sector) %>%
+           filter(state != "Puerto Rico" & state != "Virgin Islands") %>%
+           select(-area_title)
+  )
+}
+#Add columns to indicate year and sector.
+for (i in 1:14) {
+  namesector <- paste0("sector_", i)
+  assign(namesector, get(namesector) %>%
+           mutate(sector = ifelse(i < 10, sprintf("%02d", i), as.character(i))) %>%
+           mutate(year = 2000)
+  )
+}
+#Add missing states.
+sector_4 <- rbind(sector_4, data.frame(state = c("Vermont", "Rhode Island"),
+                                       year = 2000,
+                                       employment = c(0, 0),
+                                       sector = rep("04", 2)))
+sectorsmissingstates <- 5:8
+for (i in sectorsmissingstates) {
+  sector <- paste0("sector_", i)
+  assign(sector, rbind(get(sector), data.frame(state = "Alaska", year = 2000, employment = 0, sector = sprintf("%02d", i))))
+}
+sector_10 <- rbind(sector_10, data.frame(state = c("Alaska", "Hawaii"),
+                                         year = 2000,
+                                         employment = c(0, 0),
+                                         sector = rep("10", 2)))
+states_2000BLS <- bind_rows(mget(paste0("sector_", 1:14)))
+
+
+####################
+### US-sector 0 ####
+####################
+
+#Prepare BLS labor force participation data
+PARTUS <- read_excel("0-Raw_Data/staadata.xlsx", range = "B1228:E1333",col_names = FALSE)
+colnames(PARTUS) <- c("state", "year", "pop", "part")
+PARTUS <- PARTUS %>%
+  mutate(employment = pop - part)
+PARTUS <- PARTUS %>%
+  filter(!(state %in% c("Los Angeles County", "District of Columbia", "New York city")))
+
+#Create 1999's sector 0 (non-participant).
+sector_0 <- subset(PARTUS, year == 1999)
+sector_0 <- sector_0 %>%
+  select(year, employment, state)
+sector_0 <- sector_0  %>%
+  mutate(sector="00")
+states_1999BLS <- rbind(states_1999BLS,sector_0)
+
+#Create 2000's sector 0 (non-participant).
+sector_0 <- subset(PARTUS, year == 2000)
+sector_0 <- sector_0 %>%
+  select(year, employment, state)
+sector_0 <- sector_0  %>%
+  mutate(sector="00")
+states_2000BLS <- rbind(states_2000BLS,sector_0)
+```
+
+## Task 3
+1. Calculate the number of non-participants for each country. 
+2. Append non-participants to SEA values to put together "employment" for all of our sectors for each country.
+
+For any country, let $L_{tot}$ represent working age population, $L_{work}$ represent employment, $unemp$ represent unemployment, and $L_{i}$ represent "employment" in sector $i$ $\forall i=0,...,14$. If we define $L_0$ as non-participants in the labor force, and if we assume that the labor market only has 14 sectors, then we know that:
+$$
+L_{tot}	=L_{0}+unemp+L_{work}
+$$
+$$
+L_{work}	=\sum_{i=1}^{14}L_{i}
+$$
+From ILO we know the value of the labor force participation rate ($lfp$) for each country; which using our assumptions satisfies
+$$
+1-lfp	=\dfrac{L_{0}^{ILO}}{L_{tot}^{ILO}}
+$$
+Superscripts simply indicate where the data is taken from; we adopt the same convention in what follows.
+
+Also, from ILO we know the value of the unemployment rate ($u$) for each country, which is:
+$$
+u	=\dfrac{unemp^{ILO}}{unemp^{ILO}+L_{work}^{ILO}}
+$$
+For the SEA values of each of our 14 (employment) sectors to be consistent with $u$ and $lfp$, we must have
+$$
+1-lfp = \dfrac{L_{0}^{SEA}}{L_{0}^{SEA}+unemp^{SEA}+L_{work}^{SEA}} \; \; \; (1)
+$$
+$$
+unemp^{SEA}	=u\times(L_{work}^{SEA}+unemp^{SEA}) \; \; \; (2)
+$$
+Equation $(2)$ implies
+$$
+unemp^{SEA}(1-u)	=u\times L_{work}^{SEA}
+\Leftrightarrow unemp^{SEA}	=\frac{u}{1-u}L_{work}^{SEA}
+$$
+Hence, we can substitute for $unemp^{SEA}$ in equation $(1)$:
+$$
+1-lfp=\dfrac{L_{0}^{SEA}}{L_{0}^{SEA}+\left[\frac{1}{1-u}\right]L_{work}^{SEA}}
+$$
+Then,
+$$
+(1-lfp)\times L_{0}^{SEA}+(1-lfp)\left[\frac{1}{1-u}\right]L_{work}^{SEA}	=L_{0}^{SEA}
+$$
+
+$$
+\Rightarrow -lfp\times L_{0}^{SEA}+(1-lfp)\left[\frac{1}{1-u}\right]L_{work}^{SEA}	= 0
+$$
+So, we conclude
+$$
+L_{0}^{SEA}=\frac{1-lfp}{lfp}\left[\frac{1}{1-u}\right]L_{work}^{SEA}
+$$
+
+We use this formula to calculate $L_{0}$ for each country using the unemployment rate and the labor force participation rate (both taken from ILO), and total employment, $\sum_{i=1}^{14}L_{i}$ (taken from SEA).  
+```{r message=FALSE, warning=FALSE}
+# Pepare lfp for each country.
+participation <- fread("0-Raw_Data/CENSUS_2000/EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv", encoding = "UTF-8")
+participation <- subset(participation, select = c(time, ref_area, obs_value))
+participation <- participation %>%
+  mutate(obs_value = obs_value/100)
+participation <- participation %>%
+  rename(
+    year = time,
+    lfp_rate = obs_value,
+    region = ref_area
+  )
+
+#Prepare u for each country.
+unemployment<- read_excel("0-Raw_Data/CENSUS_2000/P_World unemployment rates.xlsx")
+unemployment_1999 <- unemployment %>%
+  select(2, 5) %>%
+  rename(region = colnames(.)[1], u_rate = colnames(.)[2])
+unemployment_1999$year <- 1999
+unemployment_2000 <- unemployment %>%
+  select(2, 6) %>%
+  rename(region = colnames(.)[1], u_rate = colnames(.)[2])
+unemployment_2000$year <- 2000
+unemployment <- rbind(unemployment_1999,unemployment_2000)
+unemployment$u_rate <- as.numeric(unemployment$u_rate)
+unemployment <- unemployment %>%
+  mutate(u_rate = u_rate/100)
+#Taiwan's unemployment rate is missing from ILO, so we take it from https://www.worldeconomics.com/Demographics/Unemployment-Rate/Taiwan.aspx
+TWNu <- data.frame(
+  region = c("TWN", "TWN"),
+  year = c(1999, 2000),
+  u_rate = c(0.029, 0.03)
+)
+unemployment <- rbind(unemployment,TWNu)
+rates <- merge(unemployment, participation, by = c("year", "region"))
+rates <- rates[rates$region != "RWA", ]
+#We take RoW's lfp and u rates as the average of the corresponding rates for the other countries in our list.
+ROW <- rates %>%
+  group_by(year) %>%
+  summarize(lfp_rate = mean(lfp_rate, na.rm = TRUE),
+            u_rate = mean(u_rate, na.rm = TRUE))
+ROW$region <- "RoW"
+rates <- rbind(rates,ROW)
+
+#Prepare L_work for each country
+countries <- fread("0-Raw_Data/CENSUS_2000/L_1999_2000_countries.csv", encoding = "UTF-8")
+tot_employ_countries <- countries %>%
+  group_by(region, year) %>%
+  summarize(employ_sum = sum(employ))
+
+#Calculate secto_0 for each country.
+sector0countries <- merge(rates, tot_employ_countries, by = c("year", "region"))
+sector0countries <- sector0countries %>%
+  mutate(employ = ((1-lfp_rate)/lfp_rate)*(1/(1-u_rate))*employ_sum)
+sector0countries <- subset(sector0countries, select = c(employ, year, region))
+sector0countries$sector <- 0
+countries <- rbind(countries,sector0countries)
+countries$sector <- sprintf("sector_%02d", countries$sector)
+```
+
+## Task 4
+1. Employment for US-states for year 2000 must sum up to US' total employment for year 2000 according to SEA.
+2. Employment in year 1999 and year 2000 must be consistent with zero population growth for each country (including USA in the case of BLS data). 
+3. Reshape employment for states (CBS and BLS) and countries, and bind them to get a labor matrix. 
+
+```{r message=FALSE, warning=FALSE}
+###############################################################################
+#US' total employment for year 2000 according to SEA.
+USA2000 <- subset(countries, year == 2000 & region == "USA" & sector != "sector_00")
+total_USA2000 <- sum(USA2000$employ)
+
+#Normalization for BLS employment (year 2000).
+employment2000BLS <- subset(states_2000BLS, sector != "00")
+total_2000BLS <- sum(employment2000BLS$employment)
+states_2000BLS$employment <- states_2000BLS$employment * total_USA2000/total_2000BLS
+
+#Normalization for BLS employment (year 1999).
+total_2000BLS <- sum(states_2000BLS$employment)
+total_1999BLS <- sum(states_1999BLS$employment)
+states_1999BLS$employment <- states_1999BLS$employment * total_2000BLS/total_1999BLS
+
+#Normalization for CBS
+states_2000CENSUS <- census
+colnames(states_2000CENSUS)[colnames(states_2000CENSUS) == "employ"] <- "employment"
+employstates_2000CENSUS <- subset(census, sector != 0)
+total_2000CENSUS <- sum(employstates_2000CENSUS$employ)
+states_2000CENSUS$employment <- states_2000CENSUS$employment*total_USA2000/total_2000CENSUS
+
+#Change labels, and order to prepare for reshape.
+colnames(states_2000CENSUS)[colnames(states_2000CENSUS) == "state"] <- "region"
+states_2000CENSUS$sector <- sprintf("sector_%02d", states_2000CENSUS$sector)
+states_1999BLS$sector <- paste0("sector_", states_1999BLS$sector)
+states_1999BLS <- states_1999BLS %>% 
+  arrange(sector)
+colnames(states_1999BLS)[colnames(states_1999BLS) == "state"] <- "region"
+states_2000BLS$sector <- paste0("sector_", states_2000BLS$sector)
+states_2000BLS <- states_2000BLS %>% 
+  arrange(sector)
+colnames(states_2000BLS)[colnames(states_2000BLS) == "state"] <- "region"
+states_1999BLS$year <- NULL
+states_2000BLS$year <- NULL
+
+#Separate countries (1999 and 2000) and drop USA because now we have states.
+#And make country employment in 1999 sum up to country employment in 2000.
+countries <- subset(countries,region != "USA")
+countries <- countries %>%
+  group_by(year, region) %>%
+  mutate(tot_employ = sum(employ))
+countries_1999 <- countries[countries$year == 1999, ]
+countries_1999$year <- NULL
+countries_2000 <- countries[countries$year == 2000, ]
+countries_2000$year <- NULL
+countries_1999$sum2000 <- countries_2000$tot_employ
+countries_1999$employ <- countries_1999$employ*countries_1999$sum2000 / countries_1999$tot_employ
+countries_1999 <- countries_1999 %>%
+  select(-sum2000, -tot_employ)
+countries_2000$tot_employ <- NULL
+
+#Reshape and append to get the complete datasets
+states_1999BLS <- pivot_wider(states_1999BLS, 
+                           names_from = sector, 
+                           values_from = employment, 
+                           values_fill = 0)
+states_2000BLS <- pivot_wider(states_2000BLS, 
+                           names_from = sector, 
+                           values_from = employment, 
+                           values_fill = 0)
+states_2000CENSUS <- pivot_wider(states_2000CENSUS, 
+                           names_from = sector, 
+                           values_from = employment, 
+                           values_fill = 0)
+countries_1999 <- pivot_wider(countries_1999, 
+                              names_from = sector, 
+                              values_from = employ, 
+                              values_fill = 0)
+countries_1999 <- countries_1999 %>%
+  mutate(region = ifelse(region == "RoW", "ROW", region)) %>%
+  arrange(region) %>%
+  mutate(region = ifelse(region == "ROW", "RoW", region))
+countries_2000 <- pivot_wider(countries_2000, 
+                              names_from = sector, 
+                              values_from = employ, 
+                              values_fill = 0)
+countries_2000 <- countries_2000 %>%
+  mutate(region = ifelse(region == "RoW", "ROW", region)) %>%
+  arrange(region) %>%
+  mutate(region = ifelse(region == "ROW", "RoW", region))
+L_1999BLS <- rbind(states_1999BLS,countries_1999)
+L_2000BLS <- rbind(states_2000BLS,countries_2000)
+L_2000CENSUS <- rbind(states_2000CENSUS,countries_2000)
+```
+
+```{r message=FALSE, warning=FALSE}
+
+#Save datasets
+
+fwrite(
+  L_2000CENSUS,
+  file.path(
+    "1-Intermediate_Processed_Data",
+    "L_2000CENSUS.csv"
+  )
+)
+
+fwrite(
+  L_1999BLS,
+  file.path(
+    "1-Intermediate_Processed_Data",
+    "L_1999BLS.csv"
+  )
+)
+
+fwrite(
+  L_2000BLS,
+  file.path(
+    "1-Intermediate_Processed_Data",
+    "L_2000BLS.csv"
+  )
+)

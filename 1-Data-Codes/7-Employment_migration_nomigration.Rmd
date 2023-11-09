@@ -180,6 +180,19 @@ SEA_2 <- SEA_2 %>%
   mutate(employ = ifelse(region == "RoW", R/avg_prod_by_employ, employ)) %>%
   select(-R, -R_0, -prod_by_employ, -avg_prod_by_employ)
 
+###############################################################################
+#Sectors must be weighted to be consistent with our new sector 0 and RoW lfp rate according to World Bank.
+SEA_countries <- read.csv("1-Intermediate_Processed_Data/SEA_countries.csv")
+total_2000_RoW <- sum(subset(SEA_countries, year == 2000 & country == 'RoW')$employ)
+participation_rate <- read.csv("0-Raw_Data/LFP_WB.csv")
+oldlfp_RoW <- subset(participation_rate, Country.Code == 'WLD')$X2000
+oldlfp_RoW <- oldlfp_RoW/100
+newlfp_RoW <- 1 - (subset(SEA_countries, year == 2000 & country == 'RoW' & sector == 0)$employ)/total_2000_RoW
+weight <- (oldlfp_RoW/(1-oldlfp_RoW))*((1-newlfp_RoW)/newlfp_RoW)
+SEA_2$employ <- ifelse(SEA_2$region == 'RoW' & SEA_2$year == 2000, SEA_2$employ * weight, SEA_2$employ)
+###############################################################################
+
+
 #saving
 write.table(SEA_2, file = paste("1-Intermediate_Processed_Data//L_1999_2000_countries.csv", sep=""), sep = ",", row.names = FALSE)
 

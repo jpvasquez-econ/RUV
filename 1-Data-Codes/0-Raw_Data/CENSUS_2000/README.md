@@ -2,13 +2,41 @@
 
 This file explains how to calculate labor allocation by state an sector for the years 1999-2007 and how to compute the labor movements across these states and sectors for all those years.
 
-## Employment allocation in each state and sector for 2000
+## Employment allocation in each country for 1999 and 2000
+Compute the employment level for each country and sector for year 1999 and year 2000 using ILO and SEA data. Steps to follow:
 
-We first compute the employment level for each state and sector in the year 2000. Steps to follow:
+1. Download ILO estimate country unemployment rates $u$ from [here](https://databank.worldbank.org/World-unemployment-rates/id/c5765b65#), selecting only our years and countries of interest; that is how we get the file "P_World unemployment rates.xlsx". Download ILO estimate country labor force participation rates $lfp$ from [here](https://www.ilo.org/shinyapps/bulkexplorer17/?lang=en&segment=indicator&id=EAP_2WAP_SEX_AGE_RT_A), selecting only "Total" rows and only for our years and countries of interest; that is how we get the file "EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv".
 
-1. Download the employment and unemployment levels for each state in the year 2000 that the Census Bureau published based on the 2000 Decennial Census. The file is entitled "Table 1. Employment Status of the Population 16 Years Old and Over in Households for the United States, States, Counties, and for Puerto Rico: 2000." Download the revised Excel xls file. The file can be accessed [here](https://www.census.gov/data/tables/2000/dec/phc-t-28.html). We changed the name of the downloaded excel file to "employment_2000.xls".
-2. The previous does not include distribution of workers by sectors. To gather such disaggregation we  use the 5 % sample PUMS files of the 2000 Census. These files are available [here](https://www.census.gov/data/datasets/2000/dec/microdata.html). One needs to open the folder "All additional files for the PUMS 5-Percent Dataset" and download the file "PUMS5.txt" within each state folder. There is no need to change the name of the downloaded text files.  Also, note that the variable dictionary for the census data is located in the same link and is entitled "5%_PUMS_record_layout.xls".  Note that each observation is compressed in a single line to save space. Therefore, the variables of interest have to be created using start and stop character positions.  For more information regarding the NAICS industry codes used in the census sample files, see p. 547 in [here](https://www.census.gov/prod/cen2000/doc/pums.pdf); the most updated version of the previous NAICS table can be found in [here](https://www2.census.gov/programs-surveys/cps/methodology/Industry Codes.pdf). Whenever available we use NAICS codes instead of Census Industry codes, and then recode them to final sectors.
-3. In the census 2000 sample we only keep observations type "P" (persons) with age in between 25 and 65, and that are either employed, unemployed or out of labor force. Unemployment plus non-participation will be considered an extra sector: sector 0. NAICS sectors are recoded into final sectors of interest. We apply a proportionality rule with respect to the population employment and unemployment (plus non participation) levels by state to obtain the labor allocation vector for each state and sector for 2000, $L_{2000}$. 
+2. Employment for sectors 1-14 for each country are known from SEA (they are all in "L_1999_2000_countries.csv") for year 1999 and year 2000, so we can take total employment for each country and each year as $L^{SEA,year}_{work}	=\sum_{i=1}^{14}L^{SEA,year}_{i}$. For each country we then calculate sector 0 values for each year as 
+$$
+\frac{1-lfp}{lfp}\left[\frac{1}{1-u}\right]L_{work}^{SEA}
+$$
+(the math behind this formula is fully explained in "L_1999&L_2000.Rmd").
+
+3. Finally, we normalize values for each sector and country for year 1999 so that employment for each country in 1999 sums up to its employment in 2000. Hence, employment in year 1999 and year 2000 is consistent with zero population growth for each country.
+
+## Employment allocation in each state and sector for 1999 and 2000
+
+### Employment allocation in each state and sector for 2000 using CBS data
+Compute the employment level for each state and sector for year 2000 using CBS data. Steps to follow:
+
+1. Download the employment, unemployment and non-participation levels for each state in year 2000 that CBS published based on the 2000 Decennial Census. The file is entitled "Table 1. Employment Status of the Population 16 Years Old and Over in Households for the United States, States, Counties, and for Puerto Rico: 2000." Download the revised Excel file; the file can be accessed [here](https://www.census.gov/data/tables/2000/dec/phc-t-28.html). We changed the name of the downloaded excel file to "employment_2000.xls".
+2. The previous step does not include distribution of workers by sectors. To gather such disaggregation, we use the 5 % sample REVISEDPUMS files of the 2000 Census. These files are available [here](https://www.census.gov/data/datasets/2000/dec/microdata.html). One needs to open the folder "All additional files for the PUMS 5-Percent Dataset" and download the file "REVISEDPUMS5.txt" within each state's folder. Also, note that the variable dictionary for the census data is located in the same link and is entitled "5%_PUMS_record_layout.xls". Note that each observation is compressed in a single line to save space. Therefore, the variables of interest have to be created using start and stop character positions.  For more information regarding the NAICS industry codes used in the census sample files, see p. 547 [here](https://www.census.gov/prod/cen2000/doc/pums.pdf). The most updated version of the previous NAICS table can be found [here](https://www2.census.gov/programs-surveys/cps/methodology/Industry Codes.pdf). Whenever available, we use NAICS codes instead of Census Industry codes, and then recode them to final sectors.
+
+3. In the 2000 census sample we only keep observations type "P" (persons) with age in between 25 and 65, and that are employed. Non-participation will be considered an extra sector: sector 0. The "employment" for sector 0 is taken directly as the reported value of non-participants for each state in "employment_2000.xls"; to construct the other 14 sectors, NAICS sectors are recoded into our final sectors and we apply a proportionality rule (using person weights instead of respondents) with respect to the population employment levels by state. 
+4. Finally, we normalize employment in sectors 1-14 for each state so that they sum up to US' total employment for year 2000 according to SEA (as reported in "L_1999_2000_countries.csv"). We then normalize sector 0 to be consistent with these new units.
+
+### Employment allocation in each state and sector for 1999 and 2000 using BLS data
+Compute the employment level for each state and sector for 1999 and 2000 using BLS data. Steps to follow:
+
+1. Download BLS' "annual average industry-specific NAICS-Based Quarterly Census of Employment and Wages by state" (for 1999 
+and 2000) or, from now on, QCEW, [here](https://www.bls.gov/cew/downloadable-data-files.htm). QCEW datasets take values at the state-level and at the county-level; for each NAICS (sub-)sector, we choose the values at the state-level and sum the sub-sectors to get the state values for each of our 14 sectors. We also add missing states as zeros whenever a sector does not report workers in a state.
+
+2. To create sector 00, download BLS' "Employment status of the civilian noninstitutional population, Annual Average Series" (for 1999 and 2000) [here](https://www.bls.gov/lau/rdscnp16.htm). We take the value of non-participants for each state reported in this series directly as our value for sector 0 (for 1999 and 2000, respectively).
+
+3. We normalize each state's employment for year 2000 in sectors 1-14 so that their total sums up to US' total employment for year 2000 according to SEA (as reported in "L_1999_2000_countries.csv"). We then normalize sector 0 for year 2000 to be consistent with these new units. Let us call the total (over all states) aggregate of the normalized BLS sectors 0-14 calculated in this step as $L_{work}^{*BLS,2000}$.
+
+4. Finally, we normalize each state's "employment" for year 1999 in sectors 0-14 so that they sum up to $L_{work}^{*BLS,2000}$. Hence, employment in year 1999 and year 2000 is consistent with zero population growth for USA too.
 
 ## Matrix of migration flows between sectors and US states
 
