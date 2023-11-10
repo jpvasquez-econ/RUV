@@ -355,53 +355,55 @@ states_2000BLS <- rbind(states_2000BLS,sector_0)
 1. Calculate the number of non-participants for each country. 
 2. Append non-participants to SEA values to put together "employment" for all of our sectors for each country.
 
-For any country, let $L_{tot}$ represent working age population, $L_{work}$ represent employment, $unemp$ represent unemployment, and $L_{i}$ represent "employment" in sector $i$ $\forall i=0,...,14$. If we define $L_0$ as non-participants in the labor force, and if we assume that the labor market only has 14 sectors, then we know that:
+For each country $c$ (excluding USA), let $L^c_{tot}$ represent working age population, $L^c_{work}$ represent employment, $unemp^c$ represent unemployment, and $L^c_{i}$ represent "employment" in sector $i$ $\forall i=0,...,14$. If we define $L^c_0$ as non-participants in the labor force, and if we assume that the labor market only has 14 sectors, then we know that:
 $$
-L_{tot}	=L_{0}+unemp+L_{work}
+L^c_{tot}	=L^c_{0}+unemp^c+L^c_{work}
 $$
 $$
-L_{work}	=\sum_{i=1}^{14}L_{i}
+L^c_{work}	=\sum_{i=1}^{14}L^c_{i}
 $$
-From ILO we know the value of the labor force participation rate ($lfp$) for each country; which using our assumptions satisfies
+To ease notation, here we ignore from which year we are taking each variable. However, in the exposition of Task 4 we do include a time superscript to indicate the year; the rest of the notation remains the same.
+
+From ILO we know the value of the labor force participation rate ($lfp^c$) for each country; which using our assumptions satisfies
 $$
-1-lfp	=\dfrac{L_{0}^{ILO}}{L_{tot}^{ILO}}
+1-lfp^c	=\dfrac{L_{0}^{c,ILO}}{L_{tot}^{c,ILO}}
 $$
 Superscripts simply indicate where the data is taken from; we adopt the same convention in what follows.
 
-Also, from ILO we know the value of the unemployment rate ($u$) for each country, which is:
+Also, from ILO we know the value of the unemployment rate ($u^c$) for each country, which is:
 $$
-u	=\dfrac{unemp^{ILO}}{unemp^{ILO}+L_{work}^{ILO}}
+u^c	=\dfrac{unemp^{c,ILO}}{unemp^{c,ILO}+L_{work}^{c,ILO}}
 $$
-For the SEA values of each of our 14 (employment) sectors to be consistent with $u$ and $lfp$, we must have
+For the SEA values of each of our 14 (employment) sectors to be consistent with $u^c$ and $lfp^c$, we must have
 $$
-1-lfp = \dfrac{L_{0}^{SEA}}{L_{0}^{SEA}+unemp^{SEA}+L_{work}^{SEA}} \; \; \; (1)
+1-lfp^c = \dfrac{L_{0}^{c,SEA}}{L_{0}^{c,SEA}+unemp^{c,SEA}+L_{work}^{c,SEA}} \; \; \; (1)
 $$
 $$
-unemp^{SEA}	=u\times(L_{work}^{SEA}+unemp^{SEA}) \; \; \; (2)
+unemp^{c,SEA}	=u^c\times(L_{work}^{c,SEA}+unemp^{c,SEA}) \; \; \; (2)
 $$
 Equation $(2)$ implies
 $$
-unemp^{SEA}(1-u)	=u\times L_{work}^{SEA}
-\Leftrightarrow unemp^{SEA}	=\frac{u}{1-u}L_{work}^{SEA}
+unemp^{c,SEA}(1-u^c)	=u^c\times L_{work}^{c,SEA}
+\Leftrightarrow unemp^{c,SEA}	=\frac{u^c}{1-u^c}L_{work}^{c,SEA}
 $$
-Hence, we can substitute for $unemp^{SEA}$ in equation $(1)$:
+Hence, we can substitute for $unemp^{c,SEA}$ in equation $(1)$:
 $$
-1-lfp=\dfrac{L_{0}^{SEA}}{L_{0}^{SEA}+\left[\frac{1}{1-u}\right]L_{work}^{SEA}}
+1-lfp^c=\dfrac{L_{0}^{c,SEA}}{L_{0}^{c,SEA}+\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}}
 $$
 Then,
 $$
-(1-lfp)\times L_{0}^{SEA}+(1-lfp)\left[\frac{1}{1-u}\right]L_{work}^{SEA}	=L_{0}^{SEA}
+(1-lfp^c)\times L_{0}^{c,SEA}+(1-lfp^c)\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}	=L_{0}^{c,SEA}
 $$
 
 $$
-\Rightarrow -lfp\times L_{0}^{SEA}+(1-lfp)\left[\frac{1}{1-u}\right]L_{work}^{SEA}	= 0
+\Rightarrow -lfp^c\times L_{0}^{c,SEA}+(1-lfp^c)\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}	= 0
 $$
 So, we conclude
 $$
-L_{0}^{SEA}=\frac{1-lfp}{lfp}\left[\frac{1}{1-u}\right]L_{work}^{SEA}
+L_{0}^{c,SEA}=\frac{1-lfp^c}{lfp^c}\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}
 $$
 
-We use this formula to calculate $L_{0}$ for each country using the unemployment rate and the labor force participation rate (both taken from ILO), and total employment, $\sum_{i=1}^{14}L_{i}$ (taken from SEA).  
+We use this formula to calculate $L^c_{0}$ for each country using the unemployment rate and the labor force participation rate (both taken from ILO), and total employment, $\sum_{i=1}^{14}L^c_{i}$ (taken from SEA).  
 ```{r message=FALSE, warning=FALSE}
 # Pepare lfp for each country.
 participation <- fread("0-Raw_Data/CENSUS_2000/EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv", encoding = "UTF-8")
@@ -463,8 +465,41 @@ countries$sector <- sprintf("sector_%02d", countries$sector)
 ```
 
 ## Task 4
-1. Employment for US-states for year 2000 must sum up to US' total employment for year 2000 according to SEA.
-2. Employment in year 1999 and year 2000 must be consistent with zero population growth for each country (including USA in the case of BLS data). 
+1. Employment for US-states for year 2000 must sum up to US' total employment for year 2000 according to SEA. 
+
+Specifically, if $L_{i,s}^{2000}$ represents the employment for year 2000 of sector $s=0,...,14$ and state $i=1,...,50$ that we calculated in Task 1 (for CBS) and Task 2 (for BLS), for every $s\neq0$ we do the following normalization:
+$$
+ L_{i,s}^{*CENSUS,2000} = L_{i,s}^{CENSUS,2000} \times\frac{\sum_{s=1}^{14}L_{s}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{CENSUS,2000}}
+$$
+
+$$
+ L_{i,s}^{*BLS,2000} = L_{i,s}^{BLS,2000} \times\frac{\sum_{s=1}^{14}L_{i}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{BLS,2000}}
+$$
+where $L_{i,s}^{*2000}$ is our "official" value for the employment for year 2000 of sector $s$ and state $i$.
+
+For units of sector 0 to be consistent with this normalization, we apply the same proportionality constant to them:
+$$
+L_{i,0}^{*CENSUS,2000} = L_{i,0}^{CENSUS,2000} \times\frac{\sum_{s=1}^{14}L_{s}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{CENSUS,2000}}
+$$
+
+$$
+L_{i,0}^{*BLS,2000} = L_{i,0}^{BLS,2000} \times\frac{\sum_{s=1}^{14}L_{i}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{BLS,2000}}
+$$
+
+2. Employment in year 1999 and year 2000 must be consistent with zero population growth for each country (including USA in the case of BLS data).
+
+Specifically, using the values of $L_{s}^{c,SEA,1999}$ and $L_{s}^{c,SEA,2000}$ that we calculated in Task 3 for each country $c$ (excluding USA) and each sector $s$, we do the following normalization:
+$$
+L_{s}^{*c,SEA,1999}  =  L_{s}^{c,SEA,1999} \times\frac{L_{0}^{c,SEA,2000}+\sum_{s=1}^{14}L_{s}^{c,SEA,2000}}{L_{0}^{c,SEA,1999}+\sum_{s=1}^{14}L_{s}^{c,SEA,1999}}
+$$
+where $L_{s}^{*c,1999}$ is our "official" value for the employment for year 1999 of sector $s$ and country $c$.
+
+Similarly, for USA, letting $L_{i,s}^{*2000}$ represent our "official" value for the employment for year 1999 of sector $s$ and state $i$, we do the following normalization:
+$$
+ L_{i,s}^{*,BLS,1999} = L_{i,s}^{BLS,1999} \times\frac{\sum_{i=1}^{50}\sum_{s=0}^{14}L_{i,s}^{*,BLS,2000}}{\sum_{i=1}^{50}\sum_{s=0}^{14}L_{i,s}^{BLS,1999}}
+$$
+where $L_{i,s}^{1999}$ represents the employment for year 2000 of sector $s=0,...,14$ and state $i=1,...,50$ that we calculated in Task 2 for BLS.
+
 3. Reshape employment for states (CBS and BLS) and countries, and bind them to get a labor matrix. 
 
 ```{r message=FALSE, warning=FALSE}
