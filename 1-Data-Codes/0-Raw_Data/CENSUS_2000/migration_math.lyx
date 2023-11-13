@@ -61,7 +61,7 @@
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman "ae" "default"
+\font_roman "default" "default"
 \font_sans "default" "default"
 \font_typewriter "default" "default"
 \font_math "auto" "auto"
@@ -75,37 +75,27 @@
 \use_dash_ligatures true
 \graphics default
 \default_output_format default
-\output_sync 1
+\output_sync 0
 \bibtex_command default
 \index_command default
-\float_placement h
-\paperfontsize 12
-\spacing onehalf
-\use_hyperref true
-\pdf_bookmarks true
-\pdf_bookmarksnumbered false
-\pdf_bookmarksopen false
-\pdf_bookmarksopenlevel 1
-\pdf_breaklinks false
-\pdf_pdfborder false
-\pdf_colorlinks false
-\pdf_backref false
-\pdf_pdfusetitle true
+\paperfontsize default
+\spacing single
+\use_hyperref false
 \papersize default
-\use_geometry true
+\use_geometry false
 \use_package amsmath 1
 \use_package amssymb 1
-\use_package cancel 0
+\use_package cancel 1
 \use_package esint 1
 \use_package mathdots 1
-\use_package mathtools 0
+\use_package mathtools 1
 \use_package mhchem 1
-\use_package stackrel 0
-\use_package stmaryrd 0
-\use_package undertilde 0
-\cite_engine natbib
-\cite_engine_type authoryear
-\biblio_style plainnat
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -117,10 +107,6 @@
 \shortcut idx
 \color #008000
 \end_index
-\leftmargin 1in
-\topmargin 1in
-\rightmargin 1in
-\bottommargin 1in
 \secnumdepth 3
 \tocdepth 3
 \paragraph_separation indent
@@ -142,7 +128,7 @@
 \begin_body
 
 \begin_layout Section
-Refresher
+Notation
 \end_layout
 
 \begin_layout Standard
@@ -189,7 +175,23 @@ L_{t+1}^{ik} & =\sum_{n=1}^{N}\sum_{j=0}^{J}\mu_{t}^{nj,ik}\times L_{t}^{nj}\;\f
 
 \end_inset
 
+where 
+\begin_inset Formula $L_{t}^{nj}$
+\end_inset
 
+ is the total employment in region 
+\begin_inset Formula $n$
+\end_inset
+
+ and sector 
+\begin_inset Formula $j$
+\end_inset
+
+ in time 
+\begin_inset Formula $t$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -238,9 +240,12 @@ Let
 
 \end_layout
 
+\begin_layout Subsection
+Refresher
+\end_layout
+
 \begin_layout Standard
-Let us drop the time subscript for now.
- We have two data sources:
+We have three data sources:
 \end_layout
 
 \begin_layout Itemize
@@ -256,29 +261,6 @@ From the CPS data we get
  
 \end_layout
 
-\begin_deeper
-\begin_layout Itemize
-In the CPS data constructed, 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\xout off
-\uuline off
-\uwave off
-\noun off
-\color none
-
-\begin_inset Formula $L_{CPS}^{nj,ik}=L_{CPS}^{ij,ik}$
-\end_inset
-
-, i.e it is the within destination-state migration flows.
-\end_layout
-
-\end_deeper
 \begin_layout Itemize
 From the ACS data we have 
 \begin_inset Formula $L_{ACS}^{n?,ik}\:\forall i,n\in US$
@@ -292,31 +274,27 @@ From the ACS data we have
  
 \end_layout
 
-\begin_layout Section
-How to square the two databases together? Proportionality
+\begin_layout Itemize
+From IRS we have 
+\begin_inset Formula $L_{IRS}^{n,i}\equiv L_{IRS}^{n?,i?}\:\forall i,n\in US$
+\end_inset
+
+ (interstate migration flows but without knowing the sectors of origin or
+ destination).
 \end_layout
 
-\begin_layout Standard
-I refer below to how we combine ACS and CPS.
- After what I describe, we then need to do an extra proportionality so that
- total number of workers in the US adds up to the total of the US in 2000
- according to WIOD.
+\begin_layout Section
+What we were doing before (in the version we submitted)
 \end_layout
 
 \begin_layout Subsection
-What we are doing now
-\end_layout
-
-\begin_layout Subsubsection
 Within the State
 \end_layout
 
 \begin_layout Standard
-We follow a a proportionality assumption so that the total movements within
- the state coincide with ACS (just the total across sectors but not sector
- by sector).
- In this case, we will be prioritizing the CPS when it comes to intra-state
- movements.
+We follow a proportionality assumption so that the total movements within
+ the state coincide with ACS (the total across sectors but not sector by
+ sector).
  This is, let's fix a given state 
 \begin_inset Formula $n$
 \end_inset
@@ -336,13 +314,13 @@ Note that
  (so the total coincides at the movements within the state regardless of
  the sector but not necessarily sector-by-sector).
  Also note that 
-\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$
+\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,np}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,np}}$
 \end_inset
 
  by construction.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Between States
 \end_layout
 
@@ -355,7 +333,24 @@ L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_
 
 \end_inset
 
-Note that this satisfies 
+Note that we are assuming that when people move from 
+\begin_inset Formula $n$
+\end_inset
+
+ to 
+\begin_inset Formula $i$
+\end_inset
+
+, they will be distributed among sectors in 
+\begin_inset Formula $i$
+\end_inset
+
+ according to what CPS has for the within-state movements in 
+\begin_inset Formula $i$
+\end_inset
+
+ (the destination state).
+ Note also that we have 
 \begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}$
 \end_inset
 
@@ -364,7 +359,7 @@ Note that this satisfies
 \end_layout
 
 \begin_layout Standard
-This means that combining with the 
+Combining with the 
 \begin_inset Quotes eld
 \end_inset
 
@@ -387,473 +382,7 @@ L^{nj,ik}=\sum_{q}L_{ACS}^{n?,iq}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_
 \end_layout
 
 \begin_layout Section
-NEW: May 12th, 2023
-\end_layout
-
-\begin_layout Standard
-Ref 2 said: "The authors use CPS and ACS data to assess sectoral and regional
- labor mobility.
- IRS data on county to county mobility would seem to provide a much better
- data source that the ACS (and less prone to the ACS's classification errors)"
-\end_layout
-
-\begin_layout Standard
-IRS has flows between states but not information about the sector.
- 
-\end_layout
-
-\begin_layout Subsection
-Within the State (same as before but adjusting diagonals differently)
-\end_layout
-
-\begin_layout Standard
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-*****
-\end_layout
-
-\begin_layout Plain Layout
-
-\series bold
-Zeros in diagonals:
-\end_layout
-
-\begin_layout Plain Layout
-Calculate the diagonal shares by state and sector: “stay-in” share = the
- number of people stayed in state a sector b both in year t and t-1 / the
- number of people stayed in state a sector b in year t-1 
-\end_layout
-
-\begin_layout Plain Layout
-Find the non-zero median “stay-in” share by aggregation of rolling window,
- for example 20% by year and sector.
- 
-\end_layout
-
-\begin_layout Plain Layout
-Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
- Alaska sector 10 = max{1 worker, outflow, stock} /0.8 * 0.2 (Q: 80% should
- represent the flow in and out to Alaska sector 10, but it is possible there
- are many missing values in terms inflows and outflows.
- For example, for Alaska sector 10, only have one data point: inflow from
- sector 13 to sector 10).
-\end_layout
-
-\begin_layout Plain Layout
-This will produce the new 
-\begin_inset Quotes eld
-\end_inset
-
-corrected
-\begin_inset Quotes erd
-\end_inset
-
- CPS data
-\end_layout
-
-\begin_layout Plain Layout
-*****
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-We then follow a proportionality assumption so that the total movements
- within the state coincide with IRS (just the total across sectors but not
- sector by sector).
- In this case, we will be prioritizing the CPS when it comes to intra-state
- movements.
- This is, let's fix a given state 
-\begin_inset Formula $n$
-\end_inset
-
- and define: 
-\begin_inset Formula 
-\[
-L^{nj,nk}=L_{IRS}^{n,n}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\forall n\in US,\:\forall j,k
-\]
-
-\end_inset
-
-Note that 
-\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,nk}=L_{IRS}^{n,n}$
-\end_inset
-
-.
- Also note that 
-\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$
-\end_inset
-
- by construction.
-\end_layout
-
-\begin_layout Subsection
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Subsection
-Between States
-\end_layout
-
-\begin_layout Plain Layout
-We use 
-\begin_inset Formula 
-\[
-L^{nj,ik}=\frac{L_{CPS}^{nj}}{\sum_{h}L_{CPS}^{nh}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ik}}{\sum_{h}L_{CPS}^{ih}}\quad i\neq n.
-\]
-
-\end_inset
-
-Check that 
-\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
-\end_inset
-
-.
- 
-\begin_inset Formula 
-\begin{align*}
-\sum_{k}\sum_{j}L^{nj,ik} & =\sum_{k}\sum_{j}\frac{L_{CPS}^{nj}}{\sum_{h}L_{CPS}^{nh}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ik}}{\sum_{h}L_{CPS}^{ih}}\\
- & =L_{IRS}^{n,i}\left[\sum_{k}\frac{L_{CPS}^{ik}}{\sum_{h}L_{CPS}^{ih}}\right]\left[\sum_{j}\frac{L_{CPS}^{nj}}{\sum_{h}L_{CPS}^{nh}}\right]\\
- & =L_{IRS}^{n,i}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-
-\color red
-Leo's suggestion
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-L^{nj,ik} & =L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{q}\sum_{h}L_{CPS}^{ih,iq}}
-\end{align*}
-
-\end_inset
-
-Note that it also satisfies 
-\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
-\end_inset
-
-.
- 
-\end_layout
-
-\begin_layout Plain Layout
-Some math on this suggestion:
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\[
-L^{nj,ik}=L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i,i}}
-\]
-
-\end_inset
-
-
-\begin_inset Formula 
-\[
-\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\quad\forall n
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-My guess: given information set {n,j,i,k}, weird pattern will appear if
- {n,j} or {i,k}is of no use in the similar expression above.
- In the following cases, information from {i,k} is not used, thus creates
- weird pattern.
-\end_layout
-
-\begin_layout Itemize
-
-\color red
-New suggestion: 
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-L^{nj,ik} & =\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{\sum_{h}L_{CPS}^{ih,ik}}{\sum_{h}\sum_{q}L_{CPS}^{ih,iq}}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Some math on this suggestion:
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\times L_{IRS}^{n,i}\times\frac{\sum_{j}L_{CPS}^{ij,ik}}{\sum_{j}\sum_{k}L_{CPS}^{ij,ik}}\\
- & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{n,n}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{i\#,ik}}{L_{CPS}^{i,i}}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Therefore, 
-\begin_inset Formula 
-\[
-\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Given destination state-sector, calculate the migration share from different
- original state-sector, used to back out the migration flow in 1999 conditional
- on the labour distribution in 2000:
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-rel^{nj,ik} & =\frac{L^{nj,ik}}{\sum_{n}\sum_{j}L^{nj,ik}}=\frac{L^{nj,ik}}{L^{\#\#,ik}}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Denote employment by state-sector in 2000 as 
-\begin_inset Formula $E_{2000}^{nj}$
-\end_inset
-
-, thus the migration flow in 1999 is calculated as follows:
-\begin_inset Formula 
-\[
-L_{1999}^{nj,ik}=\frac{L^{nj,ik}}{L^{\#\#,ik}}\times E_{2000}^{ik}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Thus, we have 
-\begin_inset Formula 
-\[
-\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}=\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k\quad(*)
-\]
-
-\end_inset
-
- 
-\end_layout
-
-\begin_layout Plain Layout
-Therefore, the migration share in 1999 is 
-\begin_inset Formula 
-\[
-share^{nj,ik}=\frac{L_{1999}^{nj,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Thus
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-\frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
- & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\times\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}=1
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-Jose: I didn't understand how you go from 
-\begin_inset Formula $\sum_{i}\sum_{k}L_{1999}^{nm,ik}$
-\end_inset
-
- to 
-\begin_inset Formula $L_{CPS}^{nm,n\#}.$
-\end_inset
-
- Shouldn't we have 
-\begin_inset Formula $\sum_{i}\sum_{k}L_{1999}^{nm,ik}=\sum_{i}\sum_{k}L_{1999}^{nm,ik}=L_{CPS}^{nm,\#\#}$
-\end_inset
-
-? Or is it that 
-\begin_inset Formula $\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}=\frac{L_{CPS}^{nm,\#\#}}{L_{CPS}^{nj,\#\#}}$
-\end_inset
-
-? I don't see a reason for the latter.
-\end_layout
-
-\begin_layout Plain Layout
-Leo: Because of (*), then we can have 
-\begin_inset Formula 
-\[
-\frac{L_{1999}^{nj,11}}{L_{1999}^{nm,11}}=\frac{L_{1999}^{nj,12}}{L_{1999}^{nm,12}}=\text{...}=\frac{L_{1999}^{nj,1K}}{L_{1999}^{nm,1K}}=\frac{L_{1999}^{nj,21}}{L_{1999}^{nm,21}}=...=\frac{L_{1999}^{nj,IK}}{L_{1999}^{nm,IK}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Thus
-\begin_inset Formula 
-\[
-\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}=\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-The first term tells us how common it is in region 
-\begin_inset Formula $n$
-\end_inset
-
- to depart sector 
-\begin_inset Formula $j$
-\end_inset
-
- (among all possible flows in 
-\begin_inset Formula $n$
-\end_inset
-
-).
- The last term tells us how common it is in region 
-\begin_inset Formula $i$
-\end_inset
-
- to land in sector 
-\begin_inset Formula $k$
-\end_inset
-
- (among all possible flows in 
-\begin_inset Formula $i$
-\end_inset
-
-).
- Note again that the expression above satisfies 
-\begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
-\end_inset
-
-.
- 
-\end_layout
-
-\begin_layout Itemize
-
-\color red
-Another suggestion (to combine CPS with ACS and IRS)
-\color inherit
-
-\begin_inset Formula 
-\[
-L^{nj,ik}=\frac{\sum_{q}L_{CPS}^{nj,nq}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n?,ik}}{\sum_{q}L_{ACS}^{n?,iq}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Some math on this suggestion:
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-L^{nj,ik} & =\frac{\sum_{k}L_{CPS}^{nj,nk}}{\sum_{k}\sum_{j}L_{CPS}^{nj,nk}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n\#,ik}}{\sum_{k}L_{ACS}^{n\#,ik}}\\
- & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{n,n}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}
-\end{align*}
-
-\end_inset
-
-
-\begin_inset Formula 
-\[
-\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\quad\forall i,k
-\]
-
-\end_inset
-
-
-\begin_inset Formula 
-\begin{align*}
-\frac{share^{nj,ik}}{share^{nm,ik}} & =\frac{L_{1999}^{nj,ik}}{L_{1999}^{nm,ik}}\times\frac{\sum_{i}\sum_{k}L_{1999}^{nm,ik}}{\sum_{i}\sum_{k}L_{1999}^{nj,ik}}\\
- & =\frac{L_{CPS}^{nj,n\#}}{L_{CPS}^{nm,n\#}}\times\frac{L_{CPS}^{nm,n\#}}{L_{CPS}^{nj,n\#}}=1
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-Jose: my same doubt as in the note above applies.
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
-NEW: June 11th, 2023
+What we are doing now (in the revision of the paper)
 \end_layout
 
 \begin_layout Subsection
@@ -861,43 +390,7 @@ Within the State
 \end_layout
 
 \begin_layout Standard
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-Calculate the diagonal shares by state and sector: “stay-in” share = the
- number of people stayed in state a sector b both in year t and t-1 / the
- number of people stayed in state a sector b in year t-1.
- Find the non-zero median “stay-in” share by aggregation of rolling window,
- for example 20% by year and sector.
- 
-\end_layout
-
-\begin_layout Plain Layout
-Generate the new “stay-in” flow for Alaska sector 10: “stay-in” flow for
- Alaska sector 10 = max{1 worker, outflow, stock} /0.8 * 0.2 (Q: 80% should
- represent the flow in and out to Alaska sector 10, but it is possible there
- are many missing values in terms inflows and outflows.
- For example, for Alaska sector 10, only have one data point: inflow from
- sector 13 to sector 10).
- This will produce the new 
-\begin_inset Quotes eld
-\end_inset
-
-corrected
-\begin_inset Quotes erd
-\end_inset
-
- CPS data
-\end_layout
-
-\begin_layout Plain Layout
-Then 
-\end_layout
-
-\end_inset
-
-we will have:
+We now have have:
 \begin_inset Formula 
 \[
 L^{nj,nk}=L_{IRS}^{n,n}\times\frac{L_{CPS}^{nj,nk}}{\sum_{q}\sum_{h}L_{CPS}^{nh,nq}}\text{\,}\forall n\in USA,\:\forall j,k
@@ -911,10 +404,57 @@ Note that
 
  (so the total coincides at the movements within the state from IRS).
  Also note that 
-\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,nq}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,nq}}$
+\begin_inset Formula $\frac{L^{nj,nk}}{L^{nj,np}}=\frac{L_{CPS}^{nj,nk}}{L_{CPS}^{nj,np}}$
 \end_inset
 
- by construction.
+ by construction as before.
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Quotes eld
+\end_inset
+
+No migration
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+L^{nj,nk}=L_{CPS}^{nj,nk}\text{\,}\forall n\in USA,\:\forall j,k
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then define
+\begin_inset Formula 
+\begin{align*}
+\mu_{t}^{nj,nk} & =\frac{L_{t}^{nj,nk}}{\sum_{q=0}^{J}L_{t}^{nj,nq}}\\
+\mu_{t}^{nj,ik} & =0\quad\forall n\neq i
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that 
+\begin_inset Formula 
+\[
+\sum_{k}\mu_{t}^{nj,nk}=\sum_{k}\frac{L_{t}^{nj,nk}}{\sum_{q=0}^{J}L_{t}^{nj,nq}}=1
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -930,7 +470,7 @@ Note that this part is only relevant when the state of origin is different
 \begin_layout Standard
 \begin_inset Formula 
 \[
-L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}
+L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{L_{ACS}^{n?,ik}}{\sum_{q}L_{ACS}^{n?,iq}}
 \]
 
 \end_inset
@@ -939,6 +479,10 @@ L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\ti
 \end_layout
 
 \begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
 Check that 
 \begin_inset Formula $\sum_{k}\sum_{j}L^{nj,ik}=L_{IRS}^{n,i}$
 \end_inset
@@ -958,116 +502,108 @@ Check that
 
 \end_layout
 
-\begin_layout Standard
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-Note that you can write 
-\begin_inset Formula $L^{nj,ik}$
-\end_inset
-
- as:
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{align*}
-L^{nj,ik} & =\frac{L_{ACS}^{n\#,ik}}{\sum_{q}L_{ACS}^{n\#,iq}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\\
- & =\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i\#,ik}}
-\end{align*}
-
 \end_inset
 
 
 \end_layout
 
-\begin_layout Plain Layout
-Therefore you have:
-\begin_inset Formula 
-\[
-\frac{L^{nj,ik}}{L^{nm,ik}}=\frac{\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{i\#,ik}}}{\frac{L_{ACS}^{n\#,ik}}{L_{ACS}^{n,i}}\times L_{IRS}^{n,i}\times\frac{L_{CPS}^{im,ik}}{L_{CPS}^{i\#,ik}}}=\frac{L_{CPS}^{ij,ik}}{L_{CPS}^{im,ik}}\quad\forall n
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Which is what we want for the term not to give a weird pattern.
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
-NEW: Friday June 30th.
- 
+\begin_layout Subsection
+NOTE
 \end_layout
 
 \begin_layout Standard
-We want to create the matrices but at the quarterly level instead of the
- annual level.
- Let's keep using upper case 
-\begin_inset Formula $L$
+Note from the formula above that when people move from 
+\begin_inset Formula $n$
 \end_inset
 
- for annual flows and cursive 
-\begin_inset Formula $\ell$
+ to 
+\begin_inset Formula $i$
 \end_inset
 
- to quarterly flows.
- So, 
-\begin_inset Formula $L_{IRS}^{n,i}$
+, they will be distributed among sectors in 
+\begin_inset Formula $i$
 \end_inset
 
- are the annual flows from IRS.
- Define the analogous quarterly flow 
-\begin_inset Formula $\ell_{IRS}^{n,i}=L_{IRS}^{n,i}/4$
+ not only according to CPS but also according to the flows in ACS from 
+\begin_inset Formula $n$
+\end_inset
+
+ to 
+\begin_inset Formula $i$
+\end_inset
+
+-
+\begin_inset Formula $k$
 \end_inset
 
 .
+ This means that even if CPS tells us that people are moving between sector
  
-\end_layout
-
-\begin_layout Standard
-We then use CPS and ACS (which are quarterly) to compute a matrix of flows
- at the quarterly level.
- We will pool all quarters together (still using the rolling +-2 years).
- We will keep observations of people who we observe from one quarter to
- the next regardless of whether we observe them later in other quarters.
- We then compute:
-\begin_inset Formula 
-\[
-\mu_{q}^{nj,ik}=\frac{\ell^{nj,ik}}{\sum_{p=1}^{N}\sum_{r=0}^{J}\ell^{nj,pr}}
-\]
-
+\begin_inset Formula $j$
 \end_inset
 
-using the same steps as in the previous section.
- Denote 
-\begin_inset Formula $\mu_{q}$
+ to 
+\begin_inset Formula $k$
 \end_inset
 
- as the full matrix with entries 
-\begin_inset Formula $\mu_{q}^{nj,ik}$
+ in state 
+\begin_inset Formula $i$
+\end_inset
+
+, if there isn't people moving from 
+\begin_inset Formula $n$
+\end_inset
+
+ to 
+\begin_inset Formula $i$
+\end_inset
+
+-
+\begin_inset Formula $k$
+\end_inset
+
+ in ACS (i.e., 
+\begin_inset Formula $L_{ACS}^{n?,ik}=0$
+\end_inset
+
+), then 
+\begin_inset Formula $L^{nj,ik}=0$
 \end_inset
 
 .
+ This happens, for example, to people moving to Alabama sector 6.
+ There is nobody in ACS that moves to Alabama sector 6 from another state.
+ 
 \end_layout
 
 \begin_layout Standard
-Then we compute the annual matrix 
-\begin_inset Formula $\mu$
+This is not an issue that happens only for Alabama sector 6.
+ In fact, among the 37500 potential combinations (50 states 
+\begin_inset Formula $\times$
 \end_inset
 
- as the matrix multiplication of the quarterly-level matrix:
+ 50 states 
+\begin_inset Formula $\times$
+\end_inset
+
+ 15 destination sectors) only 2504 combinations are non-zero from the ACS.
+ As a note, the number of observations that we have in the ACS is around
+ 170k.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Solution 1
+\end_layout
+
+\begin_layout Standard
+For between states, define:
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-\mu_{t}=\mu_{q}*\mu_{q}*\mu_{q}*\mu_{q}
+L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{\sum_{n}L_{ACS}^{n?,ik}}{\sum_{n}\sum_{q}L_{ACS}^{n?,iq}}
 \]
 
 \end_inset
@@ -1075,176 +611,23 @@ Then we compute the annual matrix
 
 \end_layout
 
-\begin_layout Section
-NEW: Friday July 14th.
+\begin_layout Subsubsection
+Solution 2
 \end_layout
 
 \begin_layout Standard
-Here I describe the steps processing ACS data to produce quarterly migration
- matrix
-\end_layout
-
-\begin_layout Enumerate
-First, I idenfy the movers in the annual ACS data and assign them unique
- numbers that are drawn from uniform distribution.
-\end_layout
-
-\begin_layout Enumerate
-Second, for quarter one, we assume that first 25% movers from previous steps
- are the ones that moved in the first quarter.
- Thus, we keep the one-fourth of the movers and change the third-fourth
- of movers to non-movers in the first quarter.
-\end_layout
-
-\begin_layout Enumerate
-Reapt step 2 for other quarters, thus we are able to have quarterly migration
- data where movers in each quarter represents any one-fourth of movers from
- annual data.
-\end_layout
-
-\begin_layout Standard
-We will produce followings to make comparison
-\end_layout
-
-\begin_layout Itemize
-Annual migration matrix for three cases: original CPS and ACS matrix, CPS
- and ACS matrix with diagonal modification, IRS matrix
-\end_layout
-
-\begin_layout Itemize
-Quarterly migration matrix for three cases
-\end_layout
-
-\begin_layout Itemize
-Annualised quarterly migration matrix for three cases
-\end_layout
-
-\begin_layout Section
-Summary: Wednesday August 9th.
-\end_layout
-
-\begin_layout Standard
-Here I formally list all the files (in xlsx format) for statistical description
- on migration matrix and also add simple observations.
-\end_layout
-
-\begin_layout Itemize
-Yearly migration matrix: mean, max, min, percentile only for diagonal shares
- (i.e same state and same sector) for each state (see average_diag)
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Although this yearly statistics are not directly comparable to CDP's quarterly
- ones, the numbers for same state and same sector are quite low (from my
- own perspective).
-\end_layout
-
-\begin_layout Itemize
-Under the assumption that we want this within state and sector migration
- share to be large, case 1 performs better than case 0 only in some states
- such as Alaska, Hawaii and Maryland.
- For Alaska, the average of diagonals increases by 5% points in case 1 and
- the minimum of diagonals increases by 13% points in case 1.
- Case 2 outperfoms the other two almost in each state.
- For extreme case, the average of diagonals for Alaska increases by 15%
- points compared to case 0 and the minimum for Alaska increases by 22% points
- compared to case 0.
- 
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Yearly migration matrix: 
-\begin_inset Formula $\text{\text{\text{pro\_same\_state}}=\ensuremath{\frac{\text{total number of people staying in the original state}}{\text{total number of people in the original state}}}}$
-\end_inset
-
- (see prob_same_state(at state level))
-\end_layout
-
-\begin_layout Itemize
-Yearly migration matrix: 
-\begin_inset Formula $\text{\text{\text{pro\_same\_sector}}=\ensuremath{\frac{\text{total number of people of the original state staying in the same sector}}{\text{total number of people in the original state}}}}$
-\end_inset
-
- (see prob_same_sector(at state level))
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Seems a bit low
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Yearly migration matrix: transitiona probability at state level (see transition_
-prob(at state level) and yearly_summary_statistics(at state level))
-\end_layout
-
-\begin_layout Itemize
-Yearly migration matrix: transitiona probability at state-sector level (see
- transition_prob(at state sector level) and yearly_summary_statistics(at
- state sector level))
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-One thing to note that the differences among percentiles are more pronounced
- here than in the state level, which matches the argument in the CDP that
- there is heterogeneity across labour market.
- 
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Quarterly migration matrix: prob_same_state, prob_same_sector, transitiona
- probability at state level
+For between states, define:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-L_{kj,ni,1999}=\frac{\text{people from kj to ni in 1999}}{\text{total people move to ni in 1999}}\times L_{ni,2000}
+L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{\sum_{i}L_{ACS}^{n?,ik}}{\sum_{i}\sum_{q}L_{ACS}^{n?,iq}}
 \]
 
 \end_inset
 
-Differences between CDP and RUV
-\end_layout
 
-\begin_layout Itemize
-CDP has 23 sectors: 22 industries (12 manuf + 8 service + construction +
- wholesale and retail trade) + non-employment, no agriculture, mining, utilities
-, and public sectors; RUV has 14 industries (12 manuf + 1 service + 1 agricultur
-e) + non-employment
-\end_layout
-
-\begin_layout Section
-Meeting: Thursday August 24th
-\end_layout
-
-\begin_layout Itemize
-Does the migration share differ a lot across quarters?
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Show the migration share difference excel (migration_share_diff_case2.csv)
- across quarters: maximum differences are around 23%
-\end_layout
-
-\begin_layout Itemize
-See notes for case study and quarterly statistics comparison
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Show that even with the raw CPS data, the diagonal share (i.e within state-sector
- migration) statistics are not close to CDP
-\end_layout
-
-\begin_layout Itemize
-Show the final matrix
 \end_layout
 
 \end_body
