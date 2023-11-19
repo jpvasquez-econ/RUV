@@ -74,7 +74,7 @@ CPS_NBER
 
 ```{r Clean ACS, message=FALSE, warning=FALSE}
 # ACS: state to state-sector movements
-yr_list <- c("00", "01", "02", "03", "04", "05", "06", "07")
+yr_list <- c("00", "01", "02")
 st_list <- c("al", "ak", "az", "ar", "ca", "co", "ct", "de", "fl", "ga", "hi", "id", "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma", "mi", "mn", "ms", "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny", "nc", "nd", "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", "tx", "ut", "vt", "va", "wa", "wv", "wi", "wy")
 
 # loading PUMS ACS
