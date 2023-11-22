@@ -1,5 +1,5 @@
 ---
-title: "1-WIOD_VA_shares_io_shares_distances"
+title: "Code 1-WIOD_VA_shares_io_shares_distances.Rmd"
 output:
   html_notebook:
     toc: yes
@@ -15,23 +15,25 @@ header-includes:
 - \usepackage{mathpazo}
 ---
 
-## General information
+# General information
+
+This file does the following:
 
 1) Takes WIOD and maps to the 14 relevant sectors that we consider.
 
-2) This code calculates the sector-country bilateral trade flows $X_{ij,k}$ between countries using data from WIOD.
+2) Calculates the sector-country bilateral trade flows $X_{ij,k}$ between countries using data from WIOD.
 
-3) This code calculates the share of value-added (mapped in the model to the labor share) for each country, each sector, and each year using data from WIOD. 
+3) Calculates the share of value-added (mapped in the model to the labor share) for each country, each sector, and each year using data from WIOD. 
 
-4) This code calculates the input output matrix shares for each sector, country and year using data from WIOD. Each entry is the share of expenditure of each buying sector. For each country-year, the sum across rows of each column sums up to one. 
+4) Calculates the input output matrix shares for each sector, country and year using data from WIOD. Each entry is the share of expenditure of each buying sector. For each country-year, the sum across rows of each column sums up to one. 
 
-5) The code in this document produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population; the previous information is available for the period 1950-2017 for almost all countries except: Austria, Cyprus, Denmark, Estonia, Hungary, Ireland, Lithuania, Slovakia and Slovenia. The missing information is only for the variable, "city population", for certain years. 
+5) Produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population; the previous information is available for the period 1950-2017 for almost all countries except: Austria, Cyprus, Denmark, Estonia, Hungary, Ireland, Lithuania, Slovakia and Slovenia. The missing information is only for the variable, "city population", for certain years. 
 
 6) Calculates the distances between all regions.
 
-7) This code calculates the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US).
+7) Calculates the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US).
 
-## Input files
+# Input files
 
 1. `0-Raw_Data/regions.csv`
 2. `0-Raw_Data/sectors.csv`
@@ -44,7 +46,7 @@ header-includes:
 9. `0-Raw_Data/Fips/state_codes.csv`
 10. `1-Intermediate_Processed_Data/distances.csv`
 
-## Output files
+# Output files
 
 1. `Intermediate_Processed_Data/WiodFixAgg, i,".csv`
 2. `1-Intermediate_Processed_Data/wiot_full.csv`
@@ -85,13 +87,14 @@ knitr::opts_chunk$set(engine.path = list(stata=stataexe))
 ```
 
 
-# Task 1
+# Importing data
 
-## Importing datasets to R
+## Regions and sectors
+
+Takes WIOD and maps to the 14 relevant sectors that we consider.
 
 ```{r data}
 regions <- read.csv(paste("0-Raw_Data/regions.csv", sep=""), header = TRUE, sep = ",", dec = ".")
-
 #sector reclassification table
 reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 reclass_sectors <- reclass_sectors %>% 
@@ -100,7 +103,9 @@ reclass_sectors <- reclass_sectors %>%
 ```
 
 
-## Fixing WIOD
+## "Fixing" WIOD
+
+Here we follow Costinot and Rodriguez-Clare (2014) to remove the negative values in the trade data from WIOD.
 
 ```{r}
 N <- 41   # Number of countries in WIOD
@@ -290,7 +295,9 @@ write.table(wiod_matrix, file = paste("1-Intermediate_Processed_Data//WIOD_count
 
 ```
 
-# Task 2
+# Trade flows between countries
+
+Calculates the sector-country bilateral trade flows $X_{ij,k}$ between countries using data from WIOD.
 
 ## Importing datasets to R
 
@@ -310,7 +317,7 @@ n_c <- length(c_names) -1
 wiot <- wiot_full
 ```
 
-## Trade flows between countries
+## Trade flows 
 
 ```{r}
 #colapsing by origin sectors 
@@ -336,7 +343,7 @@ for (yr in 2000:2007) {
 ```
 
 
-# Task 3
+# The share of value-added 
 
 ## Importing datasets to R
 ```{r, warning=FALSE}
@@ -407,7 +414,9 @@ for (yr in 2000:2007) {
 ```
 
 
-# Task 4
+# Input output matrix shares
+
+This part calculates the input output matrix shares for each sector, country and year using data from WIOD. Each entry is the share of expenditure of each buying sector. For each country-year, the sum across rows of each column sums up to one. 
 
 ## Constructing Input-Output matrices for countries
 
@@ -419,7 +428,7 @@ Note that $\sum_{k}\alpha_{j,ks}=1\quad\forall j$.
 
 
 ```{r}
-## Calculating shares
+# Calculating shares
 
 num <- wiot_inter %>%
   group_by(year, col_country, col_item, row_item) %>%
@@ -488,7 +497,9 @@ export excel using "2-Final_Data/io_allyears.xlsx" ///
  
 ```
 
-# Task 5
+# Population and coordinates (to later construct distances between regions)
+
+This part produces the Country_Coordinates Base that contains information about the most populated cities in each country, the cities' coordinates and population, and each country's population; the previous information is available for the period 1950-2017 for almost all countries except: Austria, Cyprus, Denmark, Estonia, Hungary, Ireland, Lithuania, Slovakia and Slovenia. The missing information is only for the variable, "city population", for certain years. 
 
 Almost all information to construct the final base comes from data sets of the UN; specifically, the inputs are the following:
 
@@ -500,7 +511,7 @@ c) Republic of Cyprus: Statistical Service. "POPULATION BY DISTRICT, 1996-2017."
 
 The final output is based mainly on input a), with some information of b) and c), since the countries named before didn't meet the requirement of providing information of at least two cities. For all these special cases (with the exception of Cyprus), b) gives the information needed since it has the cities' population by sex (we just take the aggregation of male and female); from b) we take the urban agglomeration category when possible to make it comparable with the main UN base we are using. For the specific case of Cyprus, the cities' information comes from the country's Statistical Service; since the population statistics available refer to the provinces (named after the main city in them), and not to the city itself, we take the province's urban population and not the whole province population. Finally, regarding the output, all population statistics have to be read in thousands of humans beings.  
 
-***Note that for the case of Cyprus, a more precise statistic for the cities' population can be given through municipalities' population instead of districts (province), but only for 2011.  
+Note that for the case of Cyprus, a more precise statistic for the cities' population can be given through municipalities' population instead of districts (province), but only for 2011.  
 
 ## Importing dataset to R
 
@@ -622,9 +633,7 @@ write.table(UN_1, file = paste("1-Intermediate_Processed_Data//country_coordinat
 
 ```
 
-# Task 6 
-
-## Distances between all regions
+# Distances between all regions 
 
 ```{r}
 country_coordinates <- UN_1
@@ -656,7 +665,7 @@ state_0 <- coordinates_counties %>%
 country_coor <- country_coordinates %>%
   filter(country.name.original != "United States of America", year == 2010) %>%
   mutate(city.population = ifelse(country == "IRL" & city == "Cork", 124.391, city.population)) %>%  # missing value
-  mutate(state = as.integer(factor(country)) + 50) %>% ##ojo RoW y RUS
+  mutate(state = as.integer(factor(country)) + 50) %>% #ojo RoW y RUS
   mutate(city = ifelse(country == "RoW", paste(country.name.original,city, sep="_"), city)) %>%
   mutate(city = ifelse(city == "Xinyi" & round(Latitude)==22, "Xinyi2", city)) %>%
   mutate(country_city = paste(country,city, sep="_")) %>%
@@ -763,7 +772,9 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/distances.csv", s
 ```
 
 
-# Task 7
+# Distance elasticity
+
+This part calculates the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US).
 
 To do this, we estimate:
 $$
