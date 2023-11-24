@@ -37,14 +37,10 @@ This file does the following:
 
 1. `0-Raw_Data/regions.csv`
 2. `0-Raw_Data/sectors.csv`
-3. `Intermediate_Processed_Data/WiodFixAgg, i,".csv`
-4. `1-Intermediate_Processed_Data/wiot_full.csv`
-5. `0-Raw_Data//Population_geography//UN_coordinates.xls`
-6. `0-Raw_Data//Population_geography//Full_population.xlsx`
-7. `0-Raw_Data/Fips/us_states_coordinates_counties.xlsx`
-8. `1-Intermediate_Processed_Data/country_coordinates.csv`
-9. `0-Raw_Data/Fips/state_codes.csv`
-10. `1-Intermediate_Processed_Data/distances.csv`
+3. `0-Raw_Data//Population_geography//UN_coordinates.xls`
+4. `0-Raw_Data//Population_geography//Full_population.xlsx`
+5. `0-Raw_Data/Fips/us_states_coordinates_counties.xlsx`
+6. `0-Raw_Data/Fips/state_codes.csv`
 
 # Output files
 
