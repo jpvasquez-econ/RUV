@@ -33,7 +33,7 @@ This file does the following:
 
 7) Calculates the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US).
 
-# Input files
+## Input files
 
 1. `0-Raw_Data/regions.csv`
 2. `0-Raw_Data/sectors.csv`
@@ -42,7 +42,7 @@ This file does the following:
 5. `0-Raw_Data/Fips/us_states_coordinates_counties.xlsx`
 6. `0-Raw_Data/Fips/state_codes.csv`
 
-# Output files
+## Output files
 
 1. `Intermediate_Processed_Data/WiodFixAgg, i,".csv`
 2. `1-Intermediate_Processed_Data/wiot_full.csv`

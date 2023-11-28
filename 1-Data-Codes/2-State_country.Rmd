@@ -15,11 +15,13 @@ header-includes:
 - \usepackage{mathpazo}
 ---
 
-## General information
+# General information
 
-1) Takes imports and exports data from census and changes the sectors to final 1-14.
+This file does the following:
 
-2) This code calculates the sector-country bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
+1) Takes imports and exports data from census and groups the sectors to the final 1-14 sectors that we use.
+
+2) Calculates the sector-country bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
 
 ## Input files
 
@@ -27,18 +29,15 @@ header-includes:
 2. `0-Raw_Data/sectors.csv`
 3. `0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-i.csv`
 4. `0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-i.csv`
-5. `1-Intermediate_Processed_Data//census_exports.csv`
-6. `1-Intermediate_Processed_Data//census_imports.csv`
-7. `1-Intermediate_Processed_Data/state_imports_exports.csv`
-8. `1-Intermediate_Processed_Data/country_country_step_.csv`
+4. `1-Intermediate_Processed_Data/country_country_step_.csv` 
 
 ## Output files
 
 1. `1-Intermediate_Processed_Data//census_exports.csv`
 2. `1-Intermediate_Processed_Data//census_imports.csv`
 3. `1-Intermediate_Processed_Data/state_imports_exports.csv`
-4. `Intermediate_Processed_Data//state_country_step_y_.csv`
-5. `Intermediate_Processed_Data//state_country_step_e_.csv`
+4. `1-Intermediate_Processed_Data//state_country_step_y_.csv`
+5. `1-Intermediate_Processed_Data//state_country_step_e_.csv`
 
 
 ```{r setup, include=FALSE}
@@ -61,7 +60,7 @@ lapply( libs, require, character.only=TRUE );
 ```
 
 
-# Task 1
+# Imports and Exports data
 
 ## Importing datasets to R
 
@@ -86,12 +85,6 @@ temp <- read.csv(paste("0-Raw_Data//State-Exports-Imports//State Imports by NAIC
 base_i <- rbind(base_i, temp)
 }
 
-
-```
-
-
-
-```{r}
 # Unifying .csv files
 
 colnames(base_e) <- c("state", "naics3", "country", "year", "exports")
@@ -112,6 +105,7 @@ write.table(base_e, file = paste("1-Intermediate_Processed_Data//census_exports.
 write.table(base_i, file = paste("1-Intermediate_Processed_Data//census_imports.csv", sep=""), sep = ",", row.names = FALSE)
 
 ```
+
 
 ## Changing sectors to relevant 1-14 sectors
 
@@ -210,18 +204,21 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/state_imports_exp
 ```
 
 
-# Task 2
+# Calculating the sector-country bilateral trade flows
+
+Here we compute the sector-country bilateral trade flows ($X_{ij,k}$) when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
 
 We use $X_{ij,k}^{Census}$ and $X_{ij,k}^{WIOD}$ plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;  j \notin US$ (exports from each State to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each State), and $\forall k$ (except services). We do the same procedure each year. Census data on exports and imports starts in 2002 and 2008 respectively. For the years before the starting Census year we assume that the share of sector-level imports (exports) of each state from (to) each country in the total imports (exports) of the state in each year remains constant at the level of the starting Census year.
 
-Intermediate variables 
+Define the share of exports of US State $i$ in sector $k$, going to country $j$ as:
 
-Define the share of exports of US State $i$ in sector $k$, going to country $j$ as: $$y_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{h\in US}X_{hj,k}^{Census}} \; \forall i\in US \, , \, j\notin US.$$ 
+$$y_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{h\in US}X_{hj,k}^{Census}} \; \forall i\in US \, , \, j\notin US.$$ 
 
 Similarly, only for $j \in US$ define the share of imports of State $j$ in sector $k$, coming from country $i$ as
+
 $$e_{ij,k}^{Census}\equiv\dfrac{X_{ij,k}^{Census}}{\sum_{l\in US}X_{il,k}^{Census}}. \; \forall i\notin US \, , \, j\in US.$$ 
 
-**Note**: There are some very few cases that required corrections. For instance, say country j (i) did not import (export) from (to) the US in a given sector $k$ according to CENSUS data but it did it according to WIOD data. Then we would calculate $e_{ij,k}$ ($y_{ij,k}$) by splitting WIOD imports (exports) between the states according to the share of imports (exports) of that state in the total US imports (exports) of that sector $k$. This means:
+Note: There are some very few cases that required corrections. For instance, say country j (i) did not import (export) from (to) the US in a given sector $k$ according to CENSUS data but it did it according to WIOD data. Then we would calculate $e_{ij,k}$ ($y_{ij,k}$) by splitting WIOD imports (exports) between the states according to the share of imports (exports) of that state in the total US imports (exports) of that sector $k$. This means:
 
 $$
 y_{i\;j,k}^{census}\equiv\dfrac{\sum_{j\notin US}X_{ij,k}^{census}}{\sum_{h\in US}\sum_{l\notin US}X_{hl,k}^{census}}, \; i\in US \, , \, j\notin US
@@ -231,9 +228,7 @@ $$
 e_{i\;j,k}^{census}\equiv\dfrac{\sum_{i\notin US}X_{ij,k}^{census}}{\sum_{h\notin US}\sum_{l\in US}X_{hl,k}^{census}}, \; i\notin US \, , \, j\in US
 $$
 
-Main variable
-
-Define $\forall k$: 
+Finally, we define our main variable of interest $X_{ij,k}\quad\forall k$: 
 
 $$X_{ij,k}=
 \begin{cases}
