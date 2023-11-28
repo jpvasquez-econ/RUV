@@ -381,7 +381,9 @@ R <- wiot_full %>%
 
 Calculating value added:
 
-$$VA_{i,k}= R_{i,k}- \sum_s X_{j,sk} $$
+$$VA_{i,k}= R_{i,k}- \sum_s X_{j,sk}, $$ 
+where $R_{i,k}$ denotes total revenues in sector $k$ of country $i$ and $X_{j,sk} = \sum_i X_{ij,sk}$ is the total purchases that sector k in region j makes from sector s.
+
 ```{r value-added, warning=FALSE}
 sum_s_X_jsk <- wiot_inter %>%
   group_by(year, col_country, col_item) %>%
@@ -646,6 +648,15 @@ write.table(UN_1, file = paste("1-Intermediate_Processed_Data//country_coordinat
 
 # Distances between all regions 
 
+To calculate the distance between regions ($dist_{ij}$), we follow the same procedure used in the GeoDist dataset of CEPII to calculate international (and intranational) bilateral trade distances. The idea is to calculate the distance between two countries based on bilateral distances between the largest cities of those two countries, those inter-city distances being weighted by the share of the city in the overall country's population (Head and Mayer, 2002).
+
+We use population for 2010 and coordinates data for all U.S. counties, and all cities around the world with more than 300,000 inhabitants. For those countries with less than two cities of this size, we take the two largest cities. Coordinates are important to calculate the physical bilateral distances in kms between each county $r$ in state $i$ and county $s$ in state $j$ ($d_{rs}\; \forall r\in i \; ,\; s\in j \text{ and }\;\forall i,j=1,...,50$), and define $dist\left(ij\right)$ as:
+
+$$
+dist\left(ij\right) = \left(\sum_{r\, \in\, i} \sum_{s \, \in \, j} \left(\dfrac{pop_r}{pop_i}\right) \left(\dfrac{pop_s}{pop_j}\right) d_{rs}^\theta\right)^{1/ \theta},  \label{eq:distances}
+$$
+where $pop_h$ is the population of country/state $h$. We set $\theta=-1$.
+
 ```{r}
 #Dataset of country coordinates.
 country_coordinates <- UN_1
@@ -682,7 +693,8 @@ country_coor <- country_coordinates %>%
   #Numerical ID for countries.
   mutate(state = as.integer(factor(country)) + 50) %>% 
   #Show the corresponding country for each city that we are now including in RoW.
-  mutate(city = ifelse(country == "RoW", paste(country.name.original,city, sep="_"), city)) %>%
+  mutate(city = ifelse(country == "RoW", paste(country.name.original,city, sep="_"), city)) %>% 
+  #there are two cities with the same name (Xinyi), so we relabel a Xinyi2
   mutate(city = ifelse(city == "Xinyi" & round(Latitude)==22, "Xinyi2", city)) %>%
   #Create FIPS codes and calculate population shares (city with respect to country).
   mutate(country_city = paste(country,city, sep="_")) %>%
@@ -769,7 +781,7 @@ dist <- dist %>%
   left_join(pops_i, by=c('state_i'='state_i', 'fips_r_in_i'='fips_r_in_i')) %>%
   left_join(pops_j, by=c('state_j'='state_j', 'fips_s_in_j'='fips_s_in_j'))
 
-#	5. Applying formula
+#	5. Applying formula for $dist_{ij}$ described above
 dist <- dist %>%
   mutate(theta = -1) %>%
   mutate(dist = (pop_r_i*pop_s_j*(d_rs^(theta)))) %>%
