@@ -15,25 +15,25 @@ header-includes:
 - \usepackage{mathpazo}
 ---
 
-## General information
+# General information
 
-1) This code creates the CFS base, which contains the state to state trade flow.
+This file does the following:
 
-2) This code uses CFS plus proportionality to calculate $X_{ij,k}$ for $i\in US\;  \&\;   j \in US$, for all manufacturing sectors (all sectors except services and agriculture).
+1) Imports and prepares the CFS dataset, which contains the state to state trade flow.
+
+2) Uses CFS plus proportionality to calculate state-state trade flows in manufacturing $X_{ij,k}$ for $i\in US\;  \&\;   j \in US$
 
 ## Input files
 
 1. `0-Raw_Data/CFS/NAICS to CFS Crosswalk.xlsx`
 2. `0-Raw_Data/CFS/CFS_2012_00A18_with_ann.csv`
-3. `1-Intermediate_Processed_Data/CFSapportionment.csv`
-4. `0-Raw_Data/CFS/CFS2007.xlsx`
-5. `0-Raw_Data/CFS/CFS2002mine.xlsx`
-6. `0-Raw_Data/CFS/CF1200A24.dat`
-7. `0-Raw_Data/Fips/statefips.csv`
-8. `0-Raw_Data/regions.csv`
-9. `0-Raw_Data/sectors.csv`
-10. `1-Intermediate_Processed_Data/CFS_Xijk.csv`
-11. `1-Intermediate_Processed_Data/country_country_step_.csv`
+3. `0-Raw_Data/CFS/CFS2007.xlsx`
+4. `0-Raw_Data/CFS/CFS2002mine.xlsx`
+5. `0-Raw_Data/CFS/CF1200A24.dat`
+6. `0-Raw_Data/Fips/statefips.csv`
+7. `0-Raw_Data/regions.csv`
+8. `0-Raw_Data/sectors.csv`
+9. `1-Intermediate_Processed_Data/country_country_step_.csv`
 
 ## Output files
 
@@ -60,23 +60,12 @@ if( !(libs[i] %in% installed.packages()) ) install.packages( libs )
 lapply( libs, require, character.only=TRUE );
 ```
 
-# Task 1
+# Importing and preparing the CFS dataset
 
-## Importing datasets to R
+The following code associates each commodity code with a NAICS code and then transforms the latter in the 14 desired sector categories. It is important to note that each commodity can be associated with more than one NAICS, depending on the industry that that commodity was produced in.  The code takes CFS 2007 and 2012 for the US, and calculates the proportion of the amount of commodity $c$ associated with NAICS $n$, with respect to the total amount of commodity $c$. This gives a matrix of (#commodities)x14 for each year. The code produces a matrix that shows how to redistribute the amount of each commodity into 14 sectors for the US for 2002, 2007 and 2012. The matrix for 2002 is the same as the one for 2007. 
 
-```{r data, warning=FALSE}
-statefips <- read.csv(paste("0-Raw_Data/Fips/statefips.csv", sep=""), header = TRUE, sep = ",", dec = ".")
-
-```
-
-The following code associates each commodity code with a NAICS code and then transforms the latter in the 14 desired sector categories.
-It is important to note that each commodity can be associated with more than one NAICS, depending on the industry that that
-commodity was produced in. 
-The code takes CFS 2007 and 2012 for the US, and calculates the proportion of the amount of commodity c associated with
-NAICS n, with respect to the total amount of commodity c. This gives a matrix of (#commodities)x14 for each year. 
-In general, this do file gives a matrix that shows how to redistribute the amount of each commodity into 14 sectors for the US
-for 2002, 2007 and 2012; the matrix for 2002 is the same as the one for 2007. 
 ```{r}
+statefips <- read.csv(paste("0-Raw_Data/Fips/statefips.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 final <- c()
 for (yr in c(2007, 2012)){
 if (yr == 2007){
@@ -216,12 +205,10 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/CFSapportionment.
 # *Mining, Quarrying, and Oil and Gas Extraction (c2).
 ```
 
-## State-to-state trade flows
+## Original state-to-state manufacturing trade flows
 
-The follwing code assign state-to-state trade flows at the NAICS level. 
-Calculate X_{ij,k}^{CFS} for the 12 manufacturing sectors
-The previous matrix is calculated by applying the proportions of redistribution for each commodity into 13 sectors for the US,
-to each commodity that flows between state origin and state destination.
+The following code assigns state-to-state trade flows from CFS to the NAICS level. We calculate $X_{ij,k}^{CFS}$ for the 12 manufacturing sectors. 
+
 ```{r}
 CFSapportionment <- read.csv(paste("1-Intermediate_Processed_Data/CFSapportionment.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 final <- c()
@@ -311,16 +298,16 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/CFS_Xijk.csv", se
 
 ```
 
-# Task 2
+# New state-to-state manufacturing trade flows
 
-Intermediate variables
+Using CFS data we construct: 
 
-Using CFS data we construct: $$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}},$$ where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS.
+$$x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}},$$ 
+where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS. Our object of interest is:
 
-
-Main variable 
-
-The object of interest is: $$X_{ij,k}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD},$$ where $X_{US,US,k}^{WIOD}$ is the consumption of the US in sector $k$ that is produced in the US, according to WIOD. Note that proportionality implies that $$\sum_{i} \sum_{j} X_{ij,k}=X_{US,US,k}^{WIOD}$$ for each manufacturing sector. 
+$$X_{ij,k}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD},$$ 
+where $X_{US,US,k}^{WIOD}$ is the consumption of the US in sector $k$ that is produced in the US, according to WIOD. Note that proportionality implies 
+$$\sum_{i} \sum_{j} X_{ij,k}=X_{US,US,k}^{WIOD}$$ for each manufacturing sector. 
 
 ## Importing datasets to R
 
@@ -345,7 +332,6 @@ n_sec <- length(unique(reclass_sectors$final_sector)) - 3
 
 epsilon <- 0.0001
 ```
-
 
 ## Manufacturing bilateral trade between US states
 
