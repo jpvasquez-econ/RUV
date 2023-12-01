@@ -21,7 +21,7 @@ This file does the following:
 
 1) Takes imports and exports data from census and groups the sectors to the final 1-14 sectors that we use.
 
-2) Calculates the sector-"country" bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
+2) Calculates the sector-region bilateral trade flows $X_{ij,k}$ when $i\in US\;  \&\;  j \notin US$ (exports from each state to each country) and $i\notin US\;  \&\;  j \in US$ (imports from each country to each state), for all sectors $k$ (except services).
 
 ## Input files
 
@@ -318,11 +318,11 @@ eijkBase <- eijkBase[, 3:dim(eijkBase)[2]] / rowSums(eijkBase[, 3:dim(eijkBase)[
 step3e <- eijkBase*df_wiod1$value
 step3e <- cbind(df_wiod1[, 1:2], step3e)
 ################################################################################
-#Correcting if needed:
+#Applying proportionality:
 
 #The sum over states of X_{ij,k}, ideally, would sum up to X_{i,US,k} as reported in WIOD. To correct the sectors where that is not the case, we calculate a vector of the differences between the sum over states of X_{ij,k} and X_{i,US,k}.
 check <- as.matrix(rowSums(step3e[, 3:dim(step3e)[2]]) - df_wiod1$value)
-#Corrected X_{ij,k}'s calculated as explained above (we will only substitute them for the original if it is necessary).
+#Final X_{ij,k}'s calculated as explained above (we will only substitute them for the original if it is necessary).
 m_correct <- c()
 for (sec in c(1:(n_sec), (n_sec + 2))) {
 m <- base_e %>% filter(sector == sec)
@@ -409,7 +409,7 @@ step3y <- yijkBase*df_wiod1$USA
 step3y <- cbind(df_wiod1[, 1:2], step3y)
 
 ################################################################################
-#Correcting if needed:
+#Applying proportionality:
 
 #The sum over states of X_{ij,k}, ideally, would sum up to X_{US,j,k} as reported in WIOD. To correct the sectors where that is not the case, we calculate a vector of the differences between the sum over states of X_{ij,k} and X_{US,j,k}.
 check <- as.matrix(rowSums(step3y[, 3:dim(step3y)[2]]) - df_wiod1$USA)
