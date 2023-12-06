@@ -29,7 +29,7 @@ This file does the following:
 2. `0-Raw_Data/CFS/CFS_2012_00A18_with_ann.csv`
 3. `0-Raw_Data/CFS/CFS2007.xlsx`
 4. `0-Raw_Data/CFS/CFS2002mine.xlsx`
-5. `0-Raw_Data/CFS/CF1200A24.dat`
+5. `0-Raw_Data/CFS/CF1200A24.dat` (this file was too heavy, so it was compressed in a .zip folder with the same name; it must be taken out of the foler to run the script)
 6. `0-Raw_Data/Fips/statefips.csv`
 7. `0-Raw_Data/regions.csv`
 8. `0-Raw_Data/sectors.csv`
@@ -211,7 +211,7 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/CFSapportionment.
 
 ## CFS state-to-state manufacturing trade flows
 
-The following code assigns state-to-state trade flows from CFS to the NAICS level. We then calculate $X_{ij,k}^{CFS}$ for the 12 manufacturing sectors (where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS) 
+The following code assigns state-to-state trade flows from CFS to the NAICS level. We then calculate $X_{ij,k}^{CFS}$ for the 12 manufacturing sectors (where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS). For simplicity, we calculate weights for 13 sectors here, and then we drop services in the last chunk to keep only our 12 manufacturing sectors.
 
 ```{r}
 #Matrix for redistribution.
@@ -337,7 +337,7 @@ regions <- read.csv("0-Raw_Data/regions.csv")
 s_names <- regions %>% filter(status=="state") 
 s_names <- s_names$region
 n_s <- length(s_names)
-#Number of sectors minus 3.
+#Number of sectors minus 3 (we use it to exclude agriculture, services, and non-participants).
 reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
 n_sec <- length(unique(reclass_sectors$final_sector)) - 3
 #Small value.
@@ -350,7 +350,7 @@ epsilon <- 0.0001
 
 for (yr in 2000:2007) {
 
-#Approximation
+#We only have CFS weights for three years, but we have WIOD data for 2000-2007, so we associate each year's WIOD data to the nearest available year of CFS weights.
 c=c(2002, 2007, 2012)
 ap=1000
 for (i in 1:3) {
@@ -391,6 +391,7 @@ for(k in 1:n_sectors) {
 }
 XijkCFS_1 <- c()
 denominator <- c()
+#Keep only the 12 manufacturing sectors.
 for (i in 1:n_sec) {
   denominator <- rbind(denominator,matrix(replicate(n_s*n_s,sum_hl_XhlkCFS[i]), 
                                          nrow = n_s, ncol = n_s))
