@@ -1,14 +1,15 @@
 *Cleaning and creating the database. 
- use cps_panel, clear
- order cpsid cpsidp cpsidv sex mish month age sex race popstat nativity 
- egen id=group(cpsidp)
- egen house_id=group(cpsid)
- egen id2=group(cpsidv)
+ cd "C:\Users\Efraín\OneDrive - Universidad de Costa Rica\Desktop\JP_SMALL_TASK\19997_2002"
+ use "C:/Users/Efraín/Downloads/cps_panel.dta", clear
+order cpsid cpsidp cpsidv sex mish month age sex race popstat nativity 
+egen id=group(cpsidp)
+egen house_id=group(cpsid)
+egen id2=group(cpsidv)
 order id id2 year  house_id
 drop cpsid cpsidp cpsidv
 sort id year month
 bysort id: gen quarter=_n
- drop if quarter>8
+drop if quarter>8
 order id
 sort id
 order id month mish
@@ -17,10 +18,15 @@ xtset id mish
 bysort id: gen times=_N
 tab times
 egen tag=tag(id)
+*We want to keep people that we observe for at least 4 quarters. 
+bys id: gen num=_N
+drop if num<4
 *Primera consistencia: sex
-*Alternative approach is accounting the number of times someone changes
+*Alternative approach is accounting the number of times someone changes sex in the first 4 quarters.
+sort id quarter
 bysort id (sex): gen change= 1000*sex[1]+100*sex[2]+10*sex[3]+sex[4]
 tab change if tag
+*drop if change ==1
 keep if (change==2222 | change==1111)
 *Checking for race 
 bysort id (race): gen change2=race[1]!=race[_N]
@@ -38,21 +44,18 @@ drop if change4==1
 *first we check how many changed the age, nobody should change it more than one year.
 bysort id (age): gen change5=age[1]!=age[_N]
 tab change5 if tag
-bysort id (age): gen dif_age=age[1]-age[_N]
+bysort id (age): gen dif_age=age[_N]-age[1]
 tab change5 if tag
-tab dif_age
-drop if dif_age<-3
+tab dif_age 
+drop if dif_age>3
 *Wich observations to drop. 
 *birthplace
 bysort id (bpl): gen change6=bpl[1]!=bpl[_N]
 drop if change6==1
 *Labor status. *************
-codebook labforce
 gen sector=.
 replace sector=0 if (labforce==1)
-sum statefip
 tab statefip 
-codebook statefip
 *Industry
 bysort year: tab ind
 ************
@@ -107,7 +110,36 @@ bys id (mish): replace sector_destination8=sector_destination8[_n-1] if missing(
 save clean_data, replace 
 
 sort id month mish
-keep id month year mish statefip ind sector sector_origin1 sector_destination4  sector_origin5 sector_destination8 wtfinl
-drop sector_origin1 sector_destination4 sector_origin5 sector_destination8
-*dropping people migratin from states. 
+keep id month year mish statefip ind sector sector_origin1 sector_destination4  sector_origin5 sector_destination8 wtfinl 
 save clean_data, replace 
+
+*Descriptives
+*Computing the shares
+use clean_data, clear 
+collapse (sum) wtfinl, by(sector_origin1 sector_destination4 state mish year) 
+*prueba
+tab sector_origin1
+bysort sector_origin1 statefip mish: egen tot=total(wtfinl) 
+*The shares from the changes 1--->4
+gen share14= wtfinl/tot
+sum share14 if sector_origin1==sector_destination4, detail 
+save weights4, replace 
+use clean_data, clear
+merge m:m sector_origin1 sector_destination4 statefip mish year using weights4
+drop _merge 
+save data_base_14, replace 
+*The shares from the changes 5--->8
+use clean_data, clear 
+collapse (sum) wtfinl, by(sector_origin5 sector_destination8 state mish year) 
+bysort sector_origin5 statefip mish: egen tot2=total(wtfinl) 
+gen share58= wtfinl/tot2
+save weights5, replace 
+use clean_data, clear
+merge m:m sector_origin5 sector_destination8 statefip mish year using weights5
+drop _merge 
+drop tot2
+sort id
+save data_base_15, replace 
+merge id using data_base_14
+drop tot _merge migration
+save data_base_weights, replace 
