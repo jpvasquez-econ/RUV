@@ -40,8 +40,9 @@ This script does the following:
 1. `1-Intermediate_Processed_Data/state_exp_rev_services.csv`
 2. `1-Intermediate_Processed_Data/data_services.csv`
 3. `1-Intermediate_Processed_Data/vector_lambda_.csv`
-
-
+4. `1-Intermediate_Processed_Data//matrix_B_.csv`
+5. `1-Intermediate_Processed_Data//vector_solution_.csv`
+6. `1-Intermediate_Processed_Data//Xij_matrix_services_.csv`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -382,14 +383,14 @@ wiod_base <- c()
 for (yr in 2000:2007) {
   wiot <- country.country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
   wiod_base <- rbind(wiod_base, wiot)
-}
+  }
 data_gravity_services.base <- read.csv( file="1-Intermediate_Processed_Data//data_services.csv", header=TRUE, sep="," )
 
 #Number of sectors minus three (to ease referencing sector 13: services).
 reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
 n_sec <- length(unique(reclass_sectors$final_sector)) -3
 
-#### epsilon to check between calculations
+#### small (tolerance) value to check between calculations
 epsilon<-0.01;
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -546,13 +547,24 @@ exports.to.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=2, FUN=sum) )
 ## shares of imports and exports of countries
 X_c <- as.matrix( exp.vector[(n_s + 1):(n_s + n_c)] )
 Y_c <- as.matrix( gdp.vector[(n_s + 1):(n_s + n_c)] )
+
+#Change the positions of RoW and RUS, so that all matrices/vectors have the same order.
+temp <- Y_c[31, ]
+Y_c[31, ] <- Y_c[32, ]
+Y_c[32, ] <- temp
+
 ## lambdas
 lambda.p <- (X_c-imports.from.countries) / X_c
+
+#Change the positions of RoW and RUS, so that all matrices/vectors have the same order.
+temp <- lambda.p[31, ]
+lambda.p[31, ] <- lambda.p[32, ]
+lambda.p[32, ] <- temp
 lambda.pi <- (Y_c- exports.to.countries) / Y_c
+
 ## lambda vector
 ones.ns <- matrix( data=rep(1, n_s), nrow = n_s, ncol = 1 )
 lambda_vector <- rbind( ones.ns, lambda.p, ones.ns, lambda.pi )
-
 ##
 ## 4.5 Big zeros matrices
 ##
@@ -572,8 +584,21 @@ block.11 <- rbind( cbind(phi.X.ss, phi.X.sc),
 ## Relevant matrix
 BIG.MAT <- rbind( cbind(zeros.big, block.10),
                   cbind(block.11, zeros.big) )
+#Change the positions of RoW and RUS, so that all matrices/vectors have the same order.
+temp <- BIG.MAT[81, ]
+BIG.MAT[81, ] <- BIG.MAT[82, ]
+BIG.MAT[82, ] <- temp
+temp <- BIG.MAT[ ,81]
+BIG.MAT[ ,81] <- BIG.MAT[ ,82]
+BIG.MAT[ ,82] <- temp
+temp <- BIG.MAT[168, ]
+BIG.MAT[168, ] <- BIG.MAT[169, ]
+BIG.MAT[169, ] <- temp
+temp <- BIG.MAT[ ,168]
+BIG.MAT[ ,168] <- BIG.MAT[ ,169]
+BIG.MAT[ ,169] <- temp
 
-## Saving input matrices for the matlab code
+## Saving input matrices for the gravity system.
 write.csv(BIG.MAT, file= paste('1-Intermediate_Processed_Data//matrix_B_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 write.csv(lambda_vector, file= paste('1-Intermediate_Processed_Data//vector_lambda_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 
@@ -590,6 +615,7 @@ gravity_system <- function(x){
     Bsecond <- x[1] - 100
     B <- as.matrix(rbind(Bfirst, Bsecond))  
 }
+
 start <- 100*matrix(1, 2*(n_c + n_s), 1)
 if (yr > 2000){start <- as.matrix(sol)}
 
@@ -599,10 +625,9 @@ sol <- as.matrix(sol$x)
 
 write.csv(sol, file= paste('1-Intermediate_Processed_Data//vector_solution_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 
-## Solution system
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-###SOLUTION FROM MATLAB
+###FROM SOLUTION TO X_ij
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SOL <- as.matrix(read.csv(paste('1-Intermediate_Processed_Data//vector_solution_',yr, '.csv', sep="")))
 
@@ -612,7 +637,8 @@ if(norm(value, "2")>epsilon)
   stop(paste("Solution does not seem to work for year", yr))
 
 x<- SOL;
-##calculating Xij
+
+##calculating X_ij
 
 ### Basic vector
 P.s <- as.matrix( x[1:n_s] );
@@ -626,17 +652,39 @@ P.c.inv <- P.c^(-1);
 Pi.s.inv <- Pi.s^(-1);
 Pi.c.inv <- Pi.c^(-1);
 
-#Pi*R and P*E
+#Pi^(-1)*R and P^(-1)*E (and change the positions of RoW and RUS, when necessary, so that all matrices/vectors have the same order.)
+temp <- gdp.vector[81]
+gdp.vector[81] <- gdp.vector[82]
+gdp.vector[82] <- temp
 Pi.sq.mat <- matrix( data=rep(c(Pi.s.inv, Pi.c.inv)*gdp.vector, (n_s + n_c)),
                      nrow=(n_s+n_c), ncol=(n_s+n_c), byrow=TRUE );
+temp <- exp.vector[81]
+exp.vector[81] <- exp.vector[82]
+exp.vector[82] <- temp
 P.sq.mat <- matrix( data=rep(c(P.s.inv, P.c.inv)*exp.vector, (n_s + n_c)),
                     nrow=(n_s+n_c), ncol=(n_s+n_c), byrow=FALSE );
+temp <- P.sq.mat[,81]
+P.sq.mat[,81] <- P.sq.mat[,82]
+P.sq.mat[,82] <- temp
+temp <- Pi.sq.mat[,81]
+Pi.sq.mat[,81] <- Pi.sq.mat[,82]
+Pi.sq.mat[,82] <- temp
 
 #Bilateral flows.
+
+#Change the positions of RoW and RUS, so that all matrices/vectors have the same order.
+temp <- dist.matrix[81,]
+dist.matrix[81,] <- dist.matrix[82,]
+dist.matrix[82,] <- temp
+
+#X_ij=tau*Pi^(-1)P^(-1)*R*E
 Xij.matrix <- Pi.sq.mat * dist.matrix * P.sq.mat;
+temp <- Xij.matrix[,81]
+Xij.matrix[,81] <- Xij.matrix[,82]
+Xij.matrix[,82] <- temp
 write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_services_', yr, '.csv', sep= ""), row.names=FALSE, na="" );
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-###CHECKS
+###CHECKS for X_ij
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #CHECK: US consumption from US =US consumption from US from WIOD
