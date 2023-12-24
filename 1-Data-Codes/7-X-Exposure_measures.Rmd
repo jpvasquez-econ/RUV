@@ -33,11 +33,13 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-## General Instructions
+# General Instructions
 
-1)This code imports WIOD data to create the 2000-2007 change in imports from China to the US and other advanced economies (Australia, Germany, Denmark, Spain, Finland and Japan; New Zealand and Switzerland are not included in the WIOD). Then, runs a linear regression (with and without constant) using the change of sectoral US imports from China as the dependent variable and the change of sectoral  advanced economies' imports from China as the independent variable. 
+This script does the following:
 
-2) This code computes de exposure measure using i) level el state-sector employment, ii) predicted values of regression in step 1) and iii) total US 2000 sales by sector.
+1) Imports WIOD data to create the 2000-2007 change in imports from China to the US and other advanced economies (Australia, Germany, Denmark, Spain, Finland and Japan; New Zealand and Switzerland are not included in the WIOD). Then, runs a linear regression (with and without constant) using the change of sectoral US imports from China as the dependent variable and the change of sectoral  advanced economies' imports from China as the independent variable. 
+
+2) Computes de exposure measure using i) level el state-sector employment, ii) predicted values of regression in step 1) and iii) total US 2000 sales by sector.
 
 ## Input files
 
@@ -50,10 +52,11 @@ lapply( libs, require, character.only=TRUE );
 
 1. `2-Final_Data/exposures.xlsx`
 
+# The change in imports from China
 
-## Importing general datasets to R
 ```{r}
 
+# Importing general datasets to R
 WIOD <- read.csv("1-Intermediate_Processed_Data/WIOD_countries.csv")
 
 L_2000 <- read.csv("1-Intermediate_Processed_Data/L_2000.csv", header = TRUE, sep = ",", dec = ".")
@@ -61,12 +64,6 @@ L_2000 <- read.csv("1-Intermediate_Processed_Data/L_2000.csv", header = TRUE, se
 state_emp_share_2000 <- read_dta("1-Intermediate_Processed_Data/state_emp_share_2000.dta")
 state_emp_share_2000 <- state_emp_share_2000 %>%
   dplyr::rename(state = region)
-```
-
-
-# Task 1
-
-```{r}
 
 list_countries <- c("USA", "CHN", "AUS", "DEU", "DNK", "ESP", "FIN", "JPN")
 adv_countries <- c("AUS", "DEU", "DNK", "ESP", "FIN", "JPN")
@@ -117,7 +114,7 @@ data_reg <- data %>% select(sector, hat_cons, hat_nocons)
 ```
 
 
-# Task 2
+# Exposure measure(s)
 
 ```{r}
 

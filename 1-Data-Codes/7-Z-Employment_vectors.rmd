@@ -33,9 +33,9 @@ for( i in length(libs)){
 lapply( libs, require, character.only=TRUE );
 ```
 
-## General Instructions
+# General Instructions
 
-1) This code creates employment vectors by year (1998-2009), state and sector. The information was taken from BLS (https://www.bls.gov/lau/rdscnp16.htm) for sector 0 (unemployment and out of labor force) and BEA's SAEMP25 series (https://apps.bea.gov/iTable/iTable.cfm?reqid=70&step=1&acrdn=4) for the rest of the sectors.  
+This code creates employment vectors by year (1998-2009), state and sector. The information was taken from BLS (https://www.bls.gov/lau/rdscnp16.htm) for sector 0 (unemployment and out of labor force) and BEA's SAEMP25 series (https://apps.bea.gov/iTable/iTable.cfm?reqid=70&step=1&acrdn=4) for the rest of the sectors.  
 
 ## Input files
 
@@ -49,7 +49,8 @@ lapply( libs, require, character.only=TRUE );
 1. `2-Final_Data//BEA_employment.xlsx`
 
 
-## Task 1
+# Employment vectors
+
 ```{r}
 
 `%notin%` <- Negate(`%in%`)

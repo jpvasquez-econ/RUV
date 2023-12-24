@@ -20,7 +20,8 @@ knitr::opts_chunk$set(echo = TRUE)
 remove(list = ls())
 ```
 
-## General Information
+# General Information
+
 This code creates shares of employment by state-ruv_sector for the 2000 year
 
 ## Input Files
@@ -48,10 +49,9 @@ lapply( libs, require, character.only=TRUE );
 
 
 # Cleaning Employment File
+
 ```{r bls_emp, echo=TRUE, message=FALSE, warning= FALSE}
 # SHARE OF EMPLOYMENT PER SECTOR IN 2000 ACCORDING TO BLS
-
-# JP, May 2020
 
 # 1. BLS employment
 bls <- read.csv("0-Raw_Data/emp_SAEMP25S_BLS.csv", header = TRUE)
@@ -215,7 +215,8 @@ bls$wiod_sector[bls$LineCode %in% c(815, 850)] <- 35
 
 ```
 
-#RUV sectors
+# Using RUV sectors
+
 ```{r pressure, echo=FALSE}
 # Create a new variable "ruv_sector" with missing values
 bls$ruv_sector <- NA
@@ -291,7 +292,8 @@ bls$ruv_sector[bls$ruv_sector == 23] <- 14
 
 ```
 
-#Regions and Employment Shares (US)
+# Regions and Employment Shares (US)
+
 ```{r regions, warning = FALSE}
 # Rename variables
 bls <- bls %>% rename(region = GeoName)
