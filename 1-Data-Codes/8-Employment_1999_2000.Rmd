@@ -1,5 +1,5 @@
 ---
-title: "L_1999&L_2000"
+title: "8-Employment_1999_2000"
 output:
   html_document:
     toc: yes
@@ -36,13 +36,17 @@ for( i in seq_along(libs)) {
 lapply( libs, require, character.only=TRUE );
 ```
 
-## General Instructions
+# General Instructions
 
-1) **Task 1**: This code computes the employment level for each state and sector in year 2000 using CBS data.
-2) **Task 2**: This code computes the employment level for each state and sector in year 2000 and year 1999 using BLS data.
-3) **Task 3**:  This code computes the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data. 
-4) **Task 4**: This code reshapes the outputs of step 1, step 2 and step 3, and binds them. It also applies a proportionality rule to step 1 and step 2 for consistency with SEA (and with zero population growth too in BLS' case). 
+This script does the following:
 
+1) Computes the employment level for each state and sector in year 2000 using CBS data.
+
+2) Computes the employment level for each state and sector in year 2000 and year 1999 using BLS data.
+
+3) Computes the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data
+
+4) Combines the previous outputs, applies proportionality to ensure consistency with WIOD SEA
 
 ## Input files
 
@@ -63,13 +67,14 @@ lapply( libs, require, character.only=TRUE );
 2. `1-Intermediate_Processed_Data//L_`1999BLS`.csv`
 3. `1-Intermediate_Processed_Data//L_`2000BLS`.csv`
 
-## Importing general datasets to R
+# Sector-State employment for 2000 from the 2000 Census
 
-1. Construct table for sector classifications.
-2. Construct list of US states.
-
+1. Construct employment levels for each US state from the 2000 Census. 
+2. Take CBS total non-participants for each state directly as the sector 0 value.
 
 ```{r message=FALSE, warning=FALSE}
+
+# Importing general datasets to R
 
 #US states
 regions <- read.csv("0-Raw_Data/regions.csv")  
@@ -84,14 +89,6 @@ sectors_naics_final <- sectors_naics_final %>%
   mutate(naics = as.character(naics)) %>%
   distinct(final_sector, naics)
 
-```
-
-## Task 1
-
-1. Construct employment levels for each US state from Census 2000: distribute total employment between our 14 sectors using a proportionality rule.
-2. Take CBS total non-participants for each state directly as the sector 0 value.
-
-```{r message=FALSE, warning=FALSE}
 # employment statistics in year 2000, by state
 employment_pop <- read_excel("0-Raw_Data/CENSUS_2000/employment_2000.xls", skip = 12)
 employment_pop <- employment_pop %>%
@@ -160,10 +157,11 @@ census <- census %>%
   select(state, sector, employ)
 ```
 
-## Task 2
+# Sector-State employment for 1999 and 2000 from BLS data
 
 1. Calculate employment by sector and state directly from BLS, for sectors 1-14.
 2. Take BLS total non-participants for each state directly as the sector 0 value.
+
 ```{r message=FALSE, warning=FALSE}
 ################################
 ### US-sectors 1-14 for 1999 ###
@@ -351,9 +349,10 @@ sector_0 <- sector_0  %>%
 states_2000BLS <- rbind(states_2000BLS,sector_0)
 ```
 
-## Task 3
+# Sector-Country employment for 1999 and 2000
+
 1. Calculate the number of non-participants for each country. 
-2. Append non-participants to SEA values to put together "employment" for all of our sectors for each country.
+2. Use WIOD-SEA for all employment sectors in each country.
 
 For each country $c$ (excluding USA), let $L^c_{tot}$ represent working age population, $L^c_{work}$ represent employment, $unemp^c$ represent unemployment, and $L^c_{i}$ represent "employment" in sector $i$ $\forall i=0,...,14$. If we define $L^c_0$ as non-participants in the labor force, and if we assume that the labor market only has 14 sectors, then we know that:
 $$
@@ -368,9 +367,8 @@ From ILO we know the value of the labor force participation rate ($lfp^c$) for e
 $$
 1-lfp^c	=\dfrac{L_{0}^{c,ILO}}{L_{tot}^{c,ILO}}
 $$
-Superscripts simply indicate where the data is taken from; we adopt the same convention in what follows.
+The superscripts indicate where the data is taken from; we adopt the same convention in what follows. Also, from ILO we know the value of the unemployment rate ($u^c$) for each country, which is:
 
-Also, from ILO we know the value of the unemployment rate ($u^c$) for each country, which is:
 $$
 u^c	=\dfrac{unemp^{c,ILO}}{unemp^{c,ILO}+L_{work}^{c,ILO}}
 $$
@@ -392,20 +390,15 @@ $$
 $$
 Then,
 $$
-(1-lfp^c)\times L_{0}^{c,SEA}+(1-lfp^c)\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}	=L_{0}^{c,SEA}
+(1-lfp^c)\times L_{0}^{c,SEA}+(1-lfp^c)\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}	=L_{0}^{c,SEA} \\
+\Rightarrow -lfp^c\times L_{0}^{c,SEA}+(1-lfp^c)\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}	= 0 \\
+\Rightarrow L_{0}^{c,SEA}=\frac{1-lfp^c}{lfp^c}\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}
 $$
 
-$$
-\Rightarrow -lfp^c\times L_{0}^{c,SEA}+(1-lfp^c)\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}	= 0
-$$
-So, we conclude
-$$
-L_{0}^{c,SEA}=\frac{1-lfp^c}{lfp^c}\left[\frac{1}{1-u^c}\right]L_{work}^{c,SEA}
-$$
+We use the formula in the previous line to calculate $L^c_{0}$ for each country using the unemployment rate and the labor force participation rate (both taken from ILO), and total employment, $\sum_{i=1}^{14}L^c_{i}$ (taken from SEA).  
 
-We use this formula to calculate $L^c_{0}$ for each country using the unemployment rate and the labor force participation rate (both taken from ILO), and total employment, $\sum_{i=1}^{14}L^c_{i}$ (taken from SEA).  
 ```{r message=FALSE, warning=FALSE}
-# Pepare lfp for each country.
+# Prepare lfp for each country.
 participation <- fread("0-Raw_Data/CENSUS_2000/EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv", encoding = "UTF-8")
 participation <- subset(participation, select = c(time, ref_area, obs_value))
 participation <- participation %>%
@@ -464,31 +457,26 @@ countries <- rbind(countries,sector0countries)
 countries$sector <- sprintf("sector_%02d", countries$sector)
 ```
 
-## Task 4
+# Combining previous outputs and doing final checks
+
 1. Employment for US-states for year 2000 must sum up to US' total employment for year 2000 according to SEA. 
 
 Specifically, if $L_{i,s}^{2000}$ represents the employment for year 2000 of sector $s=0,...,14$ and state $i=1,...,50$ that we calculated in Task 1 (for CBS) and Task 2 (for BLS), for every $s\neq0$ we do the following normalization:
 $$
- L_{i,s}^{*CENSUS,2000} = L_{i,s}^{CENSUS,2000} \times\frac{\sum_{s=1}^{14}L_{s}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{CENSUS,2000}}
-$$
-
-$$
- L_{i,s}^{*BLS,2000} = L_{i,s}^{BLS,2000} \times\frac{\sum_{s=1}^{14}L_{i}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{BLS,2000}}
+ L_{i,s}^{*CENSUS,2000} = L_{i,s}^{CENSUS,2000} \times\frac{\sum_{s=1}^{14}L_{s}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{CENSUS,2000}} \\
+ L_{i,s}^{*BLS,2000} = L_{i,s}^{BLS,2000} \times\frac{\sum_{s=1}^{14}L_{i}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{BLS,2000}} 
 $$
 where $L_{i,s}^{*2000}$ is our "official" value for the employment for year 2000 of sector $s$ and state $i$.
 
 For units of sector 0 to be consistent with this normalization, we apply the same proportionality constant to them:
 $$
-L_{i,0}^{*CENSUS,2000} = L_{i,0}^{CENSUS,2000} \times\frac{\sum_{s=1}^{14}L_{s}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{CENSUS,2000}}
-$$
-
-$$
+L_{i,0}^{*CENSUS,2000} = L_{i,0}^{CENSUS,2000} \times\frac{\sum_{s=1}^{14}L_{s}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{CENSUS,2000}} \\
 L_{i,0}^{*BLS,2000} = L_{i,0}^{BLS,2000} \times\frac{\sum_{s=1}^{14}L_{i}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{BLS,2000}}
 $$
-
 2. Employment in year 1999 and year 2000 must be consistent with zero population growth for each country (including USA in the case of BLS data).
 
 Specifically, using the values of $L_{s}^{c,SEA,1999}$ and $L_{s}^{c,SEA,2000}$ that we calculated in Task 3 for each country $c$ (excluding USA) and each sector $s$, we do the following normalization:
+
 $$
 L_{s}^{*c,SEA,1999}  =  L_{s}^{c,SEA,1999} \times\frac{L_{0}^{c,SEA,2000}+\sum_{s=1}^{14}L_{s}^{c,SEA,2000}}{L_{0}^{c,SEA,1999}+\sum_{s=1}^{14}L_{s}^{c,SEA,1999}}
 $$
@@ -588,6 +576,8 @@ L_1999BLS <- rbind(states_1999BLS,countries_1999)
 L_2000BLS <- rbind(states_2000BLS,countries_2000)
 L_2000CENSUS <- rbind(states_2000CENSUS,countries_2000)
 ```
+
+## Saving datasets
 
 ```{r message=FALSE, warning=FALSE}
 
