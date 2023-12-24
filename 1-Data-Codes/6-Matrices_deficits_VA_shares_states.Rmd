@@ -35,17 +35,15 @@ stataexe <- "C:/Users/alove/Desktop/Stata 16/Stata16MP-64.exe"
 knitr::opts_chunk$set(engine.path = list(stata=stataexe))
 ```
 
-## General Instructions
+# General Instructions
 
-1) The goal is to combine the previous steps in order to obtain a new Final Matrix for 2000 through 2007: $X_{ij,k}^{year}$.
+This script does the following:
 
-2) The purpose of this task is to calculate region-sector level deficits. The deficit for a region $i$ in a sector $k$ would be defined as: 
-$$
-D_{i,k}=\sum_j X_{ij,k} - \sum_j X_{ji,k}
-$$
+1) Combine the steps of the previous 5 codes to obtain the final $X_{ij,k}^{year}$ matrix for years 2000-2007.
 
-3) This code calculates the share of value added in gross output for each US state, for each sector.
+2) Calculate region-sector level deficits. The deficit for a region $i$ in a sector $k$ would be defined as $D_{i,k}=\sum_j X_{ij,k} - \sum_j X_{ji,k}$
 
+3) Calculates the share of value added in gross output for each US state, for each sector.
 
 ## Input files
 
@@ -73,9 +71,10 @@ $$
 6. `2-Final_Data/va_shares_allyears.xlsx`
 
 
-# Task 1
+# Constructing the $X_{ij,k}^{year}$ matrix
 
-## Importing datasets to R
+## Importing previous datasets to R
+
 ```{r}
 
 #General parameters
@@ -199,6 +198,7 @@ state_country_y_all <- state_country_y_all %>%
 ## Putting all together
 
 Constructing the full matrix $X_{ij,k}^{year}$ by putting together all elements using the steps described in the previous codes. 
+
 ```{r}
 
 for (yr in 2000:2007) {
@@ -246,6 +246,7 @@ write.table(final_matrix, file = paste("1-Intermediate_Processed_Data//final_mat
 }
 
 ```
+
 
 
 ## Final checks
@@ -360,7 +361,9 @@ if(abs(sum(cdp_ss$val)/sum(wiot_ss$value) -1)>epsilon)
 ```
 
 
+
 ## Exporting all bilateral flows matrices in a unique file 
+
 ```{stata, collectcode=TRUE}
 
 forvalue i=2000/2007{
@@ -373,15 +376,13 @@ export excel using "2-Final_Data/bilat_matrix_allyears.xlsx" ///
 }
 ```
 
+# Calculating Deficits
 
-# Task 2
+The deficits are given by:
 
 $$
 D_{i,k}=\sum_j X_{ij,k} - \sum_j X_{ji,k}
 $$
-
-## Calculating Deficits
-
 ```{r}
 base <- cdp_base
 
@@ -403,8 +404,8 @@ for (yr in 2000:2007) {
 
 ```
 
-
 ## Exporting all aggregate deficits in a unique sheet
+
 ```{r}
 
 deficit$pos <- as.numeric(row.names(deficit))
@@ -432,16 +433,16 @@ write_xlsx(deficit, paste("2-Final_Data/deficits_allyears.xlsx"), col_names = TR
  
 ```
 
-# Task 3
-
+# Calculating the share of value added in gross output
 
 We need to compute the share of value added in gross output the 50 for US states.  We can obtain data on sectoral and regional value added for the US from the Bureau of Economic Analysis (BEA). The final output would a matrix 50 $\times$ 13 with the shares of value added in gross output for each state, for each sector. Let's focus on the year 2000.
 
 - Value added for each of the 50 U.S. states and 13 sectors can be obtained from the Bureau of Economic Analysis (BEA) by subtracting taxes and subsidies from GDP data 
 - Gross outputs for each region $i$ is just $Y_{i,k}= \sum_j X_{ij,k}$ 
-- In a few cases, gross output might be smaller than value added (probably due to some small discrepancies between trade and production data, etc). In such cases, just constrain value added to be equal to gross output. 
+- In a few cases, gross output might be smaller than value added (probably due to some small discrepancies between trade and production data, etc). In such cases, just constraint value added to be equal to gross output. 
 
 ## Importing datasets to R
+
 ```{r}
 
 base <- c()
@@ -497,9 +498,8 @@ SUBSIDIES$V2 <- sub(' ', '', SUBSIDIES$V2)
 
 ```
 
+Then we calculate gross output for each region, for each sector, using that $Y_{i,k}= \sum_j X_{ij,k} \quad for \quad all \quad j$
 
-Gross output for each region, for each sector
-$Y_{i,k}= \sum_j X_{ij,k} \quad for \quad all \quad j$
 ```{r}
 base <- melt(base, id.vars=c("year", "importer", "sector"), variable.name="exporter", value.name = "value")
 base <- spread(base, importer, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
@@ -511,11 +511,11 @@ Y <- spread(Y, sector, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NUL
 
 ```
 
-
 ## Constructing Value-Added ("Labor Shares")
 
 Calculating value added
-$VA_{i,k}=GDP_{i,k}-tax_{i,k}-subsidy_{i,k}, \quad where \quad subsidy<0$
+$VA_{i,k}=GDP_{i,k}-tax_{i,k}-subsidy_{i,k},$ where $subsidy<0$.
+
 ```{r}
 value <- GDP
 value$tax <- TAXES[, 6]
@@ -571,8 +571,8 @@ VA_s <- spread(VA_s, sector, value_added, fill = NA, convert = TRUE,  drop = TRU
 #some NA generated at the beginning of the chunk because base was not clean yet
 ```
 
-share of value added in gross output
-$Labor share = \frac{VA_{i,k}}{Y_{i,k}}$
+The share of value added in gross output is giving by: $Labor share = \frac{VA_{i,k}}{Y_{i,k}}$
+
 ```{r}
 labor_shares <- VA_s[, 3:dim(VA_s)[2]] / Y[, 3:dim(Y)[2]]
 labor_shares[labor_shares>1] <- 1
@@ -590,6 +590,7 @@ for (yr in 2000:2007) {
 
 
 ## Exporting all VA shares in a unique sheet
+
 ```{r}
 all <- c()
 for (yr in 2000:2007) {
