@@ -1,6 +1,5 @@
 ---
-title: "Final migration matrix"
-author: "Yuanhang(Leo) Yu"
+title: "9-Migration_matrix"
 output:
   html_document:
     toc: yes
@@ -239,12 +238,14 @@ write.table(irs, file = paste("1-Intermediate_Processed_Data/irs.csv", sep=""), 
 ```
 
 ```{r Clean Raw CPS NBER, message=FALSE, warning=FALSE}
-# The code is in STATA
+# This part is in another file
 ```
 
 ```{r Generate cps_nber yearly, message=FALSE, warning=FALSE}
 # load CPS data from NBER
-#cps_nber  <- haven::read_dta("/Users/yyh/Library/CloudStorage/OneDrive-LondonSchoolofEconomics/RUV_data_no_GitHub/CPS_redone/Outputs/clean_data_new.dta")
+
+#cps_nber  <- here we need to load the output from the chunk above (currently produced in another file). The file is the one called clean_data_new.
+
 #cps_nber <- cps_nber %>%
 #  group_by(P_ID) %>%
 #  filter( min(inter_num) <=4 & max(inter_num) >=5 ) %>%
