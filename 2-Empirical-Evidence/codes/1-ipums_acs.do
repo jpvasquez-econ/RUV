@@ -1,9 +1,6 @@
 /*
-"Trade with Nominal Rigidities: Understanding the unemployment and welfare effects of the China Shock" 
-Rodriguez-Clare, A., Ulate, M., Vasquez, J.P.
-Last update: Feb 2023
 
-General information: this code created a panel dataset by CZ from 2006 to 2020 of employment indicators in the United States
+General information: this code creates a panel of employment indicators by CZ from 2006 to 2020. It follows the data construction from ADH 2013.
 
 Inputs:
 	1. workfile_china (from ADH 2013 replication package)
