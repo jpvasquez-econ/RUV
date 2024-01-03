@@ -16,25 +16,28 @@ header-includes:
 
 ## General information
 
-1) This code creates a file that contains information about distances between regions, agricultural production for all regions and agricultural consumption for countries. In doing so, the code also applies the usual proportionality rule so that aggregate expenditure and production matches WIOD.
+This script does the following:
 
-2) This code generates the inputs of the agricultural gravity system and solves it.
+1) Constructs Revenue and Expenditures data for agriculture by state.
+
+2) Sets the gravity system for state-region agriculture flows and solves it.
 
 ## Input files
 
 1. `0-Raw_Data/regions.csv`
 2. `0-Raw_Data/sectors.csv`
-3. `1-Intermediate_Processed_Data/state_imports_exports.csv`
-4. `1-Intermediate_Processed_Data/country_country_step_.csv`
-5. `0-Raw_Data//Agriculture_Census/data_agriculture.csv`
-6. `0-Raw_Data//Agriculture_Census//data_fish.csv`
-7. `1-Intermediate_Processed_Data/data_services.csv`
-8. `1-Intermediate_Processed_Data/state_country_step_y_.csv`
-9. `1-Intermediate_Processed_Data/state_country_step_e_.csv`
-10. Coefficients from `Country_Gravity_WIOD`
-11. `1-Intermediate_Processed_Data/io_shares.csv`
-12. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
-
+3. `1-Intermediate_Processed_Data//wiot_full.csv`
+4. `1-Intermediate_Processed_Data/state_imports_exports.csv`
+5. `1-Intermediate_Processed_Data/country_country_step_.csv`
+6. `0-Raw_Data//Agriculture_Census/data_agriculture.csv`
+7. `0-Raw_Data//Agriculture_Census//data_fish.csv`
+8. `1-Intermediate_Processed_Data/data_services.csv`
+9. `1-Intermediate_Processed_Data/state_country_step_y_.csv`
+10. `1-Intermediate_Processed_Data/state_country_step_e_.csv`
+11. Coefficients from `Country_Gravity_WIOD`
+12. `1-Intermediate_Processed_Data/io_shares.csv`
+13. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
+14. `1-Intermediate_Processed_Data//state_cfs_step_.csv`
 ## Output files
 
 1. `1-Intermediate_Processed_Data/data_agriculture.csv`
@@ -55,20 +58,19 @@ set.seed(2023)
 options(digits = 15, scipen = 100, stringsAsFactors = FALSE)
 # vector of libraries to be used
 libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'pracma');
-#Installing libraries in case they are not installed
+# Install libraries in case they are not installed
 for( i in length(libs)){ 
   if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
 };
-#Loading libraries
+# load libraries
 lapply( libs, require, character.only=TRUE );
 ```
 
-# Task 1
-
-## Importing data to R
+# Revenue and Expenditures data for agriculture
+## Importing data
 
 ```{r data-importing}
-#General parameters
+#General parameters (number of countries, n_c, and number of states, n_s).
 regions <- read.csv("0-Raw_Data/regions.csv")
 regions$region <- as.character(regions$region)
 c_names <- regions %>% filter(status == "country", region != "USA")
@@ -80,14 +82,14 @@ s_names <- s_names$region
 n_s <- length(s_names)
 n_c <- length(c_names)
 
-#sectors
+#sectors and the number of sectors (specifically, the number of sectors minus three to ease referencing sectors 13 and 14: services and agriculture)
 reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
 n_sec <- length(unique(reclass_sectors$final_sector)) -3
 reclass_sectors <- reclass_sectors %>% 
   select(final_sector, wiod_sector) %>%
   distinct(wiod_sector, .keep_all = TRUE)
 
-#State to country
+#States' exports to countries
 state_to_country <- c()
 for (yr in 2000:2007) {
   temp <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
@@ -98,7 +100,7 @@ census_exp <- state_to_country %>%
   select(-sector)
 census_exp <- melt(census_exp, id.var=c("year", "importer"), variable = "origin")
 
-#Country to state
+#States' imports from countries
 country_to_state <- c()
 for (yr in 2000:2007) {
   temp <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
@@ -124,33 +126,30 @@ state_imp_exp_0 <- census %>%
   filter(origin != "AllStates", destination != "AllStates")
 
 #### Agriculture and fish
-#Agriculture production states
+#Agriculture production (states)
 data_agri <- read.csv("0-Raw_Data//Agriculture_Census//data_agriculture.csv")
 
-#Fish production states
+#Fish production (states)
 data_fish <- read.csv("0-Raw_Data//Agriculture_Census//data_fish.csv")
-######
 
-#Trade distances
+#Trade distances.
+#Here, we are taking advantage of the fact that this services data set is already structured including trade distances. We just delete the revenue and expenditure values.
 data_agriculture <- read.csv("1-Intermediate_Processed_Data//data_services.csv")
-
 data_agriculture <- data_agriculture %>%
   mutate(R_i=NA, E_j=NA)
+
+#### small (tolerance) value to check between calculations
 epsilon <- 0.0001
 
 ```
 
 
-## State's agricultural revenue 
+## State's agricultural revenue (by year)
 
+The agricultural production for each state is defined as the sum of: i) exports to other countries; and ii) the total exports to states, which we obtain distributing WIOD US to US exports between states according to the Census Agriculture relative state production (so that the sum of these exports across states equals US to US exports).
 ```{r}
 
-#Each state agricultural production is defined as the sum of: i) total exports to other countries (we apply proportionality to Census so that the total US export to country c according to WIOD equals the sum of exports of each state to that country) and ii) the total exports to US states (the sum of these exports across states equals US to US exports in WIOD; this last value is divided between states to obtain ii, according to the Agriculture Census relative state production). 
-#Initially, state production (total export) was defined as a fraction of US total export from WIOD, depending on state Agri Census relative production. But, this definition generated some problems, for example, when comparing Alaska's and Illionois's total export to countries with their total export; specifically, the first term was 26 times bigger than the second, when theoretically, the first is a part of the second. This problem may be due to subestimations in their calculation of those states' productions. 
-#One way to solve this is to apply the definition used at the beginning, which assumes that the distribution of US total export by state applies as well to US total export to states. One way is to apply this solution only to the states that generate issues, but this would require to apply proportionality again and verify that new problems of the same nature don't arise. Therefore, and for now, the solution will be applied to all states, guaranteeing, by definition, that the issue doesn't occur again. 
-
-##########Component i of state production: export to countries
-
+## Exports to countries
 census_exp <- census_exp %>%
   group_by(year, origin) %>%
   mutate(R_i_1 = sum(value)) %>%
@@ -159,35 +158,31 @@ census_exp <- census_exp %>%
   arrange(year, origin) %>%
   select(-importer, -value) %>%
   dplyr::rename(iso_o = origin)
-
+#Join to distances data set.
 data_agriculture <- data_agriculture %>%
   left_join(census_exp, by=c('year'='year', 'iso_o'='iso_o'))
 
-##########Component ii of state production: export to US states
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# sum of crops, livestock, and fish
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+## Exports to states
+
+# sum of agriculture, and fish
 data_agri<- merge(data_agri,data_fish, by=c("iso_o", "year"))
 data_agri <- data_agri %>% 
   arrange(year) %>%
   mutate(R_i = fish_prod + R_i) %>%
   select(-fish_prod)
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# calculating relative state productions
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# calculating relative productions for each state
 data_agri <- data_agri %>%
   dplyr::rename(R_i_2 = R_i) %>%
   group_by(year) %>%
   mutate(tot_US = sum(R_i_2)) %>%
   ungroup() %>%
   mutate(rel = R_i_2/tot_US) 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Assigning data to years
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# Assigning Census data to years. Joining relative productions for all states for all years in one data set.
+
 agri <- c() 
-# We use Agriculture Census of 2002 for years 2000-2004 
-# and Agriculture Census of 2007 for years 2005-2007
+# We use Agriculture Census 2002 for years 2000-2004, and Agriculture Census 2007 for years 2005-2007 (we delete years 2008-2011 later).
 agri_2002 <- data_agri %>% filter(year == 2002)
 agri_2007 <- data_agri %>% filter(year == 2007)
 for (yr in 2000:2011) {
@@ -203,15 +198,10 @@ for (yr in 2000:2011) {
   agri <- rbind(agri, num)
 }
 agri$R_i_2  <- NA
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# 4. APPLYING PROPORTIONALITY TO WIOD
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-## SUM OF PRODUCTIONS ACROSS STATES = TOTAL PRODUCTION OF US ACCORDING TO WIOD
 
-##
-## 4.1 TOTAL PRODUCTION OF US IN AGRICULTURE ACCORDING TO WIOD
-## 
+# APPLYING PROPORTIONALITY TO WIOD
 
+## WIOD US to US exports
 wiod_agri <- wiod_full %>%
   filter(row_country == "USA", col_country == "USA", row_item == (n_sec + 2)) %>%
   group_by(year) %>%
@@ -220,9 +210,7 @@ wiod_agri <- wiod_full %>%
   distinct(year, .keep_all = TRUE) %>%
   select(-value, -col_item, -col_country)
 
-##
-## 4.2 DIVIDING TOTAL US PRODUCTION ACROSS STATES ACCORDING TO RELATIVE IMPORTANCE IN CENSUS
-## 
+## Distributing US to US exports according to the relative importance of each state. 
 
 for (yr in 2000:2011) {
   wiod_value  <- wiod_agri %>%
@@ -233,21 +221,14 @@ for (yr in 2000:2011) {
 }
 agri <- agri %>% select(-rel)
 
+## Final agricultural production for each state
 data_agriculture <- data_agriculture %>%
   left_join(agri, by=c('year'='year', 'iso_o'='iso_o'))
 data_agriculture <- data_agriculture %>%
   mutate(R_i = R_i_1 + R_i_2) %>%
   select(-R_i_1, -R_i_2)
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# 5. CHECKING
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-##
-## 5.1 Check: total production of US states = total US in WIOD
-## 
-
-# total production of US states from proportionality 
+#Check that revenue by states sums up to US exports. 
 check_1     <- data_agriculture %>%
                filter(iso_o %in% s_names, year <= 2007) %>%
                distinct(year, iso_o, .keep_all = TRUE) %>%
@@ -256,8 +237,6 @@ check_1     <- data_agriculture %>%
                ungroup() %>% 
                distinct(year, .keep_all = TRUE) %>%
                select(total, year)
-
-# total production of US states from WIOD 
 check_2     <- wiod_full %>%
                filter(row_country == "USA", row_item == (n_sec + 2), year <= 2007) %>%
                group_by(year) %>%
@@ -265,7 +244,6 @@ check_2     <- wiod_full %>%
                ungroup() %>%
                distinct(year, .keep_all = TRUE) %>%
                select(production, year)
-#check
 if(abs(sum(check_2$production / check_1$total-1))>epsilon)
    stop(paste("states' production does not add to WIOD for"))
 
@@ -276,7 +254,7 @@ if(abs(sum(check_2$production / check_1$total-1))>epsilon)
 ## Agricultural revenue and expenditure for countries
 
 ```{r prod-exp-countries}
-#agricultural production for countries 
+#Agricultural production for countries 
 wiod_p <- wiod_full %>%
   filter(row_item == n_sec + 2) %>%
   group_by(year, row_country) %>%
@@ -285,13 +263,12 @@ wiod_p <- wiod_full %>%
   distinct(year, row_country, .keep_all = TRUE) %>%
   dplyr::rename(iso_o = row_country) %>%
   select(year, iso_o, production)
-
+# join with states' production.
 data_agriculture <- data_agriculture %>%
   left_join(wiod_p, by=c('year'='year', 'iso_o'='iso_o')) %>%
   mutate(R_i = ifelse(iso_o %in% c_names, production, R_i))
   
-
-#agricultural consumption for countries 
+#Agricultural consumption for countries 
 wiod_c <- wiod_full %>%
   filter(row_item == n_sec + 2) %>%
   group_by(year, col_country) %>%
@@ -300,7 +277,7 @@ wiod_c <- wiod_full %>%
   distinct(year, col_country, .keep_all = TRUE) %>% 
   dplyr::rename(iso_d = col_country) %>%
   select(year, iso_d, consumption)
-
+# join with production data-set
 data_agriculture <- data_agriculture %>%
   left_join(wiod_c, by=c('year'='year', 'iso_d'='iso_d')) %>%
   mutate(E_j = ifelse(iso_d %in% c_names, consumption, E_j)) %>%
@@ -313,28 +290,76 @@ write.table(data_agriculture, file = paste("1-Intermediate_Processed_Data//data_
 ```
 
 
-# Task 2
+# Gravity system for services
 
 ## Theory
 
-Start with the standard gravity equation,
+Start with the standard gravity equation: 
+
+$$X_{ij}=\left(\frac{w_{i}\tau_{ij}}{P_{j}}\right)^{-\varepsilon}E_{j} \;\; (1)$$
+
+where $P_{j}^{-\varepsilon}=\sum_{i}\left(w_{i}\tau_{ij}\right)^{-\varepsilon}$.
+Consider
+$$\Pi_{i}^{-\varepsilon}= \sum_{j} \tau_{ij}^{ -\varepsilon}P_{j}^{\varepsilon}E_{j} \;\; (2)$$
+Since $\sum_{j}X_{ij}=R_{i}$, (1) implies $\sum_{j}\left(\frac{w_{i}\tau_{ij}}{P_{j}} \right)^{-\varepsilon}E_{j}=R_{i}.$ Then, from (2), we conclude $w_{i}^{-\varepsilon} \Pi_{i}^{-\varepsilon}=R{i}$. Hence we have:
+
+$$X_{ij}=\frac{\tau_{ij}^{-\varepsilon}}{\left(\Pi_{i}P_{j}\right)^{-\varepsilon}}R_{i}E_{j}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}R_{i}E_{j}  \;\; (3)$$
+
+where $\tilde{P}_{j}\equiv P_{j}^{-\varepsilon}$ and $\tilde{\Pi}_{i}\equiv \Pi_{i}^{-\varepsilon}$, and $\tilde{\tau}_{ij}\equiv\tau_{ij}^{-\varepsilon}$.
+We want to use (3) to calculate services bilateral flows for states, so we need to calculate  $\tilde{\Pi}_{i}^{-1}$ and $\tilde{P}_{j}$. To do that, first note that if we substitute $w_{i}^{-\varepsilon} \Pi_{i}^{-\varepsilon}=R{i}$ in $P_{j}^{-\varepsilon}=\sum_{i}\left(w_{i}\tau_{ij}\right)^{-\varepsilon}$, we have
+
+$$\tilde{P}_{j}  =  \sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}R_{i} \;\; (4)$$
+
+Equations (2) and (4) give us a system that, once solved, lets us know $\tilde{\Pi}_{i}^{-1}$ and $\tilde{P}_{j}$.
+Specifically, using (2) and (4) we get:
 $$
-X_{ij}=\left(\frac{w_{i}\tau_{ij}}{P_{j}}\right)^{-\varepsilon}X_{j}.
+\tilde{P}_{j}  =  \sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}R_{i}\quad j\in US  \;\; (5)
 $$
-Define: $\Pi_{i}^{-\varepsilon}=\sum_{j}\tau_{ij}^{-\varepsilon}P_{j}^{\varepsilon}X_{j}$. Let $\tilde{P}_{j}\equiv P_{j}^{-\varepsilon}$ and $\tilde{\Pi}_{i}\equiv\Pi_{i}^{-\varepsilon}, and \tilde{\tau}_{ij}\equiv\tau_{ij}^{-\varepsilon}$. Then we have the system
 $$
-\tilde{P}_{j}=\sum_{i}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}Y_{i} \nonumber
+\tilde{\Pi}_{i}  = \sum_{j}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}E_{j}\quad i\in US 
+ \;\; (6)
+$$
+Now, from WIOD and  Import and Export Merchandise Trade Statistics we know $X_{ij}$ for some pairs. Define $S_{j}$ as the set of $i$'s such that we know $X_{ij}$; and define $S^{*}_{i}$ as the set of $j$'s such that we know $X_{ij}$. Letting 
+
+$$X_{S_{j},j}\equiv\sum_{i\in S_{j}}X_{ij}, \quad\lambda_{j}\equiv1-X_{S_{j},j}/E_{j}, \quad X_{i,S_{i}^{*}}=\sum_{j\in S_{i}^{*}}X_{ij}, \quad\lambda_{i}^{*}\equiv1-X_{i,S_{i}^{*}}/R_{i}, $$
+we conclude that
+$$
+\lambda_{j}\tilde{P}_{j} =  \sum_{i \in US}\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}R_{i}\quad j\in US 
+\;\; (7)
 $$
 
 $$
-\tilde{\Pi}_{i}=\sum_{j}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}X_{j}
+\lambda_{i}^{*}\tilde{\Pi}_{i}  =  \sum_{j\in US}\tilde{\tau}_{ij}\tilde{P}_{j}^{-1}E_{j}\quad i\in US
+\;\; (8)
 $$
+Note that equations (7) and (8) are analogous to equations (7) and (8) in `4-Gravity_services.Rmd`, with the difference that now $S_{j}$ and $S^{*}_{i}$ only excludes the bilateral flows from states to states. Hence, (7) and (8) are our full system now. We can represent it in matrix notation. 
+Define $P_{s}=(\tilde{P}_{1},...,\tilde{P}_{50})'$ for the states, and similarly for $\Pi_{s}$,$\lambda_{s}$, and $\lambda_{s}^{*}$. Define $\lambda=\left(\lambda_{s},\lambda_{s}^{*}\right)'$. Define $S=\left(P_{s},\Pi_{s}\right)'$, and with some abuse of notation $S^{-1}=\left(P_{s}^{-1},\Pi_{s}^{-1}\right)'$ with dimensions $(s+s)\times(1)$. Define $\left(\mathcal{T} R\right)_{ss}$ as follows:
 
-So far this is the same we had before. Given $\{X_{j}\}$ and $\{Y_{i}\}$ and $\{\tilde{\tau}_{ij}\}$ then from here one can get $\{\tilde{P}_{j}\}$ and $\{\tilde{\Pi}_{i}\}$. Then we get $\{X_{ij}\}$ from 
+$$ \boldsymbol{\left(\mathcal{T} R\right)_{ss}}=\left(\begin{array}{ccc}
+\tilde{\tau}_{s_{1}s_{1}}R_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{1}}R_{s_{k}}\\
+\vdots & \ddots & \vdots\\
+\tilde{\tau}_{s_{1}s_{k}}R_{s_{1}} & \cdots & \tilde{\tau}_{s_{k}s_{k}}R_{s_{k}}
+\end{array}\right), $$
+
+and define $\left(\mathcal{T} E\right)_{ss}$ analogously. 
+The full system can be written as:
+
+$$ \lambda\circ S=\left(\begin{array}{cc}
+0 & \left(\mathcal{T} R\right)_{ss} \\
+\left(\mathcal{T} E\right)_{ss} & 0\\
+\end{array}\right)\cdot S^{-1}, $$
+
+(again, remember that we are searching for states-states flows, so we ignore $cs$, $cc$, and $sc$ pairs). Or in a more compact representation:
+$$ \lambda\circ S=B\cdot S^{-1}, $$
+
+where $\circ$ is the element-by-element product and $B$ is the big matrix. Given $\left\{ E_{j}\right\}$  and $\left\{ R_{i}\right\}$  and $\left\{ \tilde{\tau}_{ij}\right\}$,  we can get $\left\{ \tilde{P}_{j}\right\}$  and $\left\{ \tilde{\Pi}_{i}\right\}$. The solution for $\left\{ \tilde{P}_{j}, \tilde{\Pi}_{i} \right\}$ is unique up to a constant. This indeterminacy requires a normalization. We thus impose $\tilde{P}_{1}=100$. Then we compute $\left\{ X_{ij}\right\}$  from (3) as $$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}R_{i}E_{j}.$$
+
+However, we need to calculate $E_j$ for states first; as it is explained in **Appendix B.2 Step 4** of the paper, we do so using the following formula
 $$
-X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}Y_{i}X_{j}
+E_{j, A G}=\sum_{s} \tilde{\phi}_{j, A G s} R_{j, s}+\frac{\gamma_{A G}}{1-\gamma_{A G}} \sum_{r \neq A G}\left(E_{j, r}-\sum_{s} \tilde{\phi}_{j, r s} R_{j, s}\right)
 $$
-See explanation for agriculture gravity system in paper, and also see the services gravity system math.  
+where $\gamma_{k} \equiv \frac{F_{u s, k}}{F_{U S}}$, where $F_{j, k}=\sum_{i} X_{i j, k F}$ is the final consumption in region $j$ of sector $k, and F_{j}=\sum_{k} F_{j, k}$; and $\tilde{\phi}_{j, k s}=\phi_{j, k s}\left(1-\phi_{j, s}\right)$, where $\phi_{j, k s}$ is the corresponding input-output coefficient for the US and $\phi_{j, s}$ is the share of value-added in gross production for the US in sector $k$ (i.e., we assume 
+common input-output matrix and value-added shares across U.S. states and equal to the  ones of the U.S. as a whole).
 
 ## Importing data to R
 
@@ -343,12 +368,13 @@ See explanation for agriculture gravity system in paper, and also see the servic
 own_dummy <- 4.143
 dist_coeff <- -1.745
 
+#R_i, E_j (for agriculture, states need to be calculated), and trade distances for agriculture and services.
 data_gravity_agriculture.base <- read.csv(file = "1-Intermediate_Processed_Data//data_agriculture.csv", header = TRUE, sep = ",")
 data_gravity_serv.base <- read.csv(file = "1-Intermediate_Processed_Data//data_services.csv", header = TRUE, sep = ",")
 
 wiot_full <- wiod_full
 
-#State to country
+#States' exports to countries
 state_to_country <- c()
 for (yr in 2000:2007) {
   temp <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_y_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
@@ -359,7 +385,7 @@ census_exp <- state_to_country %>%
   select(-sector)
 census_exp <- melt(census_exp, id.var=c("year", "importer"), variable = "origin")
 
-#Country to state
+#States' imports from countries
 country_to_state <- c()
 for (yr in 2000:2007) {
   temp <- read.csv(paste('1-Intermediate_Processed_Data//state_country_step_e_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
@@ -372,13 +398,15 @@ census_imp <- melt(census_imp, id.var=c("year", "importer"), variable = "origin"
 
 ```
 
-## Creating and solving gravity system for agriculture
+## Creating and solving gravity system for agriculture (and calculating $E_j$ for states)
 
 ```{r warning=FALSE}
 
 for (yr in 2000:2007) {
-
-  ## Gravity data csv format with comma as the separator
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 1. LOAD DATA
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+  ## Gravity data set (distances, revenue, and expenditure)
   data_gravity_agriculture <- data_gravity_agriculture.base %>%
     filter(year == yr) %>%
     select(-year) %>%
@@ -390,10 +418,10 @@ for (yr in 2000:2007) {
   data_gravity_serv <- data_gravity_serv.base %>%
     filter(year == yr) %>%
     select(-year)
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # 1. ID OF STATES AND COUNTRIES
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # States
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 2. ID FOR STATES AND COUNTRIES
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  ## States
   id_states <- data_gravity_agriculture %>%
     filter(len_o == "STATE") %>%
     select(iso_o) %>%
@@ -402,7 +430,7 @@ for (yr in 2000:2007) {
     mutate(id = row_number()) %>%
     dplyr::rename(region = iso_o) %>%
     select(id, region)
-  # Countries
+  ## Countries
   id_countries <- data_gravity_agriculture %>%
     filter(len_o == "COUNTRY" & iso_o!= "USA") %>%
     select(iso_o) %>%
@@ -411,14 +439,15 @@ for (yr in 2000:2007) {
     mutate(id = n_s + row_number()) %>%
     dplyr::rename(region = iso_o) %>%
     select(id, region)
-  # Total
+  ## Total
   id_total <- rbind(id_states, id_countries)
   state_names <- id_total$region[1:n_s]
-  # t(id.total)
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # 2. PRODUCTION AND EXPENDITURE: services and agriculture
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # GDP VECTOR: services and agriculture
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 3. PRODUCTION AND EXPENDITURE: services and agriculture
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  # 3.1. PRODUCTION/REVENUE (R_i) VECTOR
+  ##For services
   gdp_vector_serv <- data_gravity_serv %>%
     select(iso_o, R_i) %>%
     distinct(iso_o, .keep_all = TRUE) %>%
@@ -426,10 +455,13 @@ for (yr in 2000:2007) {
     select(id, R_i) %>%
     arrange(id)
   gdp_vector_serv <- matrix(gdp_vector_serv$R_i)
+  #Only states.
   gdp_vector_serv_s <- data.frame(gdp_vector_serv[1:n_s])
+  #Add the corresponding columns (and their names).
   gdp_vector_serv_s$sector <- n_sec + 1
   gdp_vector_serv_s$exporter <- state_names
   colnames(gdp_vector_serv_s) <- c("export", "sector", "exporter")
+  ##For agriculture
   gdp_vector_agri <- data_gravity_agriculture %>%
     select(iso_o, R_i) %>%
     distinct(iso_o, .keep_all = TRUE) %>%
@@ -437,12 +469,14 @@ for (yr in 2000:2007) {
     select(id, R_i) %>%
     arrange(id)
   gdp_vector_agri <- matrix(gdp_vector_agri$R_i)
+  #Only states
   gdp_vector_agri_s <- data.frame(gdp_vector_agri[1:n_s])
+  ##Add the corresponding columns (and their names).
   gdp_vector_agri_s$sector <- n_sec + 2
   gdp_vector_agri_s$exporter <- state_names
   colnames(gdp_vector_agri_s) <- c("export", "sector", "exporter")
-
-  # Expenditure vector: services
+  #3.2. EXPENDITURE (E_j) VECTOR
+  ##For services
   expenditure_vector_serv <- data_gravity_serv %>%
     select(iso_d, E_j) %>%
     distinct(iso_d, .keep_all = TRUE) %>%
@@ -450,57 +484,64 @@ for (yr in 2000:2007) {
     select(id, E_j) %>%
     arrange(id)
   expenditure_vector_serv <- matrix(expenditure_vector_serv$E_j)
+  #Only states
   expenditure_vector_serv_s <- data.frame(expenditure_vector_serv[1:n_s])
+  ##Add the corresponding columns (and their names).
   expenditure_vector_serv_s$sector <- n_sec + 1
   expenditure_vector_serv_s$importer <- state_names
   colnames(expenditure_vector_serv_s) <- c("import", "sector", "importer")
   expenditure_vector_serv_s <- expenditure_vector_serv_s %>% select(importer, sector, import)
 
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # 3. share of US agriculture consumption to total US consumption (\gamma)
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 4. share of US agriculture final consumption in total US final consumption (\gamma_AG)
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   wiot_full_0 <- wiot_full %>%
     filter(year == yr, col_item == 0 & col_country == "USA")
+  ##US total consumption.
   wiot_full_1 <- wiot_full_0 %>%
     group_by(year, col_country) %>%
     mutate(C_us = sum(value)) %>%
     ungroup() %>%
     distinct(year, col_country, .keep_all = TRUE)
+  ##US agriculture consumption
   wiot_full_2 <- wiot_full_0 %>%
     filter(row_item == n_sec + 2) %>%
     group_by(year, col_country) %>%
     mutate(C_us_agri = sum(value)) %>%
     ungroup() %>%
     distinct(year, col_country, .keep_all = TRUE)
+  ##gamma_AG and gamma_AG/(1-gamma_AG)
   C_us <- wiot_full_1$C_us
   C_us_agri <- wiot_full_2$C_us_agri
   gamma <- C_us_agri / C_us
-  # gamma
   frac_gamma <- gamma / (1 - gamma)
 
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # 4. CALCULATING E_j FOR AGRICULTURE
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  ##
-  ## 4.1 sum.14: first component in E_j
-  ##
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 5. CALCULATING E_j FOR AGRICULTURE
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
+  ## 5.1 Prepare R_i's and \tilde{\phi}_{j, AG s} (to calculate the first term in E_j in the next step).
   io_shares <- read.csv(file = paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep = ""))
   labor_shares <- read.csv(file = paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep = ""))
-
+  ##\phi_{j, AG s}
   io_0 <- io_shares %>%
     filter(region == "USA", sector == n_sec + 2) %>%
     select(-year, -region, -sector)
-
+  ##\phi_{j, s}
   labor_shares_0 <- labor_shares %>%
     filter(region == "USA") %>%
     select(-year, -region)
-
+  ##\tilde{\phi}_{j, AG s}
   phi_14 <- io_0 * (1 - labor_shares_0)
-
+  ##bilateral trade between US states
   state_state <- read.csv(paste("1-Intermediate_Processed_Data//state_cfs_step_", yr, ".csv", sep = ""), header = TRUE, sep = ",", dec = ".")
+  ##States' exports to countries
   state_country_y <- data.frame(read.csv(paste("1-Intermediate_Processed_Data//state_country_step_y_", yr, ".csv", sep = ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector <= n_sec)
+  ##States' imports from countries
   state_country_e <- data.frame(read.csv(paste("1-Intermediate_Processed_Data//state_country_step_e_", yr, ".csv", sep = ""), header = TRUE, sep = ",", dec = ".")) %>% filter(sector <= n_sec)
+  ##States' exports to states and countries.
   state_exports <- rbind(state_state, state_country_y)
+  ##Total R_i's per state without agriculture and services.
   exp_v <- c()
   for (sec in 1:n_sec) {
     state_exports_1 <- state_exports %>%
@@ -512,7 +553,7 @@ for (yr in 2000:2007) {
     export$exporter <- state_names
     exp_v <- rbind(exp_v, export)
   }
-  # TOTAL R_i PER STATE
+  ##TOTAL R_i's PER STATE
   gdp_tot_v <- rbind(exp_v, gdp_vector_serv_s, gdp_vector_agri_s)
   US_sum <- gdp_tot_v %>%
     group_by(sector) %>%
@@ -520,9 +561,7 @@ for (yr in 2000:2007) {
     ungroup() %>%
     distinct(sector, .keep_all = TRUE) %>%
     select(sector, total_R)
-  ##
-  ## Checking US totals
-  ##
+  ##Check that WIOD US total R_i's coincide with the sum over states of our R_i's, for each sector.
   US_totals <- wiod_base %>%
     filter(year == yr) %>%
     select(year, importer, sector, USA) %>%
@@ -531,74 +570,61 @@ for (yr in 2000:2007) {
     ungroup() %>%
     distinct(year, sector, .keep_all = TRUE) %>%
     select(sector, total)
-  # check
   if (sum(abs(US_sum$total_R / US_totals$total - 1)) > epsilon) {
     stop(paste("sum(R_i) over states != US WIOD for year", yr))
   }
-  ##
-  ## 4.2 CALCULATING \sum_{s}\phi_{14,s}Y_{j,s} (SUM OF INTERMEDIATE USES IN AGRIC) FOR EACH STATE
-  ##
-  # reshaping gdp.tot.v
+
+  ##5.2 CALCULATING \sum_{s}\tilde{\phi}_{j, AG s}R_{j,s} (SUM OF INTERMEDIATE USES IN AGRICULTURE) FOR EACH STATE
+  ##reshaping vector of total R_i's per state to matrix form
   gdp_tot_v_mat <- spread(gdp_tot_v, sector, export, fill = NA, convert = TRUE, drop = TRUE, sep = NULL)
   gdp_tot_v_mat <- t(gdp_tot_v_mat[, -1])
   class(gdp_tot_v_mat) <- "numeric"
-
-  # product of a 1x14 row vect with \phi_{14,s} and a 14x50 matrix with the Y_j,s
+  ##product of vector of \tilde{\phi}_{j, AG s}'s and the matrix of R_i's to get the sum of intermediate uses in agriculture.
   sum_14 <- as.matrix(phi_14) %*% gdp_tot_v_mat
-  sum_14 <- t(sum_14) # i confirmed this is the same as the other calculation
-
-  ##
-  ## 4.3 sum.not.14: second component in E_j
-  ##
-
-  # E_j for all other sectors
+  sum_14 <- t(sum_14) 
+  
+  ## 5.3 second component in E_j
+  # E_j for all sectors except agriculture
   state_imports <- cbind(state_state[4:dim(state_state)[2]], state_country_e[4:dim(state_country_e)[2]])
   expenditure_state <- rowSums(state_imports)
   expenditure_state <- cbind(state_state[2:3], expenditure_state)
   colnames(expenditure_state) <- c("importer", "sector", "import")
-  expenditure_vector <- rbind(expenditure_state, expenditure_vector_serv_s) # sec: 1-13
+  expenditure_vector <- rbind(expenditure_state, expenditure_vector_serv_s)
   colnames(expenditure_vector) <- c("importer", "r", "import")
-
   expenditure_mat <- spread(expenditure_vector, importer, import, fill = NA, convert = FALSE, drop = TRUE, sep = NULL) %>% select(-r)
   expenditure_mat <- t(expenditure_mat)
-  ##
   ## checking that expenditure adds up to WIOD totals
-  ##
-  # expend states
   exp_states <- colSums(expenditure_mat)
-  # expend from WIOD
-
   US_totals <- wiod_base %>%
     filter(year == yr, importer == "USA", sector != 14) %>%
     select(-year, -importer, -sector)
   US_totals <- rowSums(US_totals)
-  # check
+  ## check
   if (sum(abs(exp_states / US_totals - 1)) > epsilon) {
     stop(paste("sum(E_j) over states (except agric) != US WIOD for year", yr))
   }
 
-  # IO shares
+  ##\phi_{j, k s}
   io_shares <- read.csv(file = paste("1-Intermediate_Processed_Data//io_shares", yr, ".csv", sep = "")) %>%
     filter(region == "USA") %>%
     select(-year, -region, -sector)
+  ##\phi_{j, s}
   labor_shares <- read.csv(file = paste("1-Intermediate_Processed_Data//labor_shares_countries", yr, ".csv", sep = "")) %>%
     filter(region == "USA") %>%
     select(-year, -region)
   labor_shares <- matrix(data = rep(as.matrix(labor_shares), (n_sec + 2)), nrow = (n_sec + 2), byrow = TRUE)
 
-
+  ##\tilde{\phi}_{j, k s}
   phi_ks <- io_shares * (1 - labor_shares)
 
-  # sum for all receiving sectors
+  ##sum \tilde{\phi}_{j, k s}*R_{j,s} over all receiving sectors
   sum_not_14_v <- as.matrix(phi_ks) %*% gdp_tot_v_mat
   sum_not_14_v <- as.data.frame(t(sum_not_14_v)) %>%
     select(-assign(paste("V", n_sec + 2, sep = ""), n_sec + 2)) 
-  # sum over r
+  ##Sum (for all sectors excluding agriculture) the difference between the previous sums and the corresponding E_{j,s} 
   sum_not_14_vector <- as.data.frame(rowSums(expenditure_mat - sum_not_14_v))
 
-  ##
-  ## first part of the sum + total agric US consumption = E_j for the US in agric
-  ##
+  ## first term of E_{j,AG} + US total agriculture consumption must be equal to WIOD US expenditure in agriculture
   check1 <- wiod_base %>%
     filter(year == yr, importer == "USA", sector == (n_sec + 2))
   c1 <- check1[4:dim(check1)[2]]
@@ -606,30 +632,25 @@ for (yr in 2000:2007) {
   if (abs(sum(c1) / c2 - 1) > epsilon) {
    stop(paste("problem with sum.14 year", yr))
   }
-  ##
-  ## second part of the sum needs to add up to total US consumption
-  ##
+  ## second term of E_{j,AG} must coincide with total US consumption in agriculture
   if (abs(C_us_agri / sum(frac_gamma * sum_not_14_vector) - 1) > epsilon) {
     stop(paste("second part of the summ does not add to total consumption year", yr))
   }
   
-  ##
-  ## 4.4 final computation for E_j
-  ##
+  ## 5.4 final computation of E_j
   E_j <- sum_14 + (frac_gamma * sum_not_14_vector)
-  
-   # check: sum(E_j)=WIOD
+  ## check sum of E_j is consistent with WIOD
   c1 <- sum(c1)
   c2 <- sum(E_j)
   if (abs(c1 / c2 - 1) > epsilon) {
     stop(paste("sum(E_j) over states != US WIOD for year", yr))
   }
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # 5. Calculating lambda and B matrix for the system
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  #
-  # 5.1 DISTANCE MATRIX
-  #
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 6. Calculating lambda and B matrix for the system
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  ##6.1 DISTANCE MATRIX
   dist_matrix <- data_gravity_agriculture %>%
     select(iso_o, iso_d, dist) %>%
     filter(iso_d != "USA" & iso_o != "USA") %>%
@@ -641,113 +662,92 @@ for (yr in 2000:2007) {
     arrange(id_o, id_d) %>%
     spread(key = id_d, value = dist)
   dist_matrix <- as.matrix(dist_matrix[, 2:(n_c + n_s + 1)])
-  # we use the coefficients from Country_Gravity_WIOD.
+  
+  ##Matrix of taus (we refer to it as "phi" from now on). This step eases the calculation of TE and TR matrices.
+  #we use the coefficients from 1-WIOD_VA_shares_io_shares_distances.RMD
   phi <- diag(x = own_dummy, n_c + n_s, n_c + n_s)
   phi <- exp(phi)
   phi <- phi * dist_matrix^dist_coeff
   dist_matrix <- phi
 
-  #
-  # 5.2 lambda vector
-  #
-
-  # lambda_j
-  expenditure_vector_agri_s <- (as.matrix(E_j))
+  ## 6.2 lambda vector
+  ## imports and exports
   state_imports_from_countries <- spread(census_imp, origin, value, fill = NA, convert = FALSE, drop = TRUE, sep = NULL)
   state_imports_from_countries <- state_imports_from_countries %>%
     filter(year == yr) %>%
     select(-year, -importer)
-  state_imports_from_countries <- state_imports_from_countries / expenditure_vector_agri_s
-  lambda_j <- 1 - rowSums(state_imports_from_countries)
-
-  # chi_i
-  gdp_vector_agri_s <- (as.matrix(gdp_vector_agri_s$export))
   state_exports_to_countries <- spread(census_exp, importer, value, fill = NA, convert = FALSE, drop = TRUE, sep = NULL)
   state_exports_to_countries <- state_exports_to_countries %>%
     filter(year == yr) %>%
     select(-year, -origin)
+  ## revenue and expenditure (to calculate shares)
+  expenditure_vector_agri_s <- (as.matrix(E_j))
+  gdp_vector_agri_s <- (as.matrix(gdp_vector_agri_s$export))
+  ## lambdas
+  state_imports_from_countries <- state_imports_from_countries / expenditure_vector_agri_s
+  lambda_j <- 1 - rowSums(state_imports_from_countries)
   state_exports_to_countries <- state_exports_to_countries / gdp_vector_agri_s
   chi_i <- 1 - rowSums(state_exports_to_countries)
-
-  # lambda vector
   lambda_vector <- rbind(as.matrix(lambda_j), as.matrix(chi_i))
 
-  #
-  # 5.3 BIG MATRIX B
-  #
-
-  # Matrices X and Y
+  ## 6.3 BIG MATRIX B
+  ## Matrices for E and R (repeat gdp and expenditure vectors in n_s+n_c rows). This step eases the calculation of TE and TR matrices.
   mat_Y <- matrix(data = rep(gdp_vector_agri_s, (n_s)), nrow = (n_s), byrow = TRUE)
   mat_X <- matrix(data = rep(expenditure_vector_agri_s, (n_s)), nrow = (n_s), byrow = TRUE)
-
-  ## Submatrices: TX and TY
-  # phi*Y submatrices
+  ##TR sub-matrices
   phi_Y_ss <- dist_matrix[(1:n_s), (1:n_s)] * mat_Y
-  # phi*X submatrices
+  ##TE sub-matrices
   phi_X_ss <- dist_matrix[(1:n_s), (1:n_s)] * mat_X
-
-  # Big zeros matrices
+  ## Big zeros matrices
   zeros_big <- matrix(data = rep(0, (n_s) * (n_s)), nrow = (n_s), ncol = (n_s))
-
-  # Relevant matrix
+  ## Relevant matrix
   BIG_MAT <- rbind(
     cbind(zeros_big, phi_Y_ss),
     cbind(phi_X_ss, zeros_big)
   )
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # 6. SOLVING THE SYSTEM
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# 7. SOLVING THE SYSTEM
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  ### Saving input matrices for the matlab code
+  ### Saving input matrices
   write.csv(BIG_MAT, file = paste("1-Intermediate_Processed_Data//agric_mat_B_", yr, ".csv", sep = ""), row.names = FALSE, na = "")
   write.csv(lambda_vector, file = paste("1-Intermediate_Processed_Data//agric_vec_lambda_", yr, ".csv", sep = ""), row.names = FALSE, na = "")
 
-
-## Gravity Systems
+  ## Gravity Systems
 
 # Agriculture gravity
 
 BIG.MAT <- as.matrix(read.csv(paste('1-Intermediate_Processed_Data//agric_mat_B_',yr, '.csv', sep= "")))
 lambda_vector <- as.matrix(read.csv(paste('1-Intermediate_Processed_Data//agric_vec_lambda_',yr, '.csv', sep= "")))
-lb= 0.00001
-ub= 10000000
 
-# This function solves the equilibrum system to construct the data for
-# RUV using a gravity approach 
+
+# This function solves the equilibrium system using non-linear least squares.
 gravity_system <- function(x){
     Bfirst <- ( ((lambda_vector*x) / (BIG.MAT%*%(x^(-1)))) -1)*100
     Bsecond <- x[1] - 100
     B <- as.matrix(rbind(Bfirst, Bsecond))
-    #B[B >= ub & B <= lb] <- ub # bounds
-    #B <- B
-    
 }
+
 start <- 100*matrix(0.6, 2*n_s, 1)
 if (yr > 2000){start <- as.matrix(sol)}
-
 sol <- lsqnonlin(gravity_system, start)
 sol <- as.matrix(sol$x)
-
-#residuals
-residuals <- (lambda_vector*sol) - (BIG.MAT %*% (sol^(-1)))
-print(sum(residuals))
 
 write.csv(sol, file= paste('1-Intermediate_Processed_Data//vec_agric_solution_',yr, '.csv', sep= ""), row.names=FALSE, na="" );
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  ### SOLUTION FROM MATLAB
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+###FROM SOLUTION TO X_ij
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   SOL <- as.matrix(read.csv(paste("1-Intermediate_Processed_Data//vec_agric_solution_", yr, ".csv", sep = "")))
   SOL <- (as.matrix(SOL))[1:(n_s * 2)]
-  # checking
+  ## checking if the solver worked.
   value <- lambda_vector * SOL - BIG.MAT %*% SOL^{-1}
   if (norm(value, "2") > epsilon) {
-    stop(paste("Solution from Matlab does not seem to work for year", yr))}
-
+    stop(paste("Solution does not seem to work for year", yr))}
   x <- SOL
-  ## calculating Xij
+  
   ### Basic vector
   P.s <- as.matrix(x[1:n_s])
   Pi.s <- as.matrix(x[(n_s + 1):(2 * n_s)])
@@ -756,16 +756,11 @@ write.csv(sol, file= paste('1-Intermediate_Processed_Data//vec_agric_solution_',
   P.s.inv <- P.s^(-1)
   Pi.s.inv <- Pi.s^(-1)
 
-  # E_j
-  E_j <- as.matrix(E_j)
-
-  # dist matrix
+  ##dist matrix
   dist_matrix <- dist_matrix[(1:n_s), (1:n_s)]
 
-  # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  # 9. COMPUTING BILATERAL FLOWS
-
-  # Calculating flows
+  ##Pi^(-1)*R and P^(-1)*E
+  E_j <- as.matrix(E_j)
   Pi.sq.mat <- matrix(
     data = rep(Pi.s.inv * gdp_vector_agri_s, (n_s)),
     nrow = (n_s), ncol = (n_s), byrow = TRUE
@@ -774,14 +769,15 @@ write.csv(sol, file= paste('1-Intermediate_Processed_Data//vec_agric_solution_',
     data = rep(P.s.inv * E_j, (n_s)),
     nrow = (n_s), ncol = (n_s), byrow = FALSE
   )
-  # consistent with WIOD notation
+  
+  ##X_ij=tau*Pi^(-1)P^(-1)*R*E
   Xij.matrix <- Pi.sq.mat * dist_matrix * P.sq.mat
   write.csv(Xij.matrix, file = paste("1-Intermediate_Processed_Data//Xij_matrix_agric_", yr, ".csv", sep = ""), row.names = FALSE, na = "")
 
-
-  # 10. FINAL CHECKS
-
-  # CHECK: US consumption from US =US consumption from US from WIOD
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+###CHECKS for X_ij
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  #CHECK: US consumption from US =US consumption from US from WIOD
   value1 <- sum(Xij.matrix[(1:n_s), (1:n_s)])
   value2 <- wiod_base %>%
     filter(sector == (n_sec + 2), year == yr, importer == "USA") %>%

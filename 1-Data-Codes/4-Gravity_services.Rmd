@@ -97,7 +97,7 @@ wiod_all_us_imp <- wiod_countries %>%
 wiod_all_us_imp$val_ <- rowSums(wiod_all_us_imp[, 5:dim(wiod_all_us_imp)[2]])  
 wiod_all_us_imp <- wiod_all_us_imp %>% select(year, val_)
 
-#	1. Constructs the data of production by state
+# Constructs the data of production by state
 
 #  LOOPING OVER STATES  TO GET DATA *** 
 all_states <- c()
@@ -195,7 +195,7 @@ bea_raw <- bea_raw %>%
   arrange(state, code, year, expen, revenue) %>%
   select(state, code, year, expen, revenue)
 
-#	4. Proportionality with WIOD (expenditure by states sums up to US imports; revenue by states sums up to US exports).
+#	Proportionality with WIOD (expenditure by states sums up to US imports; revenue by states sums up to US exports).
 bea_raw <- bea_raw %>%
   mutate(year = as.numeric(as.character(year))) %>%
   group_by(year) %>%
@@ -426,7 +426,7 @@ wiod <- wiod_base %>%
   filter( year == yr, sector == n_sec + 1 ) %>% 
   filter( importer != 'USA' ) %>% 
   select( -year, -USA, -sector, -importer  ) 
-## Gravity dataset (distances, revenue, and expenditure)
+## Gravity data set (distances, revenue, and expenditure)
 data_gravity_services <- data_gravity_services.base %>% 
   filter( year == yr ) %>% 
   select( -year ) %>% 
@@ -435,7 +435,7 @@ data_gravity_services <- data_gravity_services.base %>%
           len_d = ifelse(nchar(iso_d)<4, 'COUNTRY', 'STATE') )
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# 2. ID for STATES AND COUNTRIES
+# 2. ID FOR STATES AND COUNTRIES
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # States
 id.states <- data_gravity_services %>% 
@@ -457,7 +457,6 @@ id.countries <- data_gravity_services %>%
   select( id, region )
 # Total
 id.total <- rbind( id.states, id.countries )
-
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 3. DISTANCES, PRODUCTION AND EXPENDITURE
@@ -544,7 +543,7 @@ wiod.matrix <- as.matrix( wiod )
 ## imports and exports
 imports.from.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=1, FUN=sum) )
 exports.to.countries <- as.matrix( apply(X=wiod.matrix, MARGIN=2, FUN=sum) )
-## shares of imports and exports of countries
+## revenue and expenditure (to calculate shares)
 X_c <- as.matrix( exp.vector[(n_s + 1):(n_s + n_c)] )
 Y_c <- as.matrix( gdp.vector[(n_s + 1):(n_s + n_c)] )
 
