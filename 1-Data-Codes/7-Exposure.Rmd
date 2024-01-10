@@ -1,0 +1,528 @@
+---
+title: "7-Exposure"
+output:
+  html_notebook:
+    toc: yes
+    df_print: paged
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{pifont}
+- \usepackage{mathpazo}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r warning=FALSE, include=FALSE, message=FALSE, results='hide', cache=FALSE}
+# libraries
+set.seed(2023)
+options( scipen=100, digits = 15, stringsAsFactors=FALSE );
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist', 'readr', 'data.table');
+# install libraries in case they are not installed
+for( i in length(libs)){ 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
+};
+# load libraries
+lapply( libs, require, character.only=TRUE );
+```
+
+# General Instructions
+
+This script does the following (manufacture sectors only):
+
+1) Calculates employment levels by state-sector for year 2000 ($L_{i,s,2000}$) using Census data without person weights (to calculate shares later).
+
+2) Calculates employment shares by state-sector for year 2000 using BLS data (then it joins these shares with ADH shares): $\frac{L_{i,s,2000}}{\sum_sL_{i,s,2000}}$.
+
+3) Calculates the 2000-2007 change in imports from China to the US, $\Delta X_{C,US,s}^{2007-2000}$, and other advanced economies (Australia, Germany, Denmark, Spain, Finland, and Japan), $\Delta X_{C,OC,s}^{2007-2000}$, from WIOD data. 
+
+4) Runs a linear regression (with and without constant) using the change of sector US imports from China as the dependent variable and the change of sector  advanced economies' imports from China as the independent variable. 
+
+5) Computes the exposure measure using: i.- the 2000 state-sector employment shares derived from step 1) and step 2), ii.- predicted values of the regression in step 4) ($\widehat{\Delta X_{C,US,s}^{2007-2000}}$), and iii.- total US 2000 sales by sector ($R_{US,s,2000}$).
+
+## Input files
+
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `0-Raw_Data/CENSUS_2000/employment_2000.xls`
+4. `0-Raw_Data/CENSUS_2000/PUMS5/PUMS5_`
+5. `0-Raw_Data/emp_SAEMP25S_BLS.csv`
+6. `1-Intermediate_Processed_Data/WIOD_countries.csv`
+7. `1-Intermediate_Processed_Data/state_emp_2000.dta`
+
+
+## Output files
+
+1. `1-Intermediate_Processed_Data/state_emp_share_2000.dta`
+2. `2-Final_Data/exposures.xlsx`
+
+#Calculate state-sector employment using Census data
+
+Calculate $L_{i,s,2000}$ and $\sum_sL_{i,s,2000}$ using Census data without person weights.
+```{r}
+#List (and number) of states
+regions <- read.csv("0-Raw_Data/regions.csv")
+s_names <- regions %>% filter(status == "state") 
+s_names <- s_names$region
+n_s <- length(s_names)
+
+#Sector reclassification table (NAICS to final)
+sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+sectors_naics_final <- sectors_naics_final %>% 
+  select(final_sector, naics) %>%
+  mutate(naics = as.character(naics)) %>%
+  distinct(final_sector, naics)
+
+#Employment statistics for year 2000, by state
+employment_pop <- read_excel("0-Raw_Data/CENSUS_2000/employment_2000.xls", skip = 12)
+employment_pop <- employment_pop %>%
+  dplyr::rename(state = ...1, Not_LF = ...8, employed = Employed, unemployed = Unemployed) %>%
+  filter(is.na(state) == FALSE) %>%
+  mutate(state = gsub(" ", "", state)) %>% #taking out spaces
+  filter(state %in% s_names) %>% #only states
+  mutate(unemployed = unemployed + Not_LF) %>% #out of sectors 1 to 13 
+  select(state, employed, unemployed) %>%
+  mutate(unemployed = unemployed/1000, employed = employed/1000) #units in thousands (as WIOD)
+
+#Loading Census PUMS
+list <- c("01", "02", "04", "05", "06", "08", "09", setdiff(10:56, c(11,14,43,52)))
+c <- 1
+census_list <- vector("list", length = n_s)
+for (i in list){
+CENSUS_PUMS <- read_csv(paste("0-Raw_Data/CENSUS_2000/PUMS5/PUMS5_", i,".txt", sep=""), col_names = FALSE, col_types = cols())
+CENSUS_PUMS$state <- s_names[c]
+
+# Creating variables: age, employment status, and industry info for each US state
+CENSUS_PUMS <- CENSUS_PUMS %>%
+  mutate(len = nchar(X1)) %>% #only two len: Households and Persons; len matches with dictionary
+  mutate(type = substr(X1, start=1, stop=1)) %>% 
+  filter(type=="P") %>% #keeping only persons and NOT households
+  mutate(age = as.numeric(substr(X1, start=25, stop=26))) %>%
+  filter(age >=25 & age <=65) %>%
+  mutate(employ_status = as.numeric(substr(X1, start=154, stop=154))) %>%
+  filter(is.na(employ_status) == FALSE & ((employ_status>=1 & employ_status<=3)|employ_status==6)) %>%
+  mutate(employ_status = as.numeric(recode( as.character(employ_status), '6' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>%
+  mutate(naics = substr(X1, start=215, stop=217)) %>% #industry information
+  mutate(naics = ifelse(employ_status == 0, NA, naics)) %>%
+  filter((employ_status == 0 & is.na(naics) == TRUE)|(employ_status == 1 & is.na(naics) == FALSE)) %>%
+  mutate(naics = ifelse(naics == "23 ", "230", naics)) %>%
+  mutate(naics = ifelse(naics == "31M", "313", naics)) %>%
+  mutate(naics = ifelse(naics == "4MS", "423", naics)) %>%
+  left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
+  dplyr::rename(sector = final_sector) %>%
+  filter(is.na(sector) == FALSE) %>% #NAICS that are not in final sectors
+  select(-X1)
+census_list[[c]] <- CENSUS_PUMS #each list in census_list contains all the micro-info for each US state
+rm(CENSUS_PUMS)
+print(s_names[c])
+c <- c + 1
+}
+census <- rbindlist(census_list)
+rm(census_list)
+
+#computing employment and non-employment, by sector and state
+census <- census %>%
+  group_by(state, sector) %>%
+  mutate(num_employ = n()) %>%
+  ungroup() %>%
+  distinct(state, sector, .keep_all = TRUE) %>%
+  select(state, sector, num_employ) %>%
+  arrange(state, sector) %>%
+  mutate(num_employ = ifelse(sector == 0, 0, num_employ)) %>% #non-employed total (not sample) will be added directly
+  group_by(state) %>%
+  mutate(tot = sum(num_employ)) %>%
+  ungroup() %>%
+  mutate(rel = num_employ/tot) %>%
+  left_join(employment_pop, by=c('state'='state')) %>% #total employed people
+  mutate(employ = rel*employed) %>%
+  mutate(employ = ifelse(sector == 0, unemployed, employ)) %>%
+  select(state, sector, employ)
+L_2000 <- spread(census, sector, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
+
+#Calculate employment by state. And drop (from state-sector employment) agriculture, services, and non-employed.
+L <- melt(L_2000, id.vars=c("state"), variable.name="sector", value.name = "employ")
+L <- L %>% 
+  mutate(sector = as.numeric(gsub("X", "", sector))) %>%
+  filter(sector != 0) %>%
+  group_by(state) %>%
+  mutate(employ_state = sum(employ)) %>%
+  ungroup() %>%
+  filter(sector <= 12)
+```
+
+# Calculate state-sector employment shares using BLS data
+Calculate $\frac{L_{i,s,2000}}{\sum_sL_{i,s,2000}}$ using BLS data.
+```{r bls_emp, echo=TRUE, message=FALSE, warning= FALSE}
+
+#BLS employment
+bls <- read.csv("0-Raw_Data/emp_SAEMP25S_BLS.csv", header = TRUE)
+
+#Drop footnotes, change variables to the correct format, and keep relevant lines
+bls <- bls[1:6180,]
+bls <- bls %>%
+  mutate(GeoFips = as.character(GeoFips)) %>%
+  mutate(Jobs = as.numeric(Jobs)) %>%
+  filter(!is.na(Jobs)) %>%
+  filter(LineCode > 60 & LineCode != 80)
+
+#Number of indents in Description (to identify subcategories)
+bls$indent <- NA
+temp_space <- "  "
+spaces <- c("  ","  ","  ","  ","  ")
+for (i in 2:5) {
+  bef <- i - 1
+  spaces[i] <- paste0(spaces[bef], temp_space)
+}
+for (i in 5:1) {
+  bls$indent[grepl(spaces[i], bls$Description) & is.na(bls$indent)] <- i
+}
+
+#Keep sectors: farm employment or manuf (disaggregated) or services
+bls <- bls %>%
+  filter(indent == 3 | LineCode == 70 |
+            (LineCode >= 400 & LineCode <= 480) |
+            (LineCode >= 800 & LineCode <= 880) |
+            (LineCode >= 500 & LineCode <= 540) |
+            LineCode == 560 | LineCode ==570 | (LineCode >= 700 & LineCode <= 736) |
+            (LineCode >= 621 & LineCode <= 628) |
+            (LineCode >= 540 & LineCode <= 544))
+
+#Dropping totals for manuf, durables, and non-durables
+bls <- bls %>%
+  filter(!(LineCode == 410 | LineCode == 450 |
+             LineCode == 400 | LineCode == 800 |
+             LineCode == 500 | LineCode == 700 |
+             LineCode == 730 | LineCode == 620 |
+             LineCode == 540))
+
+
+#Check: sum of employment = total employment of USA
+bls <- bls %>%
+  group_by(GeoName) %>%
+  mutate(tot_emp = sum(Jobs)) %>%
+  arrange(GeoFips,LineCode)
+if (mean(bls$tot_emp[bls$GeoName == "United States"], na.rm = TRUE) == 165370800) {
+  print("check if sum of employment = total employment of USA: TRUE")
+} else {
+  print("check if sum of employment = total employment of USA: FALSE")
+    stop()
+}
+
+#Remove column for the number of indents, and remove indents from Description.
+bls <- bls %>% select(-indent)
+bls$Description <- str_trim(bls$Description)
+
+## ASSIGNING WIOD SECTORS
+
+bls$wiod_sector <- NA
+
+# Agriculture, Hunting, Forestry and Fishing
+bls$wiod_sector[bls$LineCode %in% c(100)] <- 1
+# Mining and Quarrying
+bls$wiod_sector[bls$LineCode %in% c(200)] <- 2
+# Food, Beverages and Tobacco
+bls$wiod_sector[bls$LineCode %in% c(453, 456)] <- 3
+# Textiles and Textile Products
+bls$wiod_sector[bls$LineCode %in% c(459, 462)] <- 4
+# Leather, Leather and Footwear
+bls$wiod_sector[bls$LineCode %in% c(480)] <- 5
+# Wood and Products of Wood and Cork
+bls$wiod_sector[bls$LineCode %in% c(413)] <- 6
+# Pulp, Paper, Paper, Printing and Publishing
+bls$wiod_sector[bls$LineCode %in% c(465, 468)] <- 7
+# Coke, Refined Petroleum and Nuclear Fuel
+bls$wiod_sector[bls$LineCode %in% c(474)] <- 8
+# Chemicals and Chemical Products
+bls$wiod_sector[bls$LineCode %in% c(471)] <- 9
+# Rubber and Plastics
+bls$wiod_sector[bls$LineCode %in% c(477)] <- 10
+# Other Non-Metallic Mineral
+bls$wiod_sector[bls$LineCode %in% c(420)] <- 11
+# Basic Metals and Fabricated Metal
+bls$wiod_sector[bls$LineCode %in% c(423, 426)] <- 12
+# Machinery, Nec
+bls$wiod_sector[bls$LineCode %in% c(429)] <- 13
+# Electrical and Optical Equipment
+bls$wiod_sector[bls$LineCode %in% c(432)] <- 14
+# Transport Equipment
+bls$wiod_sector[bls$LineCode %in% c(435, 438)] <- 15
+# Manufacturing, Nec; Recycling
+bls$wiod_sector[bls$LineCode %in% c(417, 441, 444)] <- 16
+# Electricity, Gas and Water Supply
+bls$wiod_sector[bls$LineCode %in% c(570)] <- 17
+# Construction
+bls$wiod_sector[bls$LineCode %in% c(300)] <- 18
+# Sale, Maintenance and Repair of Motor Vehicles and Motorcycles; Retail Sale of Fuel
+bls$wiod_sector[bls$LineCode %in% c(624)] <- 19
+# Wholesale Trade and Commission Trade, Except of Motor Vehicles and Motorcycles
+bls$wiod_sector[bls$LineCode %in% c(610)] <- 20
+# Retail Trade, Except of Motor Vehicles and Motorcycles; Repair of Household Goods
+bls$wiod_sector[bls$LineCode %in% c(621, 622, 623, 625, 626, 627, 628)] <- 21
+# Hotels and Restaurants
+bls$wiod_sector[bls$LineCode %in% c(805)] <- 22
+# Inland Transport
+bls$wiod_sector[bls$LineCode %in% c(510, 520)] <- 23
+# Water Transport
+bls$wiod_sector[bls$LineCode %in% c(530)] <- 24
+#Air Transport
+bls$wiod_sector[bls$LineCode %in% 542] <- 25
+#Other Supporting and Auxiliary Transport Activities; Activities of Travel Agencies
+bls$wiod_sector[bls$LineCode %in% c(541, 543, 544)] <- 26
+#Post and Telecommunications
+bls$wiod_sector[bls$LineCode %in% 560] <- 27
+#Financial Intermediation
+bls$wiod_sector[bls$LineCode %in% c(710, 731, 732, 733, 735, 736)] <- 28
+#Real Estate Activities
+bls$wiod_sector[bls$LineCode %in% 734] <- 29
+#Renting of M&Eq and Other Business Activities
+bls$wiod_sector[bls$LineCode %in% c(820, 825, 830, 875, 880)] <- 30
+#Public Admin and Defence; Compulsory Social Security
+bls$wiod_sector[bls$LineCode %in% c(910, 920, 930)] <- 31
+#Education
+bls$wiod_sector[bls$LineCode %in% 855] <- 32
+#Health and Social Work
+bls$wiod_sector[bls$LineCode %in% c(845, 860)] <- 33
+#Other Community, Social and Personal Services
+bls$wiod_sector[bls$LineCode %in% c(810, 835, 840, 865, 870)] <- 34
+#Private Households with Employed Persons
+bls$wiod_sector[bls$LineCode %in% c(815, 850)] <- 35
+
+## ASSIGNING FINAL SECTORS
+
+bls$ruv_sector <- NA
+
+# 1. (NAICS 311-312) Food Products, Beverage, and Tobacco Products (c3)
+bls$ruv_sector[bls$wiod_sector == 3] <- 1
+# 2. (NAICS 313-316) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (c4-c5)
+bls$ruv_sector[bls$wiod_sector == 4 | bls$wiod_sector == 5] <- 2
+# 3. (NAICS 321-323) Wood Products, Paper, Printing, and Related Support Activities (c6-c7)
+bls$ruv_sector[bls$wiod_sector == 6 | bls$wiod_sector == 7] <- 3
+# 4. (NAICS 211-213, 324) Petroleum and Coal Products (c8)
+# Mining, Quarrying, and Oil and Gas Extraction (c2)
+bls$ruv_sector[bls$wiod_sector == 8 | bls$wiod_sector == 2] <- 4
+# 5. (NAICS 325) Chemical (c9)
+bls$ruv_sector[bls$wiod_sector == 9] <- 5
+# 6. (NAICS 326) Plastics and Rubber Products (c10)
+bls$ruv_sector[bls$wiod_sector == 10] <- 6
+# 7. (NAICS 327) Nonmetallic Mineral Products (c11)
+bls$ruv_sector[bls$wiod_sector == 11] <- 7
+# 8. (NAICS 331-332) Primary Metal and Fabricated Metal Products (c12)
+bls$ruv_sector[bls$wiod_sector == 12] <- 8
+# 9. (NAICS 333) Machinery (c13)
+bls$ruv_sector[bls$wiod_sector == 13] <- 9
+# 10. (NAICS 334-335) Computer and Electronic Products, and Electrical Equipment and Appliances (c14)
+bls$ruv_sector[bls$wiod_sector == 14] <- 10
+# 11. (NAICS 336) Transportation Equipment (c15)
+bls$ruv_sector[bls$wiod_sector == 15] <- 11
+# 12. (NAICS 337-339) Furniture and Related Products, and Miscellaneous Manufacturing (c16)
+bls$ruv_sector[bls$wiod_sector == 16] <- 12
+# 13. (NAICS 23) Construction (c18)
+bls$ruv_sector[bls$wiod_sector == 18] <- 13
+# 14. (NAICS 42-45) Wholesale and Retail Trade (c19-c21)
+bls$ruv_sector[bls$wiod_sector == 19 | bls$wiod_sector == 20 | bls$wiod_sector == 21] <- 14
+# 15. (NAICS 481-488) Transport Services (c23-c26)
+bls$ruv_sector[bls$wiod_sector == 23 | bls$wiod_sector == 24 | bls$wiod_sector == 25 | bls$wiod_sector == 26] <- 15
+# 16. (NAICS 511-518) Information Services (c27)
+bls$ruv_sector[bls$wiod_sector == 27] <- 16
+# 17. (NAICS 521-525) Finance and Insurance (c28)
+bls$ruv_sector[bls$wiod_sector == 28] <- 17
+#18.	(NAICS 531-533)  Real Estate (c29-c30); 
+bls$ruv_sector[bls$wiod_sector == 29 | bls$wiod_sector == 30] <- 18
+#19.	(NAICS 61) Education (c32); 
+bls$ruv_sector[bls$wiod_sector == 32] <- 19
+#20.	(NAICS 621-624) Health Care (c33);
+bls$ruv_sector[bls$wiod_sector == 33] <- 20
+#21.	(NAICS 721-722) Accommodation and Food Services (c22); 
+bls$ruv_sector[bls$wiod_sector == 22] <- 21
+#22.	(NAICS 493, 541, 55, 561, 562, 711-713, 811-814) Other Services (c34).
+bls$ruv_sector[bls$wiod_sector == 34] <- 22
+#23.	(NAICS 111-115) Agriculture, Forestry, Fishing, and Hunting (c1)
+bls$ruv_sector[bls$wiod_sector == 1] <- 23
+#final
+bls$ruv_sector[bls$ruv_sector >=13 & bls$ruv_sector < 23 & !is.na(bls$ruv_sector)] <- 13
+bls$ruv_sector[bls$ruv_sector == 23] <- 14
+
+#Computing BLS employment shares, and joining ADH employment shares. 
+
+#Rename variables
+bls <- bls %>% rename(region = GeoName)
+# Convert region to lower case
+bls$region <- tolower(bls$region)
+# Remove spaces in region variable
+bls$region <- str_replace(bls$region," ","")
+
+#Load ADH data (to obtain "1-Intermediate_Processed_Data/state_emp_2000.dta", one must run first ADH-0-cbp2000_imputations.do, ADH-1-cbp2000_to_cz.do, and ADH-2-cz_to_states.do, in that order; these scripts are at RUV/1-Data-Codes/0-Raw_Data).
+
+ADH <- read_dta("1-Intermediate_Processed_Data/state_emp_2000.dta")
+
+#Use ADH data to only keep states.
+regions <- ADH %>% 
+  group_by(region) %>%
+  summarize(key = 1)
+bls <- left_join(bls, regions, by = "region")
+bls <- bls %>% filter(key == 1 | region == "alaska") %>% select(-key)
+
+#Computing employment shares.
+bls <- bls %>% group_by(region) %>%
+  mutate(emp_state = sum(Jobs)) %>%
+  group_by(region, ruv_sector) %>%
+  mutate(emp_state_sector = sum(Jobs))%>%
+  summarise(emp_state = mean(emp_state), emp_state_sector = mean(emp_state_sector))
+tot_US <- sum(bls$emp_state_sector, na.rm = TRUE)
+bls <- bls %>% filter(!is.na(ruv_sector))
+bls$share_sector_state <- bls$emp_state_sector / bls$emp_state
+
+# Keep manufacturing
+bls <- bls %>% filter(ruv_sector <= 12)
+
+#Keep relevant variables
+bls <- bls %>% 
+  select(region, ruv_sector, share_sector_state)%>%
+  rename(sector = ruv_sector, share_bls = share_sector_state)
+bls$share_bls[is.na(bls$share_bls)] <- 0
+
+# Balance Panel
+bls <- bls %>%
+  ungroup() %>%
+  complete(region, sector, fill = list(share_bls = 0))
+
+# Join with ADH shares.
+state_emp_share_2000 <- merge(bls, ADH, by = c("region", "sector"), all = TRUE)
+
+# Save output
+state_emp_share_2000 <- state_emp_share_2000 %>% mutate(share_bls = round(share_bls,digits = 8)) 
+haven::write_dta(state_emp_share_2000, "1-Intermediate_Processed_Data/state_emp_share_2000.dta")
+state_emp_share_2000 <- state_emp_share_2000 %>%
+  dplyr::rename(state = region)
+```
+
+# The change in imports from China
+Calculate $\Delta X_{C,US,s}^{2007-2000}$ and $\Delta X_{C,OC,s}^{2007-2000}$
+
+```{r}
+
+#WIOD
+WIOD <- read.csv("1-Intermediate_Processed_Data/WIOD_countries.csv")
+#List the countries (China, USA, and other advanced)
+list_countries <- c("USA", "CHN", "AUS", "DEU", "DNK", "ESP", "FIN", "JPN")
+adv_countries <- c("AUS", "DEU", "DNK", "ESP", "FIN", "JPN")
+
+#Select years and importers of interest.
+WIOD_1 <- WIOD %>%
+  filter(year == 2000 | year == 2007) %>%
+  filter(importer_country %in% list_countries) %>%
+  select(-importer)
+
+#Drop all exporters but China, and select manufacture (sectors from 1 to 12). Then calculate imports from China for US and for OC.
+WIOD_1 <- melt(WIOD_1, id.vars=c("year", "importer_country", "sector"), variable.name="exporter", value.name = "value")
+WIOD_1 <- WIOD_1 %>%
+  mutate(exporter = gsub("value_", "", exporter)) %>%
+  filter(exporter == "CHN" & importer_country != "CHN" & sector <= 12) %>%
+  mutate(importer_country = ifelse(importer_country %in% adv_countries, "adv", importer_country)) %>%
+  group_by(year, importer_country, exporter, sector) %>%
+  mutate(value = sum(value)) %>%
+  ungroup() %>%
+  distinct(year, importer_country, exporter, sector, .keep_all = TRUE) %>%
+  mutate(value_2000 = ifelse(year == 2000, value, 0)) %>%
+  mutate(value_2007 = ifelse(year == 2007, value, 0)) %>%
+  group_by(importer_country, exporter, sector) %>%
+  mutate(value_2000 = max(value_2000)) %>%
+  mutate(value_2007 = max(value_2007)) %>%
+  ungroup() %>%
+  distinct(importer_country, exporter, sector, .keep_all = TRUE) %>%
+  mutate(M_change = value_2007 - value_2000) %>%
+  select(-year, -value, -value_2000, -value_2007)
+
+#Calculate change in imports. And prepare data set for regression.
+x_data <- WIOD_1 %>%
+  filter(importer_country == "adv") %>%
+  dplyr::rename(delta_M_others = M_change) %>%
+  select(sector, delta_M_others)
+data <- WIOD_1 %>%
+  filter(importer_country == "USA") %>%
+  dplyr::rename(delta_M_USA = M_change) %>%
+  left_join(x_data, by=c("sector"="sector"))
+```
+
+## Run regression between change in imports
+Run the following regression:
+$$\Delta X_{C,US,s}^{2007-2000}= b_2\Delta X_{C,OC,s}^{2007-2000}+\varepsilon_s$$
+(and another with intercept), and extract the predicted values: $\widehat{\Delta X_{C,US,s}^{2007-2000}}$.
+```{r}
+#regressions
+reg_cons <- lm(data$delta_M_USA ~ data$delta_M_others)
+reg_nocons <- lm(data$delta_M_USA ~ data$delta_M_others -1)
+summary(reg_nocons) #Note that the model without intercept has a 0.99 R^2.
+#predicted values
+data$hat_cons <- predict(reg_cons, data.frame(data$delta_M_others))
+data$hat_nocons <- predict(reg_nocons, data.frame(data$delta_M_others))
+data_reg <- data %>% select(sector, hat_cons, hat_nocons)
+
+```
+
+
+# Exposure measure(s)
+Calculate
+$$
+Exposure_i \equiv \sum_{s=1}^S\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}
+$$
+where $L_{i,2000}\equiv\sum_sL_{i,s,2000}$
+```{r}
+
+#Total US sales by sector in year 2000 
+R_US <- WIOD %>% 
+  filter(year == 2000 & sector <= 12) %>%
+  select(importer_country, sector, value_USA)
+R_US <- melt(R_US, id.vars=c("importer_country", "sector"), variable.name="exporter", value.name = "value")
+R_US <- R_US %>%
+  mutate(exporter = gsub("value_", "", exporter)) %>%
+  group_by(exporter, sector) %>%
+  mutate(sales = sum(value)) %>%
+  ungroup() %>%
+  distinct(exporter, sector, .keep_all = TRUE) %>%
+  select(sector, sales)
+
+#Calculate Exposure_i
+final <- L %>%
+  left_join(R_US, by=c("sector"="sector")) %>%
+  left_join(data_reg, by=c("sector"="sector")) %>%
+  mutate(state = tolower(state)) %>%
+  left_join(state_emp_share_2000, by=c("state"="state", "sector"="sector")) %>%
+  mutate(exposure_cons = ( (employ*hat_cons)/(employ_state*sales) ) ) %>%
+  mutate(exposure_nocons = ( (employ*hat_nocons)/(employ_state*sales) ) ) %>%
+  mutate(exposure_cons_bls = ( (share_bls*hat_cons)/(sales) ) ) %>%
+  mutate(exposure_nocons_bls = ( (share_bls*hat_nocons)/(sales) ) ) %>%
+  group_by(state) %>%
+  mutate(ADH_EXP_pred = sum(exposure_cons)) %>%
+  mutate(ADH_EXP_pred_nocons = sum(exposure_nocons)) %>%
+  mutate(ADH_EXP_pred_bls = sum(exposure_cons_bls)) %>%
+  mutate(ADH_EXP_pred_nocons_bls = sum(exposure_nocons_bls)) %>%
+  ungroup() %>%
+  distinct(state, .keep_all = TRUE) %>%
+  dplyr::rename(region = state) %>%
+  select(region, ADH_EXP_pred_nocons, ADH_EXP_pred, ADH_EXP_pred_nocons_bls, ADH_EXP_pred_bls)
+
+#Correlation between Census and BLS exposures (with and without intercept)
+corr_cons <- cor(final$ADH_EXP_pred, final$ADH_EXP_pred_bls)
+print(corr_cons)
+corr_nocons <- cor(final$ADH_EXP_pred_nocons, final$ADH_EXP_pred_nocons_bls)
+print(corr_nocons)
+
+#correlation between Census shares and BLS shares
+temp_L <- L %>% 
+  arrange(state, sector) %>%
+  mutate(share_L = employ/employ_state) %>%
+  select(state, sector, share_L)
+corr_employ_BLS <- cor(temp_L$share_L, state_emp_share_2000$share_bls)
+print(corr_employ_BLS)
+plot(x = temp_L$share_L, y = state_emp_share_2000$share_bls, xlab = "share_L", ylab = "share_bls")
+
+write_xlsx(final, path = "2-Final_Data/exposures.xlsx")
+```

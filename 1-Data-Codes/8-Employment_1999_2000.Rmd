@@ -46,7 +46,7 @@ This script does the following:
 
 3) Computes the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data
 
-4) Combines the previous outputs, applies proportionality to ensure consistency with WIOD SEA
+4) Combines the previous outputs, and applies proportionality to ensure consistency with WIOD SEA
 
 ## Input files
 
@@ -67,14 +67,14 @@ This script does the following:
 2. `1-Intermediate_Processed_Data//L_`1999BLS`.csv`
 3. `1-Intermediate_Processed_Data//L_`2000BLS`.csv`
 
-# Sector-State employment for 2000 from the 2000 Census
+# Sector-State employment for 2000 from Census
 
-1. Construct employment levels for each US state from the 2000 Census. 
+1. Construct employment levels for each US state from the 2000 Census, using person weights. 
 2. Take CBS total non-participants for each state directly as the sector 0 value.
 
 ```{r message=FALSE, warning=FALSE}
 
-# Importing general datasets to R
+# Importing general data sets to R
 
 #US states
 regions <- read.csv("0-Raw_Data/regions.csv")  
@@ -331,7 +331,6 @@ PARTUS <- PARTUS %>%
   mutate(employment = pop - part)
 PARTUS <- PARTUS %>%
   filter(!(state %in% c("Los Angeles County", "District of Columbia", "New York city")))
-
 #Create 1999's sector 0 (non-participant).
 sector_0 <- subset(PARTUS, year == 1999)
 sector_0 <- sector_0 %>%
@@ -339,7 +338,6 @@ sector_0 <- sector_0 %>%
 sector_0 <- sector_0  %>%
   mutate(sector="00")
 states_1999BLS <- rbind(states_1999BLS,sector_0)
-
 #Create 2000's sector 0 (non-participant).
 sector_0 <- subset(PARTUS, year == 2000)
 sector_0 <- sector_0 %>%
@@ -361,7 +359,7 @@ $$
 $$
 L^c_{work}	=\sum_{i=1}^{14}L^c_{i}
 $$
-To ease notation, here we ignore from which year we are taking each variable. However, in the exposition of Task 4 we do include a time superscript to indicate the year; the rest of the notation remains the same.
+To ease notation, here we ignore from which year we are taking each variable. However, in the exposition of step 4 we do include a time superscript to indicate the year; the rest of the notation remains the same.
 
 From ILO we know the value of the labor force participation rate ($lfp^c$) for each country; which using our assumptions satisfies
 $$
@@ -461,7 +459,7 @@ countries$sector <- sprintf("sector_%02d", countries$sector)
 
 1. Employment for US-states for year 2000 must sum up to US' total employment for year 2000 according to SEA. 
 
-Specifically, if $L_{i,s}^{2000}$ represents the employment for year 2000 of sector $s=0,...,14$ and state $i=1,...,50$ that we calculated in Task 1 (for CBS) and Task 2 (for BLS), for every $s\neq0$ we do the following normalization:
+Specifically, if $L_{i,s}^{2000}$ represents the employment for year 2000 of sector $s=0,...,14$ and state $i=1,...,50$ that we calculated in step 1 (for CBS) and step 2 (for BLS), for every $s\neq0$ we do the following normalization:
 $$
  L_{i,s}^{*CENSUS,2000} = L_{i,s}^{CENSUS,2000} \times\frac{\sum_{s=1}^{14}L_{s}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{CENSUS,2000}} \\
  L_{i,s}^{*BLS,2000} = L_{i,s}^{BLS,2000} \times\frac{\sum_{s=1}^{14}L_{i}^{USA,SEA,2000}}{\sum_{i=1}^{50}\sum_{s=1}^{14}L_{i,s}^{BLS,2000}} 
@@ -475,7 +473,7 @@ L_{i,0}^{*BLS,2000} = L_{i,0}^{BLS,2000} \times\frac{\sum_{s=1}^{14}L_{i}^{USA,S
 $$
 2. Employment in year 1999 and year 2000 must be consistent with zero population growth for each country (including USA in the case of BLS data).
 
-Specifically, using the values of $L_{s}^{c,SEA,1999}$ and $L_{s}^{c,SEA,2000}$ that we calculated in Task 3 for each country $c$ (excluding USA) and each sector $s$, we do the following normalization:
+Specifically, using the values of $L_{s}^{c,SEA,1999}$ and $L_{s}^{c,SEA,2000}$ that we calculated in step 3 for each country $c$ (excluding USA) and each sector $s$, we do the following normalization:
 
 $$
 L_{s}^{*c,SEA,1999}  =  L_{s}^{c,SEA,1999} \times\frac{L_{0}^{c,SEA,2000}+\sum_{s=1}^{14}L_{s}^{c,SEA,2000}}{L_{0}^{c,SEA,1999}+\sum_{s=1}^{14}L_{s}^{c,SEA,1999}}
@@ -486,7 +484,7 @@ Similarly, for USA, letting $L_{i,s}^{*2000}$ represent our "official" value for
 $$
  L_{i,s}^{*,BLS,1999} = L_{i,s}^{BLS,1999} \times\frac{\sum_{i=1}^{50}\sum_{s=0}^{14}L_{i,s}^{*,BLS,2000}}{\sum_{i=1}^{50}\sum_{s=0}^{14}L_{i,s}^{BLS,1999}}
 $$
-where $L_{i,s}^{1999}$ represents the employment for year 2000 of sector $s=0,...,14$ and state $i=1,...,50$ that we calculated in Task 2 for BLS.
+where $L_{i,s}^{1999}$ represents the employment for year 2000 of sector $s=0,...,14$ and state $i=1,...,50$ that we calculated in step 2 for BLS.
 
 3. Reshape employment for states (CBS and BLS) and countries, and bind them to get a labor matrix. 
 
@@ -575,13 +573,8 @@ countries_2000 <- countries_2000 %>%
 L_1999BLS <- rbind(states_1999BLS,countries_1999)
 L_2000BLS <- rbind(states_2000BLS,countries_2000)
 L_2000CENSUS <- rbind(states_2000CENSUS,countries_2000)
-```
 
-## Saving datasets
-
-```{r message=FALSE, warning=FALSE}
-
-#Save datasets
+#Save data sets
 
 fwrite(
   L_2000CENSUS,
@@ -606,3 +599,4 @@ fwrite(
     "L_2000BLS.csv"
   )
 )
+```
