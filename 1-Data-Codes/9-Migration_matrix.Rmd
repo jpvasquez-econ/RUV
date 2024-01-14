@@ -1,15 +1,12 @@
 ---
 title: "9-Migration_matrix"
 output:
-  html_document:
+  html_notebook:
     toc: yes
     df_print: paged
-  # pdf_document:
-    # number_sections: yes
-  # html_notebook:
-    # toc: yes
-    # df_print: paged
-    # number_sections: yes
+    number_sections: yes    
+  pdf_document:
+    number_sections: yes
 header-includes:
 - \usepackage{amsmath}
 - \usepackage{amssymb}
@@ -37,80 +34,116 @@ for( i in seq_along(libs)){
 lapply( libs, require, character.only=TRUE );
 
 ```
+# General Instructions
 
+This script does the following:
+
+1) Computes ACS total state to state migration movements (knowing the sector of destination, but not the sector of origin), by year for 1999-2001.That is, we calculate $L_{ACS}^{n?,iq}$: migration from state $n$ to state $i$ and sector $q$, according to ACS.
+
+2) Computes IRS total state to state migration movements (not knowing the sector of origin, nor the sector of destination), for 1999. That is, we calculate $L_{IRS}^{n,i}$: migration from state $n$ to state $i$, according to IRS.
+
+3) Computes CPS total state to state migration movements (knowing both the sector of origin and the sector of destination), by year for 1999-2001. That is, we calculate $L_{CPS}^{{nj,ik}}$: migration from state $n$ and sector $j$ to state $i$ and sector $k$, according to CPS.
+
+4) We combine the data from the previous three steps to compute our final $L^{{nj,ik}}$'s. Then we calculate the corresponding mobility shares: $\mu_{nj,ik}$'s.
+
+5) We calculate $\mu_{nj,ik}$'s for a non-migration case (that is, not allowing state to state movements, just allowing sector reallocation).
+
+## Input files
+
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `0-Raw_Data/Fips/states_fips_num.xlsx`
+4. `0-Raw_Data/ACS/20*/c2ssp**.csv`
+5. `0-Raw_Data/IRS/1999to2000CountyMigration/1999to2000flow.dta`
+6. `0-Raw_Data/CPS/CPS_NBER/Inputs/cps_panel.dta`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data//acs_temp.csv`
+2. `1-Intermediate_Processed_Data/acs.csv`
+3. `1-Intermediate_Processed_Data/irs.csv`
+4. `1-Intermediate_Processed_Data/cps_nber_2_yearly.csv`
+5. `2-Final_Data/mu_1999_nber_case4_yearly.xlsx`
+6. `2-Final_Data/mu_1999_nber_case4_yearly_no_migration.xlsx`
+
+
+# Importing preliminary data
 ```{r Input data}
-# region: US states and other countries
+#States and countries.
 regions <- read.csv("0-Raw_Data/regions.csv")  
 c_names <- regions %>% filter(status == "country")
 c_names <- c_names$region
-
 s_names <- regions %>% filter(status == "state") 
 s_names <- s_names$region
 
-# state codes
+#Fips state codes
 states_fips <- read_excel("0-Raw_Data/Fips/states_fips_num.xlsx", range = "A1:D53")
 states_fips_mod_ACS <- states_fips %>% 
   select(st_num, st_name) %>%
+  #make the codes consistent with ACS
   mutate(st_num = ifelse(st_num > 8, st_num + 1, st_num)) %>%
   distinct(st_name, .keep_all = TRUE) %>%
-  dplyr::rename(st_name1 = st_name)  #state code that is consistent with used in ACS
+  dplyr::rename(st_name1 = st_name)
 states_fips <- states_fips %>% dplyr::select(st_fips, st_num, st_name)
 
-# sector reclassification table (NAICS to final)
+#Sector reclassification table (NAICS to final)
 sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 sectors_naics_final <- sectors_naics_final %>% 
   select(final_sector, naics) %>%
   mutate(naics = as.character(naics)) %>%
-  distinct(final_sector, naics)     #create the mapping table from NAICS to final at sector level
+  distinct(final_sector, naics)
 
 ```
 
 
-## Clean Raw Data
-ACS: `0-Raw_Data/ACS/`yr`/ss`yr``state`.csv`
-IRS: `0-Raw_Data/IRS/1999to2000CountyMigration/1999to2000flow.dta`
-CPS_NBER
 
+# ACS migration movements
+
+Compute $L_{ACS}^{n?,iq}$.
 ```{r Clean ACS, message=FALSE, warning=FALSE}
-# ACS: state to state-sector movements
+#list of years and states
 yr_list <- c("00", "01", "02")
 st_list <- c("al", "ak", "az", "ar", "ca", "co", "ct", "de", "fl", "ga", "hi", "id", "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma", "mi", "mn", "ms", "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny", "nc", "nd", "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", "tx", "ut", "vt", "va", "wa", "wv", "wi", "wy")
 
-# loading PUMS ACS
+#loading PUMS ACS
 acs <- c() 
-yr_c <- 2000 #controls the year
-for (yr in yr_list) {  #help to load file for the same year as yr_c
+yr_c <- 2000
+for (yr in yr_list) {
 print(yr)
-c <- 1 #controls the destination state
-for (st in st_list) { #loop over all the original states
-#print(st)  
+c <- 1
+for (st in st_list) {
 if (yr_c == 2000){ACS_PUMS <- read_csv(paste("0-Raw_Data/ACS/20", yr,"/c2ssp", st,".csv", sep=""))}  
 if (yr_c != 2000){ACS_PUMS <- read_csv(paste("0-Raw_Data/ACS/20", yr,"/ss", yr,"p", st,".csv", sep=""))}    
 ACS_PUMS$year <- yr_c
-ACS_PUMS <- ACS_PUMS %>%  #ACS: inter/intra-state flows but without knowing the sector of origin
+ACS_PUMS <- ACS_PUMS %>%  
+  #ACS: inter- and intra-state flows but without knowing the sector of origin
   select(year, AGEP, POWSP, MIGSP, ESR, NAICSP, PWGTP) %>%
   mutate(AGEP = as.numeric(AGEP),
          POWSP = as.numeric(POWSP),
          MIGSP = as.numeric(MIGSP),
          ESR = as.numeric(ESR), 
          PWGTP = as.numeric(PWGTP)) %>%
-  filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>% #age
-  filter( is.na(ESR) == FALSE & (ESR==1 |ESR==2 | ESR==3 | ESR==6)) %>% #employ status
+  #select range of age
+  filter( is.na(AGEP) == TRUE  | (AGEP >= 25 & AGEP <=65)) %>%
+  #select (and relabel) employment status of interest
+  filter( is.na(ESR) == FALSE & (ESR==1 |ESR==2 | ESR==3 | ESR==6)) %>%
   mutate(ESR = as.numeric( recode( as.character(ESR), '6' ="0", '3' ="0", '1' = "1", '2' = "1"))) %>%
+  #Filter and merge Fips codes.
   filter( is.na(POWSP) == TRUE | (is.na(POWSP) == FALSE & POWSP != 11 & POWSP <= 56 & year>=2003) | (is.na(POWSP) == FALSE & POWSP != 9 & POWSP <= 51 & year<=2002)) %>%
   left_join(states_fips, by=c('POWSP' = 'st_fips')) %>% 
   mutate(st_num = ifelse(year <= 2002, POWSP, st_num)) %>%
-  mutate(st_num = ifelse(year <= 2002 & POWSP > 8, st_num - 1, st_num)) %>%       
-  filter( is.na(st_num) == TRUE  | (is.na(st_num) == FALSE & st_num == c)) %>% # workplace (state)
-  select(-st_name, -POWSP, -st_num) %>%
+  mutate(st_num = ifelse(year <= 2002 & POWSP > 8, st_num - 1, st_num)) %>%        #state of workplace
+  filter( is.na(st_num) == TRUE  | (is.na(st_num) == FALSE & st_num == c)) %>% # 
+  select(-st_name, -POWSP,-st_num) %>% 
   mutate(state_dest = s_names[c]) %>% 
+  #migration (indicate state of origin from 1 year ago)
   filter( is.na(MIGSP) == TRUE | (is.na(MIGSP) == FALSE & MIGSP != 11 & MIGSP <= 56 & year>=2003) | (is.na(MIGSP) == FALSE & MIGSP != 9 & MIGSP <= 51 & year<=2002)) %>%
-  left_join(states_fips, by=c('MIGSP' = 'st_fips')) %>% #lived 1 yr ago
-  left_join(states_fips_mod_ACS, by=c('MIGSP' = 'st_num')) %>% #lived 1 yr ago
+  left_join(states_fips, by=c('MIGSP' = 'st_fips')) %>%
+  left_join(states_fips_mod_ACS, by=c('MIGSP' = 'st_num')) %>%
   mutate(st_name = ifelse(year <= 2002, st_name1, st_name)) %>%
   select(-MIGSP, -st_num, -AGEP, -st_name1) %>%
   dplyr::rename(state_ori = st_name, employ_status = ESR) %>%
-  mutate(state_ori = ifelse(is.na(state_ori) == TRUE, s_names[c], state_ori)) %>% # no MIG
+  mutate(state_ori = ifelse(is.na(state_ori) == TRUE, s_names[c], state_ori)) %>%   #Map NAICS to final sector (and label as sector of destination)
   dplyr::rename(naics = NAICSP) %>%
   mutate(naics = substr(naics, start=1, stop=3)) %>%
   mutate(naics = ifelse(employ_status == 0, NA, naics)) %>%
@@ -118,27 +151,28 @@ ACS_PUMS <- ACS_PUMS %>%  #ACS: inter/intra-state flows but without knowing the 
   mutate(naics = ifelse(naics == "23", "230", naics)) %>%
   mutate(naics = ifelse(naics == "31M", "313", naics)) %>%
   mutate(naics = ifelse(naics == "4MS", "423", naics)) %>%
-  left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
+  left_join(sectors_naics_final, by=c('naics'='naics')) %>%
   dplyr::rename(sector_dest = final_sector) %>%
   filter(is.na(sector_dest) == FALSE) %>%
-  select(-naics, -employ_status)  #ACS_PUMS: year, state_dest, state_ori, sector_dest, PWGTP (at surveyed representative individual level)
+  select(-naics, -employ_status)  
 
-#counting by state and sector, origin and destination
+#At this point we have the ACS PUMS person weights (PWGTP, at surveyed representative individual level) for state of origin, state of destination and sector destination by year.
+
+#Counting total by (state of origin)-(state of destination-sector of destination)
 ACS_PUMS <- ACS_PUMS %>%
   group_by(year, sector_dest, state_dest, state_ori) %>%
-  mutate(n = sum(PWGTP)) %>% #weights (how many the obs represents, many surveyed representative obs within the same migration combination)
+  mutate(n = sum(PWGTP)) %>% #using weights
   ungroup() %>%
   distinct(year, sector_dest, state_dest, state_ori, .keep_all = TRUE) %>%  #keep one migration combination
-  select(-PWGTP) #there are many missing migration combinations
-
-#adding missing combinations (sector_dest, state_dest, state_ori)
+  select(-PWGTP)
+#adding missing combinations
 add <- c()
 for (sec in 0:14) {
-temp <- data.frame(s_names) #list of regions
+temp <- data.frame(s_names)
 temp <- temp %>%
   dplyr::rename(state_ori = s_names) %>%
-  mutate(state_dest = s_names[c], year = yr_c, sector_dest = sec, n = 0)  #create destination state and sector
-add <- rbind(add, temp) #add all together, therefore all combination 
+  mutate(state_dest = s_names[c], year = yr_c, sector_dest = sec, n = 0)
+add <- rbind(add, temp)
 }
 ACS_PUMS <- rbind(ACS_PUMS, add)
 rm(add, temp)
@@ -148,24 +182,24 @@ ACS_PUMS  <- ACS_PUMS %>%
   ungroup() %>%
   select(-n) %>%
   distinct(year, sector_dest, state_dest, state_ori, .keep_all = TRUE) %>%
-  arrange(year, sector_dest, state_dest, state_ori) #make sure there are all migration combinations at state-sector level
-
+  arrange(year, sector_dest, state_dest, state_ori)
 acs <- rbind(acs, ACS_PUMS)
  
 c <- c + 1
 }
 yr_c <- yr_c + 1  
 }
-#mu matrices named after base year
+
+#Change to the year that migration happened
 acs <- acs %>% 
-  mutate(year = year - 1) #The year that migration happened 
+  mutate(year = year - 1)  
 rm(ACS_PUMS)
 
 write.table(acs, file = paste("1-Intermediate_Processed_Data//acs_temp.csv", sep=""), sep = ",", row.names = FALSE)
 
-acs <- read.csv(paste("1-Intermediate_Processed_Data//acs_temp.csv", sep=""), header = TRUE, sep = ",", dec = ".") #many zero migration flow due to missing values
+acs <- read.csv(paste("1-Intermediate_Processed_Data//acs_temp.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
-#rolling basis: three-year window
+#rolling basis: three-year window (to reduce noise due to the fact that each year has relatively few observations)
 final_base <- c()
 for (yr in 1999:2006) { # the year is changed from 2000-2007 to 1999-2006
 temp <- acs %>%
@@ -177,7 +211,7 @@ acs <- final_base
 #counting by state and sector, origin and destination on three-year rolling basis
 acs <- acs %>%
   group_by(year, sector_dest, state_dest, state_ori) %>%
-  mutate(n_acs = sum(n_acs)) %>%  #1999-2004: n_acs is the sum of consecutive 3 years; 2005, 2 years; 2006, 1 year.
+  mutate(n_acs = sum(n_acs)) %>%  #from 1999 to 2004, n_acs is the sum of consecutive 3 years; for 2005, consecutive 2 years; and for 2006, 1 year.
   ungroup() %>%
   distinct(year, sector_dest, state_dest, state_ori, .keep_all = TRUE)
 
@@ -186,90 +220,223 @@ acs <- acs %>%
 acs <- acs %>%
   mutate(diag = ifelse(state_ori == state_dest, 1, 0)) %>%
   group_by(state_ori, state_dest, sector_dest) %>%
-  mutate(n_acs_mean = mean(n_acs)) %>% #average total migration flow across years 
+  mutate(n_acs_mean = mean(n_acs)) %>%
   ungroup() %>%
-  mutate(n_acs = ifelse(diag == 1 & n_acs == 0, n_acs_mean, n_acs)) %>% #use n_acs_mean to fill in the missing within state migration: Alaska(1999,2006), NewMexico(1999,2000), Hawaii(2006)
+  mutate(n_acs = ifelse(diag == 1 & n_acs == 0, n_acs_mean, n_acs)) %>%
   select(-n_acs_mean, -diag)
 ##b. given (year, state_ori, sector_dest), the within state_ori migration to that destination sector should be greater than any across state migration from that state_ori to that sector_dest; otherwise, replace it with average across destination states
 acs <- acs %>%
-  mutate(n_acs_temp = ifelse(state_ori==state_dest, n_acs, 0)) %>% #n_acs_temp: within state migration across sector (three-year window), others 0
+  mutate(n_acs_temp = ifelse(state_ori==state_dest, n_acs, 0)) %>%
   group_by(year, state_ori, sector_dest) %>%
-  mutate(n_acs_temp = max(n_acs_temp), mean_n_acs = mean(n_acs)) %>% #n_acs_temp: either equals to within state_ori migration or zero ; mean_n_acs: average flows from (year, state_ori, sector_dest) pair to any other state
+  mutate(n_acs_temp = max(n_acs_temp), mean_n_acs = mean(n_acs)) %>%
   ungroup() %>%
-  mutate(n_acs = ifelse(n_acs_temp<n_acs, mean_n_acs, n_acs)) %>% #condition: for any (year, state_ori, state_dest, sector_dest), if the within state migration for one sector is less than the migration for this combination,  replace with the average n_acs from (year, state_ori, sector_dest). Potential concern: given (year, state_ori, sector_dest), the within state migration flow to that sector should be greater than the across state migration, if it is less, replace it with average migration flow to that sector across states. Total 22 cases.
+  mutate(n_acs = ifelse(n_acs_temp<n_acs, mean_n_acs, n_acs)) %>%
   select(-n_acs_temp, -mean_n_acs)
-##c. given (year, state_dest, sector_dest), the within state_dest migration to that destination sector should be greater than the any across state migration to that state_dest and to that sector_dest
+##c. given (year, state_dest, sector_dest), the within state_dest migration to that destination sector should be greater than any across state migration to that state_dest and to that sector_dest
 acs <- acs %>%
-  mutate(n_acs_temp = ifelse(state_ori==state_dest, n_acs, 0)) %>% #n_acs_temp: within state migration across sector, others 0
+  mutate(n_acs_temp = ifelse(state_ori==state_dest, n_acs, 0)) %>%
   group_by(year, state_dest, sector_dest) %>%
-  mutate(n_acs_temp = max(n_acs_temp),mean_n_acs = mean(n_acs)) %>% #n_acs_temp: either equals to within state_dest migration or zero; mean_n_acs: average flows to (year, state_dest, sector_dest) pair from any other state
+  mutate(n_acs_temp = max(n_acs_temp),mean_n_acs = mean(n_acs)) %>%
   ungroup() %>%
-  mutate(n_acs = ifelse(n_acs_temp<n_acs, mean_n_acs, n_acs)) %>% #Potential concern: given (year, state_dest, sector_dest), the within state_dest migration flow to that sector should greater than the across state migration, if it is less, replace it with average migration flow to that sector across original states.  Total 2 cases.
+  mutate(n_acs = ifelse(n_acs_temp<n_acs, mean_n_acs, n_acs)) %>%
   select(-n_acs_temp, -mean_n_acs)
 
+#Save
 write.table(acs, file = paste("1-Intermediate_Processed_Data/acs.csv", sep=""), sep = ",", row.names = FALSE)
 
 ```
 
+#IRS migration movements
+Compue $L_{IRS}^{n,i}$.
 ```{r Clean IRS, message=FALSE, warning=FALSE}
-# Clean the county-by-county IRS data (1999-2000)
-# There is stata code (0-Raw_Data/IRS/1999to2000CountyMigration/process_raw_1999to2000CountyMigration.do) that combines raw IRS to 1999to2000flow.dta
-
+# Load IRS data (1999-2000) (to get 1999to2000flow.dta, one must run 0-Raw_Data/IRS/1999to2000CountyMigration/process_raw_1999to2000CountyMigration.dofirst).
 irs_temp  <- read_dta("0-Raw_Data/IRS/1999to2000CountyMigration/1999to2000flow.dta")
 
+#Create all state-state combinations.
 state_name  <- c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "NewHampshire", "NewJersey", "NewMexico", "NewYork", "NorthCarolina", "NorthDakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "RhodeIsland", "SouthCarolina", "SouthDakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "WestVirginia", "Wisconsin", "Wyoming")
-
 all_combo <- c()
 for (state in state_name) {
-temp <- data.frame(state_name) #list of regions
+temp <- data.frame(state_name)
 temp <- temp %>%
   dplyr::rename(state_ori = state_name) %>%
-  mutate(state_dest = state)  #create destination state and sector
-all_combo <- bind_rows(all_combo, temp) #add all together, therefore all combination 
+  mutate(state_dest = state)
+all_combo <- bind_rows(all_combo, temp)
 }
-
+#Replace missing combinations flows with zero, and keep year 1999 only.
 irs  <- all_combo %>% 
   left_join(irs_temp, by = c('state_dest' = 'state_dest', 'state_ori' = 'state_ori'))  %>% 
   mutate(year = 1999)  %>% 
   mutate(exemption = ifelse(is.na(exemption), 0, exemption))
 
+#Save.
 write.table(irs, file = paste("1-Intermediate_Processed_Data/irs.csv", sep=""), sep = ",", row.names = FALSE) 
 
 ```
 
-```{r Clean Raw CPS NBER, message=FALSE, warning=FALSE}
-# This part is in another file
-```
+#CPS migration movements.
 
+Compue $L_{CPS}^{{nj,ik}}$.
 ```{r Generate cps_nber yearly, message=FALSE, warning=FALSE}
-# load CPS data from NBER
+# Load the CPS data. 
+cps_panel <-read_dta("0-Raw_Data/CPS/CPS_NBER/Inputs/cps_panel.dta")
+# Create a unique identifier for each individual
+cps_panel <- cps_panel %>%
+  group_by(cpsidp) %>%
+  mutate(id = cur_group_id()) %>%
+  ungroup()
+# Generating 'quarter' within each 'id'
+cps_panel <- cps_panel%>%
+  arrange(id, month, mish) %>%
+  group_by(id) %>%
+  mutate(quarter = row_number()) %>%
+  ungroup()
+#Drop irrelevant variables
+cps_panel0<-cps_panel %>%
+  select(id, month, year, mish, statefip, ind, wtfinl, quarter, sex, race, bpl, nativity, popstat, age, labforce)
+#Keep people that we can observe for at least 4 quarters. 
+cps_panel0  <- cps_panel0%>%
+  group_by(id) %>%
+  mutate(num = n()) %>%
+  filter(num >= 4) %>%
+  ungroup() %>%
+  select(-num)
 
-#cps_nber  <- here we need to load the output from the chunk above (currently produced in another file). The file is the one called clean_data_new.
+# Generating 'quarter' column and dropping rows where 'quarter' > 8
+cps_panel0  <- cps_panel0 %>%
+  filter(quarter <= 8)
 
-#cps_nber <- cps_nber %>%
-#  group_by(P_ID) %>%
-#  filter( min(inter_num) <=4 & max(inter_num) >=5 ) %>%
-#  ungroup()
-#write_csv(cps_nber, file = paste("1-Intermediate_Processed_Data/cps_nber_yearly.xlsx", sep = ""))
+#Checking consistency.
+# First consistency: each observation's sex constant over the time
+cps_panel0 <- cps_panel0 %>%
+  arrange(id, sex) %>%
+  group_by(id) %>%
+  mutate(change = 1000 * sex[1] + 100 * sex[2] + 10 * sex[3] + sex[4]) %>%
+  ungroup()
+cps_panel0 <-cps_panel0 %>%
+  filter(change == 2222 | change == 1111) %>% select(-change, -sex)
 
-cps_nber <- read.csv("1-Intermediate_Processed_Data/cps_nber_yearly.xlsx")
-mn_list  <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+# Second consistency: each observation's race constant over time
+cps_panel0 <- cps_panel0 %>%
+  group_by(id) %>%
+   mutate(change2 = ifelse(n_distinct(race) == 1, 1, 0)) %>%
+  ungroup() %>%  filter(change2 == 1 )  %>% select(-change2, -race)
 
+# Third consistency: each observation's Nativity (condition of foreign birth place or parentage) constant over time
+cps_panel0 <- cps_panel0 %>%
+  group_by(id) %>%
+   mutate(change3 = ifelse(n_distinct(nativity) == 1, 1, 0)) %>%
+  ungroup() %>%  filter(change3 == 1 ) %>% select(-change3, -nativity)
+
+#Fourth consistency: population status ("civilian" or "armed forces") constant over time
+cps_panel0 <- cps_panel0 %>%
+  group_by(id) %>%
+   mutate(change4 = ifelse(n_distinct(popstat) == 1, 1, 0)) %>%
+  ungroup() %>%  filter(change4 == 1 )  %>% select(-change4, -popstat)
+
+#Fifth consistency: each year, nobody's age should have change more than one year.
+cps_panel0<-cps_panel0[order(cps_panel0$id, cps_panel0$age), ]
+cps_panel0 <-cps_panel0 %>%
+  arrange(id, age) %>%
+   group_by(id) %>%
+  mutate(age_difference = max(age) - min(age)) %>%  ungroup() 
+cps_panel0  <- cps_panel0 %>% 
+    arrange(id, age) %>%
+   filter(age_difference <= 3) 
+
+#Sixth consistency: Place of birth constant over time
+cps_panel0 <- cps_panel0 %>%
+  group_by(id) %>%
+   mutate(change6 = ifelse(n_distinct(bpl) == 1, 1, 0))  %>%
+  ungroup() %>%  filter(change6 == 1 )
+
+#Mapping sectors (currently, column ind for "industry") to our final classification
+cps_panel0$sector <- NA
+cps_panel0$sector <- ifelse(cps_panel0$labforce == 1, 0, cps_panel0$sector) #sector 0 (non-participant)
+clean_data <- cps_panel0 %>%select(id, month, year, mish, statefip, ind, sector, wtfinl, age) 
+clean_data$sector <- ifelse(clean_data$ind %in% c(10, 11, 12, 20, 30, 31, 32), 14, clean_data$sector)
+clean_data <- clean_data %>%
+  mutate(sector = case_when(
+    ind %in% c(100, 101, 102, 110, 111, 112, 120, 121, 122, 130) ~ 1,
+    ind %in% c(132, 140, 141, 142, 150, 151, 152) ~ 2,
+    ind %in% c(160, 161, 162, 171, 172) ~ 3,
+    ind %in% c(200, 201, 40, 41, 42, 50) ~ 4,
+    ind %in% c(180, 181, 182, 190, 191, 192) ~ 5,
+    ind %in% c(210, 211, 212) ~ 6,
+    ind %in% c(250, 251, 252, 261, 262) ~ 7,
+    ind %in% c(270, 271, 272, 280, 281, 282, 290, 291 ) ~ 8,
+    ind %in% c(300, 301, 310, 311, 312, 320) ~ 9,
+    ind %in% c(321, 322, 331, 332, 340, 341, 342, 350) ~ 10,
+    ind %in% c(352, 360, 361, 362, 370) ~ 11,
+    ind %in% c(372, 380, 381, 390, 391, 392) ~ 12,
+    ind %in% c(60, 351, 242, 501, 502, 510, 511, 512, 521, 522, 530, 531, 532, 540, 541, 542, 550, 551, 552, 560, 561, 562, 571, 580, 581, 582 ) ~ 13,
+    TRUE ~ sector  # Keep unchanged if not matching any condition
+  ))
+clean_data <- clean_data %>%
+  filter(ind <= 893)#Dropping military and public services
+clean_data <- clean_data %>%
+  mutate(sector = case_when(
+    ind > 582 ~ 13,
+    ind %in% c(400, 401, 402, 410, 411, 420, 421, 422, 432, 440, 441, 442, 450, 451, 452, 470, 471, 472) ~ 13,
+    TRUE ~ sector
+  )) %>%
+  filter(!(ind == 412))
+clean_data <- clean_data %>%
+  mutate(sector = ifelse(ind == 0, 0, sector))
+
+#Age filter 
+clean_data  <- clean_data %>%
+  filter(age < 66 & age > 24)
+
+#Keep relevant columns.
+clean_data <- clean_data %>%
+  select(id, month, year, mish, statefip, ind, sector, 
+       wtfinl)
+
+#Drop missing values for sectors
+clean_data<-clean_data %>%
+  filter(!is.na(sector))
+
+#Final changes of format.
+
+#Rename ID, mish, and st_fips; and create abbreviated month column.
+clean_data<-clean_data %>%
+    rename(P_ID = id) %>%
+    mutate(monthname = month.name[month]) %>% 
+    select(-month) %>%
+   mutate(month = substr(monthname, 1, 3))
+clean_data<-clean_data %>%
+  select(-monthname) %>%
+  rename(inter_num=mish) %>%
+  select(-ind)  %>%
+  rename(st_fips=statefip)
+#Drop Washington DC.
+clean_data_new<- left_join(clean_data, states_fips , by="st_fips")
+clean_data_new <- clean_data_new %>%
+  select(-st_num) %>%
+  filter(st_fips != 11)
+
+#Choosing months in sample of interest.
+cps_nber <- clean_data_new %>%
+  group_by(P_ID) %>%
+  filter( min(inter_num) <=4 & max(inter_num) >=5 ) %>%
+  ungroup()
+
+## CREATE SECTOR-STATE ORIGINS AND DESTINATIONS.
+
+#list of months
+mn_list  <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 # Choose the number of observation for each household
 num_obs_present  <- c(5, 6, 7, 8)   # up to: 1 observation c(5); 2 observations c(5,6); 4 observations c(5,6,7,8)
 num_obs_past  <- c(1, 2, 3, 4)       # up to: 1 observation c(1); 2 observations c(1,2); 4 observations c(1,2,3,4)
-
 # Choose the restriction on the number of respondents (i.e sample size) within (year, state_ori, sector_ori)
 num_sample  <- 0
 
-# keep two observations
+# Loop to take state-sector origin as state-sector in period t, and state-sector destination as state-sector in period t+1.
 base <- c()
 for (yr in 1997:2002) {
 for (mn in mn_list) {
-  
 temp_cps_nber  <- cps_nber  %>% 
   filter(month == mn & (  (year == yr & inter_num  %in% num_obs_present ) | (year == yr-1 & inter_num  %in% num_obs_past ) ))
-
 info_present <- temp_cps_nber %>% 
   filter(year == yr) %>%
   dplyr::rename(sector_dest = sector, state_dest = st_name)
@@ -277,16 +444,16 @@ info_past <- temp_cps_nber %>%
   filter(year == yr-1) %>%
   dplyr::select(-year, -month, -wtfinl) %>% 
   dplyr::rename(sector_ori = sector, state_ori = st_name)
-temp <- full_join(info_present, info_past, by=c("P_ID"))  %>%  # after matching, get state info for t and t-1 from CPS
+temp <- full_join(info_present, info_past, by=c("P_ID"))  %>%
         filter(inter_num.x - inter_num.y == 4) 
 temp <- temp %>%
-  filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) %>% # only matches
+  filter(is.na(state_ori) == FALSE & is.na(state_dest) == FALSE) %>% # only matches (origins consistent with destinations)
   distinct( P_ID, .keep_all = TRUE)
 base <- rbind(base, temp)
 }
 }
 
-# rolling basis: five-year window
+# rolling basis: five-year window (to reduce noise due to the fact that each year has relatively few observations)
 final_base <- c()
 for (yr in 1997:2002) {
 temp <- base %>%
@@ -297,7 +464,7 @@ final_base <- rbind(final_base, temp)
 base <- final_base %>% 
   mutate(year = year - 1)   # the original year is the year of the survey at the present; minus one gives the year of survey at the start
 
-# counting sector-sector within state movements
+# counting sector-sector within state movements (using person weights)
 base <- base %>%
   dplyr::select(-month, -P_ID, -inter_num.x, -inter_num.y, -st_fips.x, -st_fips.y) %>%
   group_by(year, state_ori, sector_ori, state_dest, sector_dest) %>%
@@ -309,12 +476,6 @@ base <- base %>%
   distinct(year, state_ori, sector_ori, state_dest, sector_dest, .keep_all = TRUE) %>%
   dplyr::select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps, n_sample)
 
-base_temp  <- base  %>% 
-  filter(year == 1999)  %>% 
-  filter(n_sample < num_sample)  %>% 
-  mutate(name = paste(state_ori, sector_ori))  %>% 
-  arrange(state_ori, sector_ori)
-
 # adding missing combinations
 temp <- data.frame(s_names)
 sec  <- c(0:14)
@@ -322,74 +483,84 @@ temp_sec  <- data.frame(sec)
 yr  <- c(1998:2001)
 temp_yr  <- data.frame(yr)
 combo_st_sec  <- expand.grid(year = temp_yr$yr,state_ori = temp$s_names, sector_ori = temp_sec$sec, state_dest = temp$s_names, sector_dest = temp_sec$sec)
-
 cps_nber  <- combo_st_sec  %>% 
   left_join(base, by = c('year', 'state_dest', 'state_ori','sector_dest','sector_ori'))  %>% 
   mutate(n_cps = ifelse(is.na(n_cps), 0, n_cps))
 
 ## Modification: proportionality assumption on diagonals
-# replacing 0 in diag based on median non-zero diag shares within year-sector
+# We want to set maximum consistent stock in the diagonal (stay at the same state and sector).
 temp <- cps_nber  %>% 
+  #Binary variable: the observation is on the diagonal: yes or no?
   mutate(diag = ifelse(sector_ori == sector_dest & state_ori == state_dest, 1, 0))  %>% 
+  #Sum of people by state-sector origin.
   group_by(year, state_ori, sector_ori)  %>% 
-  mutate(stock_ori = sum(n_cps))  %>%  # the sum of people at origin; under restriction, there are many zeros
-  mutate(outflow_share = n_cps/stock_ori)  %>% # share of outflow
+  mutate(stock_ori = sum(n_cps))  %>%  
+  #Share of outflow (with respect of total at the origin)
+  mutate(outflow_share = n_cps/stock_ori)  %>% 
+  #Replace missing values of shares with zeros.
   mutate(outflow_share = ifelse(is.na(outflow_share), 0, outflow_share))  %>% 
-  mutate(stay_in_share = ifelse(diag == 1, outflow_share, 0))  %>%  # there is no stay-in share for those (state_ori, sector_ori) dropped under restriction
+  #Shares on the diagonal
+  mutate(stay_in_share = ifelse(diag == 1, outflow_share, 0))  %>%
   mutate(stay_in_share = max(stay_in_share))  %>% # no NA; minimum 0.44
-  ungroup() %>% 
+  ungroup() %>%
+  #Median of shares in the diagonal by year and sector of origin
   group_by(year, sector_ori)  %>% 
-  mutate(stay_in_share_median = median(stay_in_share))  %>%  # no NA; minimum 0.44
+  mutate(stay_in_share_median = median(stay_in_share))  %>% 
   ungroup()  %>% 
+  #Sum of people by state-sector destination.
   group_by(year, state_dest, sector_dest)  %>% 
-  mutate(stock_dest = sum(n_cps))  %>%  # the sum of people at destination
+  mutate(stock_dest = sum(n_cps))  %>%
+  #Leave only sums of people on the diagonal.
   mutate(stock_dest_diag = ifelse(diag == 1, stock_dest, 0))  %>% 
   ungroup()  %>% 
   group_by(year, state_ori, sector_ori)  %>% 
-  mutate(stock_dest_diag = max(stock_dest_diag))  %>% # repeating the stock_dest_diag within each (state_ori, sector_ori)
+  mutate(stock_dest_diag = max(stock_dest_diag))  %>%
   ungroup()  %>% 
   group_by(year, sector_ori)  %>% 
+  #Minimum (positive) stock in the diagonal.
   mutate(stock_dest_diag_min = min(stock_dest_diag[stock_dest_diag > 0]))  %>%   
   ungroup()  %>% 
-  mutate(diag_new = ifelse(stay_in_share_median == 1, pmax(stock_dest_diag_min, stock_ori, stock_dest_diag),  pmax(stock_dest_diag_min, stock_ori, stock_dest_diag)/(1-stay_in_share_median) * stay_in_share_median))  %>% 
-  #mutate(diag_new = ifelse(stay_in_share_median == 1, pmax(1, stock_ori, stock_dest_diag),  pmax(1, stock_ori, stock_dest_diag)/(1-stay_in_share_median) * stay_in_share_median))  %>% 
-  #mutate(diag_new = pmax(1, stock_ori, stock_dest_diag)/(1-stay_in_share_median) * stay_in_share_median)  %>%  # 709 cases takes the value of 1 in all quarter in 1999
-  #mutate(diag_new = pmax(1, stock_ori, stock_dest_diag)/(1-stay_in_share_median) * stay_in_share_median)  %>%  # 9 cases stock_ori = stock_dest_diag = 0: Alaska 9/6, Hawaii 6/5/10, Wyoming 6, Georgia 4, Rhodes 4, Montana 11  
-  mutate(flag = ifelse(diag == 1 & n_cps == 0, 1, 0))  %>%  #82 cases in 1999
-  mutate(n_cps = ifelse(diag == 1 & n_cps == 0, diag_new, n_cps))  %>% 
+  #When the "probability" of staying at the same sector-state is 1, assign the corresponding combination the maximum between the minimum stock at the diagonal (according to destination), the stock at the origin, and the stock at the destination. Otherwise, set the maximum between the stock at the origin, the stock at the destination, and a proportionality rule that uses the median of the "probability" of staying at the same sector-state. We apply this replacement for the combinations of the diagonal that do not registered people (n_cps=0).
+  mutate(diag_new = ifelse(stay_in_share_median == 1, pmax(stock_dest_diag_min, stock_ori, stock_dest_diag),  pmax(stock_dest_diag_min, stock_ori, stock_dest_diag)/(1-stay_in_share_median) * stay_in_share_median)) %>%
+  mutate(n_cps = ifelse(diag == 1 & n_cps == 0, diag_new, n_cps)) %>% 
   select(year, state_ori, sector_ori, state_dest, sector_dest, n_cps) 
 cps_nber  <- temp
 
-#filling missing matrix sections as CDP
+#filling missing matrix sections
 cps_nber <- cps_nber %>%
   mutate(n_master = ifelse(state_ori == state_dest, n_cps, 0)) %>%
-  select(-n_cps) %>%   #actually, n_master == n_cps......
+  select(-n_cps) %>%
   group_by(year, state_dest, sector_dest, sector_ori) %>% #based on destination state
   mutate(n_cps = max(n_master)) %>%  #n_cps:  each entry takes the value of within destination state migration for that sector-sector movement, therefore same value for same (year, state_dest, sector_dest, sector_ori) across original states
   ungroup() %>%
   select(-n_master) %>%
   arrange(year, state_dest, sector_dest, state_ori, sector_ori)
 
+#Save
 write.table(cps_nber, file = paste("1-Intermediate_Processed_Data/cps_nber_2_yearly.csv", sep=""), sep = ",", row.names = FALSE) 
 
 ```
 
-## Generate Migration Matrix
-Within the state
+# Calculate mobility shares with migration.
+For movements between sectors within the same state we use the following proportionality rule:
 $$
 L^{n j, n k}=L_{I R S}^{n, n} \times \frac{L_{C P S}^{n j, n k}}{\sum_q \sum_h L_{C P S}^{n h, n q}} \quad \forall n \in U S A, \forall j, k
 $$
-Between the state
+For all the other cases, we use the following proportionality rule:
 $$
 L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{\sum_{i}L_{ACS}^{n?,ik}}{\sum_{i}\sum_{q}L_{ACS}^{n?,iq}}
+$$
+Then we calculate the corresponding migration shares:
+$$
+\mu_{nj,ik}=\frac{L^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=1}^{J}L^{nj,pq}}
 $$
 
 ```{r Migration matrix solution 2, message=FALSE, warning=FALSE}
 # loading intermediate CPS
 cps <- read.csv(paste("1-Intermediate_Processed_Data/cps_nber_2_yearly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
-# within states proportionality
-temp_within  <- cps %>%           # create the cps share for within state expression
+# create the CPS term in the within state proportionality rule
+temp_within  <- cps %>%
   filter(state_ori == state_dest & year == 1999)  %>% 
   group_by(year, state_dest, state_ori)  %>% 
   mutate(n_cps_two_states_tot = sum(n_cps))  %>% 
@@ -397,8 +568,8 @@ temp_within  <- cps %>%           # create the cps share for within state expres
   mutate(cps_share_wti = n_cps/n_cps_two_states_tot) %>% 
   select(year, state_ori, state_dest, sector_ori, sector_dest, cps_share_wti)
 
-# between states proportionality
-temp_between_cps  <- cps  %>%    # create the cps share for between state expression
+# create the CPS term in the proportionality rule for all the other cases
+temp_between_cps  <- cps  %>%
   filter(state_ori == state_dest & year == 1999)  %>% 
   group_by(year, state_dest, state_ori, sector_dest)  %>% 
   mutate(n_cps_same_sector_dest = sum(n_cps))  %>% 
@@ -406,9 +577,11 @@ temp_between_cps  <- cps  %>%    # create the cps share for between state expres
   mutate(cps_share_btw = n_cps/n_cps_same_sector_dest)  %>% 
   select(year, state_ori, state_dest, sector_ori, sector_dest, cps_share_btw)
 
+# loading intermediate ACS
 acs <- read.csv(paste("1-Intermediate_Processed_Data/acs.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
-temp_between_acs  <-  acs  %>%  # create the acs share for between state expression
+# create the ACS term in the proportionality rule for all the other cases
+temp_between_acs  <-  acs  %>%
   filter(year == 1999)  %>% 
   group_by(year, state_ori)  %>% 
   mutate(n_acs_two_tot = sum(n_acs))  %>% 
@@ -420,11 +593,11 @@ temp_between_acs  <-  acs  %>%  # create the acs share for between state express
   mutate(acs_share = ifelse(is.na(acs_share), 0, acs_share))  %>% 
   select(year, state_ori, state_dest, sector_dest, acs_share)
 
+# IRS terms in the formula are already computed
 irs <-  read.csv(paste("1-Intermediate_Processed_Data/irs.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
-
-#### Calculating the mu ####
-mobility  <- cps  %>%   # adjusted migration flows
+#Calculate the final/adjusted migration flows.
+mobility  <- cps  %>%
   filter(year == 1999)  %>% 
   left_join(irs, by=c('year' = 'year', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori')) %>%
   left_join(temp_within, by = c('year' = 'year', 'state_dest' = 'state_dest', 'state_ori' = 'state_ori', 'sector_dest' = 'sector_dest', 'sector_ori' = 'sector_ori'))  %>% 
@@ -435,14 +608,15 @@ mobility  <- cps  %>%   # adjusted migration flows
   mutate(n_cps_adj = ifelse(state_ori == state_dest, exemption*cps_share_wti, n_cps_adj))  %>% 
   select(-state_ori.y)
 
-# mu_1999 prime for L_1999
+# Calculate mu_{nj,ik}
 mu_1999_prime <- mobility %>%
   group_by(year, state_ori, sector_ori) %>% 
-  mutate(tot_n = sum(n_cps_adj)) %>% # total inflows to destination state-sector
+  mutate(tot_n = sum(n_cps_adj)) %>%
   ungroup() %>%
-  mutate(rel = n_cps_adj/tot_n) %>%  #(inflow share of destination state-sector across original state-sector) rel: share of people from original state-sector pairs to the same destination state-sector
+  mutate(rel = n_cps_adj/tot_n) %>%
   select(year, state_dest, state_ori, sector_dest, sector_ori, rel)
 
+#Final changes of format (and reshape to matrix form).
 mu_1999_prime <- mu_1999_prime %>%
   mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
   mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
@@ -454,27 +628,32 @@ epsilon <- 0.01
 check <- mu_1999_prime %>% select(-year, -state_ori, -sector_ori)
 if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
   stop("mobility shares do not add to 1")
+
+#Save
 write_xlsx(mu_1999_prime, path = paste("2-Final_Data/mu_1999_nber_case4_yearly.xlsx", sep=""))
 
 ```
 
-## Generate Migration Matrix (No mobility across state)
+## Calculate mobility sharess "without migration".
+
+We take CPS $L^{nj,nk}$'s as our final ones.
 $$
 L^{nj,nk}=L_{CPS}^{nj,nk}\text{,}\forall n\in USA,\:\forall j,k
 $$
-Then define
+Then we define
 $$
-\mu_{t}^{nj,nk} =\frac{L_{t}^{nj,nk}}{\sum_{q=0}^{J}L_{t}^{nj,nq}} \\
-\mu_{t}^{nj,ik} = 0\quad\forall n\neq i
+\mu^{nj,nk} =\frac{L^{nj,nk}}{\sum_{q=0}^{J}L^{nj,nq}} \\
+\mu^{nj,ik} = 0\quad\forall n\neq i
 $$
 
 ```{r Migration matrix, message=FALSE, warning=FALSE}
 # loading intermediate CPS
 cps <- read.csv(paste("1-Intermediate_Processed_Data/cps_nber_2_yearly.csv", sep=""), header = TRUE, sep = ",", dec = ".")
-
+ 
+# Calculate mu_{nj,ik}
 mobility  <- cps %>% 
   mutate(diag = ifelse(state_ori == state_dest, 1, 0))  %>% 
-  mutate(n_cps = ifelse(diag == 1, n_cps, 0))  %>% 
+  mutate(n_cps = ifelse(diag == 1, n_cps, 0))  %>% #set between states flows to zero
   group_by(year, state_ori, diag, sector_ori)  %>% 
   mutate(n_cps_tot = sum(n_cps))  %>% 
   ungroup()  %>% 
@@ -483,6 +662,7 @@ mobility  <- cps %>%
   filter(year == 1999)  %>% 
   select(year, state_dest, state_ori, sector_dest, sector_ori, rel)
 
+#Final changes of format (and reshape to matrix form).
 mu_1999_prime <- mobility %>%
   mutate(sector_dest = recode(as.character(sector_dest), '0' ="00", '1' ="01", '2' ="02", '3' ="03", '4' ="04", '5' ="05", '6' ="06", '7' ="07", '8' ="08", '9' ="09" )) %>%
   mutate(state_dest_sector_dest = paste(state_dest, sector_dest, sep="_")) %>%
@@ -494,6 +674,8 @@ epsilon <- 0.01
 check <- mu_1999_prime %>% select(-year, -state_ori, -sector_ori)
 if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon) 
   stop("mobility shares do not add to 1")
+
+#Save
 write_xlsx(mu_1999_prime, path = paste("2-Final_Data/mu_1999_nber_case4_yearly_no_migration.xlsx", sep=""))
 
 ```
