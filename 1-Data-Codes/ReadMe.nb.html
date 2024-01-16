@@ -11,7 +11,7 @@
 
 
 
-<title>3-State_state</title>
+<title>ReadMe</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1746,542 +1746,339 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">3-State_state</h1>
+<h1 class="title toc-ignore">ReadMe</h1>
 
 </div>
 
 <div id="TOC">
 <ul>
-<li><a href="#general-information" id="toc-general-information"><span class="toc-section-number">1</span> General information</a>
+<li><a href="#summary-and-codes-to-run" id="toc-summary-and-codes-to-run"><span class="toc-section-number">1</span> Summary and codes to run</a></li>
+<li><a href="#more-detailed-description" id="toc-more-detailed-description"><span class="toc-section-number">2</span> More detailed description</a>
 <ul>
-<li><a href="#input-files" id="toc-input-files"><span class="toc-section-number">1.1</span> Input files</a></li>
-<li><a href="#output-files" id="toc-output-files"><span class="toc-section-number">1.2</span> Output files</a></li>
+<li><a href="#input-output-coefficients-and-value-added-shares-for-countries" id="toc-input-output-coefficients-and-value-added-shares-for-countries"><span class="toc-section-number">2.1</span> Input-output coefficients and
+value-added shares (for countries)</a></li>
+<li><a href="#bilateral-trade-flows" id="toc-bilateral-trade-flows"><span class="toc-section-number">2.2</span> Bilateral trade flows</a></li>
+<li><a href="#trade-deficits" id="toc-trade-deficits"><span class="toc-section-number">2.3</span> Trade deficits</a></li>
+<li><a href="#value-added-shares" id="toc-value-added-shares"><span class="toc-section-number">2.4</span> Value-added shares</a></li>
+<li><a href="#exposure-meassures" id="toc-exposure-meassures"><span class="toc-section-number">2.5</span> Exposure meassures</a></li>
+<li><a href="#employment-total" id="toc-employment-total"><span class="toc-section-number">2.6</span> Employment total</a></li>
 </ul></li>
-<li><a href="#importing-and-preparing-the-cfs-dataset-and-constructing-commodity-sector-redistribution-matrix." id="toc-importing-and-preparing-the-cfs-dataset-and-constructing-commodity-sector-redistribution-matrix."><span class="toc-section-number">2</span> Importing and preparing the CFS
-dataset, and constructing commodity-sector redistribution matrix.</a>
-<ul>
-<li><a href="#cfs-state-to-state-manufacturing-trade-flows" id="toc-cfs-state-to-state-manufacturing-trade-flows"><span class="toc-section-number">2.1</span> CFS state-to-state manufacturing
-trade flows</a></li>
-</ul></li>
-<li><a href="#final-state-to-state-manufacturing-trade-flows" id="toc-final-state-to-state-manufacturing-trade-flows"><span class="toc-section-number">3</span> Final state-to-state manufacturing
-trade flows</a>
-<ul>
-<li><a href="#importing-datasets-to-r" id="toc-importing-datasets-to-r"><span class="toc-section-number">3.1</span> Importing datasets to R</a></li>
-<li><a href="#manufacture-bilateral-trade-between-us-states" id="toc-manufacture-bilateral-trade-between-us-states"><span class="toc-section-number">3.2</span> Manufacture bilateral trade
-between US states</a></li>
-</ul></li>
+<li><a href="#note-raw-data-not-in-github" id="toc-note-raw-data-not-in-github"><span class="toc-section-number">3</span> Note: Raw data not in
+GitHub</a></li>
 </ul>
 </div>
 
 <!-- rnb-text-begin -->
-<div id="general-information" class="section level1" number="1">
-<h1><span class="header-section-number">1</span> General
-information</h1>
-<p>This file does the following:</p>
+<div id="summary-and-codes-to-run" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Summary and codes to
+run</h1>
+<p><em>1-Data-Codes/1-WIOD_VA_shares_io_shares_distances.Rmd</em></p>
+<ul>
+<li><strong>Goal:</strong></li>
+</ul>
 <ol style="list-style-type: decimal">
-<li><p>Imports and prepares the CFS dataset, which contains the state to
-state trade flow.</p></li>
-<li><p>Uses CFS plus proportionality to calculate state-state trade
-flows in manufacturing <span class="math inline">\(X_{ij,k}\)</span> for
-<span class="math inline">\(i\in US\; \&amp;\; j \in
-US\)</span></p></li>
+<li>Calculate bilateral trade flows between countries for all
+sectors.</li>
+<li>Calculate the share of value-added for each sector on each
+country</li>
+<li>Calculate the input-output matrix shares for each country.</li>
+<li>Calculate the distances between all regions.</li>
+<li>Calculate the distance elasticity and own-dummy coefficients for
+trade flows in services and agriculture.</li>
 </ol>
-<div id="input-files" class="section level2" number="1.1">
-<h2><span class="header-section-number">1.1</span> Input files</h2>
+<ul>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code></li>
+<li><strong>Outputs:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code> and
+<code>1-Data-Codes/2-Final_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/2-State_country.Rmd</em></p>
+<ul>
+<li><strong>Goal:</strong> Calculate state-country bilateral flows for
+all sectors except services.</li>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code> and
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+<li><strong>Outputs:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/3-State_state.Rmd</em></p>
+<ul>
+<li><strong>Goal:</strong> Calculate state-state bilateral flows for all
+sectors except services and agriculture.</li>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code> and
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+<li><strong>Output:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/4-Gravity_services.Rmd</em></p>
+<ul>
+<li><strong>Goal:</strong> Calculate state-state and state-country
+bilateral flows for services using a gravity system approach.</li>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code> and
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+<li><strong>Output:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/5-Gravity_agriculture.Rmd</em></p>
+<ul>
+<li><strong>Goal:</strong> Calculate state-state bilateral flows for
+agriculture using a gravity system approach.</li>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code> and
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+<li><strong>Output:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/6-Matrices_deficits_VA_shares_states</em></p>
+<ul>
+<li><strong>Goal:</strong></li>
+</ul>
 <ol style="list-style-type: decimal">
-<li><code>0-Raw_Data/CFS/NAICS to CFS Crosswalk.xlsx</code></li>
-<li><code>0-Raw_Data/CFS/CFS_2012_00A18_with_ann.csv</code></li>
-<li><code>0-Raw_Data/CFS/CFS2007.xlsx</code></li>
-<li><code>0-Raw_Data/CFS/CFS2002mine.xlsx</code></li>
-<li><code>0-Raw_Data/CFS/CF1200A24.csv</code> (this file was too heavy,
-so it was compressed in a .zip folder with the same name; it must be
-taken out of the folder to run the script)</li>
-<li><code>0-Raw_Data/Fips/statefips.csv</code></li>
-<li><code>0-Raw_Data/regions.csv</code></li>
-<li><code>0-Raw_Data/sectors.csv</code></li>
-<li><code>1-Intermediate_Processed_Data/country_country_step_.csv</code></li>
+<li>Combine the results of the previous 5 scripts to obtain the final
+matrix of bilateral flows (for all sectors, for all regions) for years
+2000-2007.</li>
+<li>Calculate region-sector level deficits.</li>
+<li>Calculate the share of value added in gross output for each US
+state, for each sector.</li>
 </ol>
-</div>
-<div id="output-files" class="section level2" number="1.2">
-<h2><span class="header-section-number">1.2</span> Output files</h2>
+<ul>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code> and
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+<li><strong>Output:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code> and
+<code>1-Data-Codes/2-Final_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/7-Exposures.Rmd</em></p>
+<ul>
+<li><strong>Goal:</strong></li>
+</ul>
 <ol style="list-style-type: decimal">
-<li><code>1-Intermediate_Processed_Data/CFSapportionment.csv</code></li>
-<li><code>1-Intermediate_Processed_Data/CFS_Xijk.csv</code></li>
-<li><code>1-Intermediate_Processed_Data/state_cfs_step_.csv</code></li>
+<li>Calculate employment levels by state-sector for year 2000 using BLS
+and CENSUS.</li>
+<li>Calculate the 2000-2007 change in imports from China to the US and
+other advanced economies. To run a linear regression using the change of
+sector US imports from China as the dependent variable and the change of
+sector advanced economies’ imports from China as the independent
+variable.</li>
+<li>Computes the exposure measure of equation (16) from the
+manuscript.</li>
+</ol>
+<ul>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code> and
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+<li><strong>Output:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code> and
+<code>1-Data-Codes/2-Final_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/8-Employment_1999_2000.Rmd</em></p>
+<ul>
+<li><strong>Goal:</strong></li>
+</ul>
+<ol style="list-style-type: decimal">
+<li>Compute the employment level for each state and sector in year 2000
+using CBS data.</li>
+<li>Compute the employment level for each state and sector in year 2000
+and year 1999 using BLS data.</li>
+<li>Compute the employment level for each country and sector in year
+1999 and year 2000 using ILO and SEA data</li>
+<li>Combine the previous outputs, and apply proportionality to ensure
+consistency with WIOD SEA</li>
+</ol>
+<ul>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code></li>
+<li><strong>Output:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code></li>
+</ul>
+<p><em>1-Data-Codes/9-Migration_matrix</em></p>
+<ul>
+<li><strong>Goal:</strong></li>
+</ul>
+<ol style="list-style-type: decimal">
+<li>Compute ACS total state to state migration movements (knowing the
+sector of destination, but not the sector of origin), by year for
+1999-2001.</li>
+<li>Compute IRS total state to state migration movements (not knowing
+the sector of origin, nor the sector of destination), for 1999.</li>
+<li>Compute CPS total state to state migration movements (knowing both
+the sector of origin and the sector of destination), by year for
+1999-2001.</li>
+<li>Combine the data from the previous three steps to compute our final
+sector-state to sector-state mobility flows. Then we calculate the
+corresponding mobility shares in a case with migration and a case
+without migration (that is, not allowing state to state movements, just
+allowing sector reallocation).</li>
+</ol>
+<ul>
+<li><strong>Source:</strong> <code>1-Data-Codes/0-Raw_Data</code></li>
+<li><strong>Output:</strong>
+<code>1-Data-Codes/1-Intermediate_Processed_Data</code> and
+<code>1-Data-Codes/2-Final_Data</code></li>
+</ul>
+</div>
+<div id="more-detailed-description" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> More detailed
+description</h1>
+<div id="input-output-coefficients-and-value-added-shares-for-countries" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Input-output
+coefficients and value-added shares (for countries)</h2>
+<p>The first script calculates the input-output matrix for countries.
+Defining <span class="math inline">\(\alpha_{j,ks}\)</span> for region
+<span class="math inline">\(j\)</span> as the share of purchases of
+sector <span class="math inline">\(s\)</span> that come from sector
+<span class="math inline">\(k\)</span> in the total purchases of sector
+<span class="math inline">\(s\)</span>:</p>
+<p><span class="math display">\[\alpha_{j,ks}=\dfrac{\sum_{i}X_{ij,ks}}{\sum_{r}\sum_{i}X_{ij,rs}}=\dfrac{X_{j,ks}}{\sum_{r}X_{j,rs}}\]</span></p>
+<p>This script also calculates the share of value-added (mapped in the
+model to the labor share) for each country, each sector, and each year
+using data from WIOD.In particular, <span class="math display">\[Labor
+\; share = \frac{VA_{i,k}}{R_{i,k}}\]</span> where <span class="math inline">\(R_{i,k}\)</span> denotes total revenue in sector
+<span class="math inline">\(k\)</span> of country <span class="math inline">\(i\)</span>.</p>
+</div>
+<div id="bilateral-trade-flows" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> Bilateral trade
+flows</h2>
+<p>Finally, the first script begins the necessary steps to construct a
+matrix of bilateral trade flows. Specifically, it calculates the
+bilateral trade flows (<span class="math inline">\(X_{ij,k}\)</span>)
+between countries for all sectors, directly from WIOD data.</p>
+<p>However, for bilateral flows that involve states, there are
+region-sector combinations that we can not observe directly from data.
+For those combinations, we use (in later scripts) a gravity system
+approach to derive the corresponding transactions. In particular, the
+“problematic” sectors are agriculture and services. Hence, the last
+thing that the first script does is to calculate the distance elasticity
+and own-dummy coefficients for trade flows in services and agriculture
+between countries (including the US) estimating: <span class="math display">\[
+\ln X_{ij,t}=\lambda_t +
+\delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln
+dist_{ij}+\xi_{ij,t}
+\]</span> where <span class="math inline">\(\lambda_t\)</span> is a time
+fixed effect, <span class="math inline">\(\delta_{i}^{o}\)</span> is an
+origin fixed effect, <span class="math inline">\(\delta_{j}^{d}\)</span>
+is a destination fixed effect, and <span class="math inline">\(\iota_{ij}\)</span> is an indicator variable equal
+to 1 if <span class="math inline">\(i=j\)</span>, and zero otherwise. As
+usual <span class="math inline">\(X_{ij,t}\)</span> is what country
+<span class="math inline">\(i\)</span> sells to country <span class="math inline">\(j\)</span> in year <span class="math inline">\(t\)</span>. The coefficients of interest are <span class="math inline">\(\beta_0\)</span> and <span class="math inline">\(\beta_1\)</span> that we use to construct: <span class="math display">\[\tilde{\tau}_{ij}=\exp(\hat{\beta}_{0}\iota_{ij}+\hat{\beta}_{1}\ln
+dist_{ij}).\]</span></p>
+<p>After script 2 calculates state-country bilateral flows for all
+sectors except services, from CENSUS data (and a proportionality rule
+that makes state flows sum up to US flows according to WIOD), and script
+3 calculates state-state bilateral flows for all sectors except services
+and agriculture, from CFS data (and a proportionality rule that makes
+state flows sum up to US flows according to WIOD). Script 4 calculates
+the remaining combinations for services (country-state and state-state
+flows) and Script 5 calculates the remaining combinations for
+agriculture (state-state flows), both using a gravity approach.</p>
+<p>Specifically, from the trade resistances implied by the first script
+we calculate the corresponding bilateral flows using the following
+formula: <span class="math display">\[X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}R_{i}E_{j}.\]</span>
+where <span class="math inline">\(R_{i}\)</span> is total revenue of
+region <span class="math inline">\(i\)</span>; <span class="math inline">\(E_{j}\)</span> is total expenditure of region
+<span class="math inline">\(j\)</span>; and <span class="math inline">\(\tilde{\Pi}_{i}\)</span> and <span class="math inline">\(\tilde{P}_{j}\)</span> are price indices that
+solve the gravity system (see scripts 4 and 5 for a detailed exposition
+of the system).</p>
+<p>Having all the bilateral trade flows, script 6 combines them all in a
+single matrix.</p>
+</div>
+<div id="trade-deficits" class="section level2" number="2.3">
+<h2><span class="header-section-number">2.3</span> Trade deficits</h2>
+<p>Then script 6 calculates the deficit for a region <span class="math inline">\(i\)</span> in a sector <span class="math inline">\(k\)</span>, defined as: <span class="math display">\[ D_{i,k}=\sum_j X_{ij,k} - \sum_j X_{ji,k}
+\]</span></p>
+</div>
+<div id="value-added-shares" class="section level2" number="2.4">
+<h2><span class="header-section-number">2.4</span> Value-added
+shares</h2>
+<p>Finally, script 6 calculates the share of value added in gross output
+for each US state, for each sector (as we noted above, value-added
+shares for countries were already calculated in the first script).</p>
+</div>
+<div id="exposure-meassures" class="section level2" number="2.5">
+<h2><span class="header-section-number">2.5</span> Exposure
+meassures</h2>
+<p>The calibration of the key model parameters is based on matching
+moments that capture the relative effect of the China shock on labor.
+These moments are captured by an exposure measure that follows the one
+proposed by ADH and that we calculate in script 7: <span class="math display">\[
+Exposure_i \equiv
+\sum_{s=1}^S\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta
+X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}
+\]</span> where <span class="math inline">\(L_{i,s,2000}\)</span> are
+the employment levels by state-sector for year 2000; <span class="math inline">\(L_{i,2000}\equiv\sum_sL_{i,s,2000}\)</span>
+(script 7 calculates <span class="math inline">\(Exposure_i\)</span>
+using labor shares coming from Census data without person weights, and
+coming from BLS data); <span class="math inline">\(R_{US,s,2000}\)</span> is total US 2000 sales by
+sector; and (<span class="math inline">\(\widehat{\Delta
+X_{C,US,s}^{2007-2000}}\)</span>) are the predicted values of a linear
+regression (that script 7 also estimates) using the change of sector US
+imports from China as the dependent variable and the change of sector
+advanced economies’ imports from China as the independent variable.</p>
+</div>
+<div id="employment-total" class="section level2" number="2.6">
+<h2><span class="header-section-number">2.6</span> Employment total</h2>
+<p>Script 8 does a rather “separated” task. It computes the employment
+level for each state and sector in year 2000 using CBS data; the
+employment level for each state and sector in year 2000 and year 1999
+using BLS data; and the employment level for each country and sector in
+year 1999 and year 2000 using ILO and SEA data. Finally, script 8
+combines the previous US employment levels, and applies proportionality
+to ensure consistency with WIOD SEA. ## Labor flows Finally, script 9
+calculates migration flows between US states. Specifically, script 9
+computes migration from state <span class="math inline">\(n\)</span> to
+state <span class="math inline">\(i\)</span> and sector <span class="math inline">\(q\)</span>, according to ACS (<span class="math inline">\(L_{ACS}^{n?,iq}\)</span>) by year for 1999-2001;
+migration from state <span class="math inline">\(n\)</span> to state
+<span class="math inline">\(i\)</span>, according to IRS (<span class="math inline">\(L_{IRS}^{n,i}\)</span>) for 1999; and migration
+from state <span class="math inline">\(n\)</span> and sector <span class="math inline">\(j\)</span> to state <span class="math inline">\(i\)</span> and sector <span class="math inline">\(k\)</span>, according to CPS (<span class="math inline">\(L_{CPS}^{{nj,ik}}\)</span>) by year for 1999-2001.
+We combine the data from the previous three migration measures to
+compute our final <span class="math inline">\(L^{{nj,ik}}\)</span>’s.
+For movements between sectors within the same state we use the following
+proportionality rule: <span class="math display">\[
+L^{n j, n k}=L_{I R S}^{n, n} \times \frac{L_{C P S}^{n j, n k}}{\sum_q
+\sum_h L_{C P S}^{n h, n q}} \quad \forall n \in U S A, \forall j, k
+\]</span> For all the other cases, we use the following proportionality
+rule: <span class="math display">\[
+L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times
+L_{IRS}^{n,i}\times\frac{\sum_{i}L_{ACS}^{n?,ik}}{\sum_{i}\sum_{q}L_{ACS}^{n?,iq}}
+\]</span> Then we calculate the corresponding mobility shares: <span class="math display">\[
+\mu_{nj,ik}=\frac{L^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=1}^{J}L^{nj,pq}}
+\]</span></p>
+<p>We also calculate <span class="math inline">\(\mu_{nj,ik}\)</span>’s
+for a non-migration case (that is, not allowing state to state
+movements, just allowing sector reallocation).</p>
+</div>
+</div>
+<div id="note-raw-data-not-in-github" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Note: Raw data not in
+GitHub</h1>
+<ol style="list-style-type: decimal">
+<li>For script 3: <code>0-Raw_Data/CFS/CF1200A24.csv</code> was too
+heavy, so it was compressed in a .zip folder with the same name; it must
+be taken out of the folder to run the script.</li>
+<li>For script 5: the collection of
+<code>0-Raw_Data/CENSUS_2000/PUMS5/PUMS5_</code> .txt files for each US
+state was too heavy to be uploaded. However, we explain in the raw data
+ReadMe file how to download these files directly from U.S. Census
+Bureau’s page. The same comment applies to script 8 and the collection
+of <code>0-Raw_Data/CENSUS_2000/REVISEDPUMS5/REVISEDPUMS5_</code> .txt
+files.</li>
+<li>For script 8:
+<code>0-Raw_Data/CENSUS_2000/L_1999_2000_countries.csv</code>,
+<code>0-Raw_Data/CENSUS_2000/EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv</code>,
+and <code>0-Raw_Data/CENSUS_2000/P_World unemployment rates.xlsx</code>
+were not uploaded. However, we explain in the raw data ReadMe file how
+to download these files directly from WIOD’s, ILO’s and World Bank’s
+pages, respectively.</li>
+<li>For script 9: the collection of
+<code>0-Raw_Data/ACS/20*/c2ssp**.csv</code> .txt files for each US state
+was too heavy to be uploaded. However, we explain in the raw data ReadMe
+file how to download these files directly from U.S. Census Bureau’s
+page.</li>
+<li>For script 9: to get
+<code>0-Raw_Data/CPS/CPS_NBER/Inputs/cps_panel.dta</code>, one needs to
+run first the scripts in <code>RUV\CPS</code>.</li>
 </ol>
 <!-- rnb-text-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-text-begin -->
-</div>
-</div>
-<div id="importing-and-preparing-the-cfs-dataset-and-constructing-commodity-sector-redistribution-matrix." class="section level1" number="2">
-<h1><span class="header-section-number">2</span> Importing and preparing
-the CFS dataset, and constructing commodity-sector redistribution
-matrix.</h1>
-<p>The following code associates each commodity code with a NAICS code
-and then transforms the latter in the final desired sector categories.
-It is important to note that each commodity can be associated with more
-than one NAICS, depending on the industry that that commodity was
-produced in.<br />
-The code takes CFS 2007 and 2012 for the US, and calculates the
-proportion of the amount of commodity <span class="math inline">\(c\)</span> associated with NAICS <span class="math inline">\(n\)</span>, with respect to the total amount of
-commodity <span class="math inline">\(c\)</span>. This gives a matrix of
-(#commodities)x14 for each year. The code produces a matrix that shows
-how to redistribute the amount of each commodity into 13 sectors for the
-US for 2002, 2007 and 2012. The matrix for 2002 is the same as the one
-for 2007.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZmluYWwgPC0gYygpXG5mb3IgKHlyIGluIGMoMjAwNywgMjAxMikpe1xuaWYgKHlyID09IDIwMDcpe1xuIyBJbXBvcnQgQ0ZTIGRhdGEgd2l0aCBib3RoIE5BSUNTIGFuZCBDRlMgY29kZXNcbmJhc2UgPC0gcmVhZF9leGNlbChwYXN0ZShcIjAtUmF3X0RhdGEvQ0ZTL05BSUNTIHRvIENGUyBDcm9zc3dhbGsueGxzeFwiLCBzZXA9XCJcIikpXG4jIFJlLWNvZGUgbWFudWZhY3R1cmluZyBhcyBOQUlDUyAzIGFuZCBkZS1zdHJpbmcgTkFJQ1MgY29kZVxuYmFzZSA8LSBiYXNlICU+JVxuICBmaWx0ZXIoR0VPVFlQRSA9PSAxKSAlPiVcbiAgIyBSZWRpc3RyaWJ1dGlvbiBtYXRyaXggZm9yIDIwMDIgaXMgdGhlIHNhbWUgYXMgdGhlIG9uZSBmb3IgMjAwNy5cbiAgZHBseXI6OnJlbmFtZShOQUlDUzIwMDcgPSBOQUlDUzIwMDIpICU+JVxuICBkcGx5cjo6cmVuYW1lKE5BSUNTMjAwN19NRUFOSU5HID0gTkFJQ1MyMDAyX01FQU5JTkcpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDA3ID0gaWZlbHNlKE5BSUNTMjAwNyA9PSBcIjMxLTMzXCIsIFwiM1wiLE5BSUNTMjAwNykpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDA3ID0gYXMubnVtZXJpYyhOQUlDUzIwMDcpKSAlPiVcbiAgc2VsZWN0KE5BSUNTMjAwNywgTkFJQ1MyMDA3X01FQU5JTkcsIENPTU0sIENPTU1fTUVBTklORywgVkFMKVxufVxuaWYgKHlyID09IDIwMTIpe1xuIyBJbXBvcnQgQ0ZTIGRhdGEgd2l0aCBib3RoIE5BSUNTIGFuZCBDRlMgY29kZXMuXG5iYXNlIDwtIHJlYWQuY3N2KHBhc3RlKFwiMC1SYXdfRGF0YS9DRlMvL0NGU18yMDEyXzAwQTE4X3dpdGhfYW5uLmNzdlwiLCBzZXA9XCJcIiksIGhlYWRlciA9IFRSVUUsIHNlcCA9IFwiLFwiLCBkZWMgPSBcIi5cIilcbmJhc2UgPC0gYmFzZVsoMjpkaW0oYmFzZSlbMV0pLCBdXG4jIFJlLWNvZGUgbWFudWZhY3R1cmluZyBhcyBOQUlDUyAzIGFuZCBkZS1zdHJpbmcgTkFJQ1MgY29kZVxuYmFzZSA8LSBiYXNlICU+JVxuICBkcGx5cjo6cmVuYW1lKE5BSUNTMjAxMj1OQUlDUy5pZCkgJT4lXG4gIG11dGF0ZShOQUlDUzIwMTIgPSBpZmVsc2UoTkFJQ1MyMDEyID09IFwiMzEtMzNcIiwgXCIzXCIsTkFJQ1MyMDEyKSkgJT4lXG4gIG11dGF0ZShOQUlDUzIwMTIgPSBpZmVsc2UoTkFJQ1MyMDEyID09IFwiNDkzMShDRjEpXCIsIFwiNDkzMVwiLE5BSUNTMjAxMikpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDEyID0gYXMubnVtZXJpYyhOQUlDUzIwMTIpKVxuIyBLZWVwIGp1c3QgcmVsZXZhbnQgdmFyaWFibGVzOiBOQUlDUyBjb2RlLCBTQ1RHIGNvZGUsIGFuZCB2YWx1ZSBzaGlwcGVkXG5iYXNlIDwtIGJhc2UgJT4lXG4gIGRwbHlyOjpyZW5hbWUoTkFJQ1MyMDEyX01FQU5JTkcgPSBOQUlDUy5kaXNwbGF5LmxhYmVsKSAlPiVcbiAgZHBseXI6OnJlbmFtZShDT01NID0gQ09NTS5pZCkgJT4lXG4gIGRwbHlyOjpyZW5hbWUoQ09NTV9NRUFOSU5HID0gQ09NTS5kaXNwbGF5LmxhYmVsKSAlPiVcbiAgbXV0YXRlKFZBTCA9IGFzLm51bWVyaWMoVkFMKSkgJT4lXG4gIHNlbGVjdChOQUlDUzIwMTIsIE5BSUNTMjAxMl9NRUFOSU5HLCBDT01NLCBDT01NX01FQU5JTkcsIFZBTClcbn1cblxuI1JlLWNvZGUgc29tZSBjb21tb2RpdHkgY2F0ZWdvcmllcy4gRHJvcCBcImFsbCBjb21tb2RpdGllc1wiIGNhdGVnb3J5IGFuZCBcInVua25vd24gY29tbW9kaXR5XCIgY2F0ZWdvcnkuXG5iYXNlIDwtIGJhc2UgJT4lXG4gIG11dGF0ZShDT01NID0gYXMuY2hhcmFjdGVyKENPTU0pKSAlPiVcbiAgbXV0YXRlKENPTU0gPSBpZmVsc2UoQ09NTSA9PSBcIjA3LVJcIiwgXCIwN1wiLCBDT01NKSkgJT4lXG4gIG11dGF0ZShDT01NID0gaWZlbHNlKENPTU0gPT0gXCIwOC1SXCIsIFwiMDhcIiwgQ09NTSkpICU+JVxuICBtdXRhdGUoQ09NTSA9IGlmZWxzZShDT01NID09IFwiMTctUlwiLCBcIjE3XCIsIENPTU0pKSAlPiVcbiAgbXV0YXRlKENPTU0gPSBpZmVsc2UoQ09NTSA9PSBcIjE4LVJcIiwgXCIxOFwiLCBDT01NKSkgJT4lXG4gIG11dGF0ZShDT01NID0gYXMubnVtZXJpYyhDT01NKSkgJT4lXG4gIGZpbHRlcihDT01NICE9IDAgJiBDT01NICE9IDk5KVxuI0Ryb3Agc3VwZXJmbHVvdXMgTkFJQ1MgYW5kIHR1cm4gdGhlbSBhbGwgaW50byAzIGRpZ2l0IG51bWJlcnNcbmlmICh5ciA9PSAyMDA3KXtcbmJhc2UgPC0gYmFzZSAlPiVcbiAgZmlsdGVyKE5BSUNTMjAwNyAhPSAzICYgTkFJQ1MyMDA3ICE9IDQyMyAmIE5BSUNTMjAwNyAhPSA0MjQpICU+JVxuICBmaWx0ZXIoTkFJQ1MyMDA3IDw9IDQyMzAgfCBOQUlDUzIwMDcgPj0gNDI1MCkgJT4lXG4gIG11dGF0ZShOQUlDUzIwMDcgPSBpZmVsc2UoTkFJQ1MyMDA3ID09IDQyLCA0MjEsIE5BSUNTMjAwNykpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDA3ID0gaWZlbHNlKE5BSUNTMjAwNyA9PSA0NTQxLCA0NTQsIE5BSUNTMjAwNykpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDA3ID0gaWZlbHNlKE5BSUNTMjAwNyA9PSA0NTQzMSwgNDU1LCBOQUlDUzIwMDcpKSAlPiVcbiAgbXV0YXRlKE5BSUNTMjAwNyA9IGlmZWxzZShOQUlDUzIwMDcgPT0gNDkzMSwgNDkzLCBOQUlDUzIwMDcpKSAlPiVcbiAgbXV0YXRlKE5BSUNTMjAwNyA9IGlmZWxzZShOQUlDUzIwMDcgPT0gNTExMSwgNTExLCBOQUlDUzIwMDcpKSAlPiVcbiAgbXV0YXRlKE5BSUNTMjAwNyA9IGlmZWxzZShOQUlDUzIwMDcgPT0gNTUxMTE0LCA1NTEsIE5BSUNTMjAwNykpICU+JVxuICAjTWFwIHRvIDEzIHNlY3RvcnMuXG4gIG11dGF0ZShOQUlDUzIwMDcgPSBhcy5udW1lcmljKHJlY29kZShOQUlDUzIwMDcsICc1NTEnPVwiNjAwXCIsICczMTEnPVwiMVwiLCAnMzEyJz1cIjFcIiwgJzMxMyc9XCIyXCIsICczMTQnPVwiMlwiLCAnMzE1Jz1cIjJcIiwgJzMxNic9XCIyXCIsICczMjEnPVwiM1wiLCAnMzIyJz1cIjNcIiwgJzMyMyc9XCIzXCIsICczMjQnPVwiNFwiLCAnMzI1Jz1cIjVcIiwgJzMyNic9XCI2XCIsICczMjcnPVwiN1wiLCAnMzMxJz1cIjhcIiwgJzMzMic9XCI4XCIsICczMzMnPVwiOVwiLCAnMzM0Jz1cIjEwXCIsICczMzUnPVwiMTBcIiwgJzMzNic9XCIxMVwiLCAnMzM3Jz1cIjEyXCIsICczMzknPVwiMTJcIiwgJzQyMSc9XCIxNFwiLCAnNDU0Jz1cIjE0XCIsICc0NTUnPVwiMTRcIiwgJzQ5Myc9XCIyMlwiLCAnNTExJz1cIjE2XCIsICc1NTEnPVwiMjJcIikpKSAlPiVcbiAgZmlsdGVyKGlzLm5hKE5BSUNTMjAwNyk9PUZBTFNFKSAlPiVcbiAgbXV0YXRlKE5BSUNTMjAwNyA9IGlmZWxzZShOQUlDUzIwMDcgPj0xMyAmIE5BSUNTMjAwNyA8PSAyMiwgMTMsIE5BSUNTMjAwNykpICU+JVxuICBkcGx5cjo6cmVuYW1lKGNkcCA9IE5BSUNTMjAwNykgXG59XG4jRHJvcCBzdXBlcmZsdW91cyBOQUlDUyBhbmQgdHVybiB0aGVtIGFsbCBpbnRvIDMgZGlnaXQgbnVtYmVyc1xuaWYgKHlyID09IDIwMTIpe1xuYmFzZSA8LSBiYXNlICU+JVxuICBmaWx0ZXIoTkFJQ1MyMDEyICE9IDMgJiBOQUlDUzIwMTIgIT0gNDIzICYgTkFJQ1MyMDEyICE9IDQyNCkgJT4lXG4gIGZpbHRlcihOQUlDUzIwMTIgPD0gNDIzMCB8IE5BSUNTMjAxMiA+PSA0MjUwKSAlPiVcbiAgbXV0YXRlKE5BSUNTMjAxMiA9IGlmZWxzZShOQUlDUzIwMTIgPT0gNDIsIDQyMSwgTkFJQ1MyMDEyKSkgJT4lXG4gIG11dGF0ZShOQUlDUzIwMTIgPSBpZmVsc2UoTkFJQ1MyMDEyID09IDQ1NDEsIDQ1NCwgTkFJQ1MyMDEyKSkgJT4lXG4gIG11dGF0ZShOQUlDUzIwMTIgPSBpZmVsc2UoTkFJQ1MyMDEyID09IDQ1NDMxLCA0NTUsIE5BSUNTMjAxMikpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDEyID0gaWZlbHNlKE5BSUNTMjAxMiA9PSA0OTMxLCA0OTMsIE5BSUNTMjAxMikpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDEyID0gaWZlbHNlKE5BSUNTMjAxMiA9PSA1MTExLCA1MTEsIE5BSUNTMjAxMikpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDEyID0gaWZlbHNlKE5BSUNTMjAxMiA9PSA1NTExMTQsIDU1MSwgTkFJQ1MyMDEyKSkgJT4lXG4gICNNYXAgdG8gMTMgc2VjdG9ycy5cbiAgbXV0YXRlKE5BSUNTMjAxMiA9IGFzLm51bWVyaWMocmVjb2RlKE5BSUNTMjAxMiwgJzU1MSc9XCI2MDBcIiwgJzMxMSc9XCIxXCIsICczMTInPVwiMVwiLCAnMzEzJz1cIjJcIiwgJzMxNCc9XCIyXCIsICczMTUnPVwiMlwiLCAnMzE2Jz1cIjJcIiwgJzMyMSc9XCIzXCIsICczMjInPVwiM1wiLCAnMzIzJz1cIjNcIiwgJzMyNCc9XCI0XCIsICczMjUnPVwiNVwiLCAnMzI2Jz1cIjZcIiwgJzMyNyc9XCI3XCIsICczMzEnPVwiOFwiLCAnMzMyJz1cIjhcIiwgJzMzMyc9XCI5XCIsICczMzQnPVwiMTBcIiwgJzMzNSc9XCIxMFwiLCAnMzM2Jz1cIjExXCIsICczMzcnPVwiMTJcIiwgJzMzOSc9XCIxMlwiLCAnNDIxJz1cIjE0XCIsICc0NTQnPVwiMTRcIiwgJzQ1NSc9XCIxNFwiLCAnNDkzJz1cIjIyXCIsICc1MTEnPVwiMTZcIiwgJzU1MSc9XCIyMlwiKSkpICU+JVxuICBmaWx0ZXIoaXMubmEoTkFJQ1MyMDEyKT09RkFMU0UpICU+JVxuICBtdXRhdGUoTkFJQ1MyMDEyID0gaWZlbHNlKE5BSUNTMjAxMiA+PTEzICYgTkFJQ1MyMDEyIDw9IDIyLCAxMywgTkFJQ1MyMDEyKSkgJT4lXG4gIGRwbHlyOjpyZW5hbWUoY2RwID0gTkFJQ1MyMDEyKSBcbn1cblxuI1Byb3BvcnRpb24gb2YgdGhlIGFtb3VudCBvZiBjb21tb2RpdHkgXCJjXCIgYXNzb2NpYXRlZCB3aXRoIE5BSUNTIFwiblwiLCB3aXRoIHJlc3BlY3QgdG8gdGhlIHRvdGFsIGFtb3VudCBvZiBjb21tb2RpdHkgXCJjXCIuXG5iYXNlJGNkcCA8LSBwYXN0ZShcInBvcnRpb25cIiwgYmFzZSRjZHAsIHNlcD1cIlwiKSAgXG5iYXNlIDwtIGJhc2UgJT4lXG4gIGdyb3VwX2J5KGNkcCwgQ09NTSkgJT4lIFxuICAjUmVwbGFjZSBtaXNzaW5nIHZhbHVlcyB3aXRoIHplcm9zLlxuICBtdXRhdGUoVkFMID0gaWZlbHNlKGlzLm5hKFZBTCk9PVRSVUUsIDAsIFZBTCkpICU+JVxuICBtdXRhdGUoVkFMID0gc3VtKFZBTCkpICU+JVxuICB1bmdyb3VwKCkgJT4lXG4gIGRpc3RpbmN0KGNkcCwgQ09NTSwgLmtlZXBfYWxsID0gVFJVRSkgJT4lXG4gIHNlbGVjdChDT01NLCBjZHAsIFZBTCkgJT4lXG4gIGFycmFuZ2UoQ09NTSwgY2RwLCBWQUwpICU+JVxuICBncm91cF9ieShDT01NKSAlPiVcbiAgbXV0YXRlKHRvdGFsc2VudCA9IHN1bShWQUwpKSAlPiVcbiAgdW5ncm91cCgpICU+JVxuICBtdXRhdGUocG9ydGlvbiA9IFZBTC90b3RhbHNlbnQpICU+JVxuICBtdXRhdGUocG9ydGlvbiA9IGlmZWxzZShpcy5uYShwb3J0aW9uKT09VFJVRSwgMCwgcG9ydGlvbikpICU+JVxuICBzZWxlY3QoLVZBTCwgLXRvdGFsc2VudClcbiNSZXNoYXBlIHRvIG1hdHJpeCBmb3JtLlxuYmFzZSA8LSBzcHJlYWQoYmFzZSwgY2RwLCBwb3J0aW9uLCBmaWxsID0gTkEsIGNvbnZlcnQgPSBUUlVFLCAgZHJvcCA9IFRSVUUsIHNlcCA9IE5VTEwpXG5iYXNlJHllYXIgPC0geXJcbmJhc2VbaXMubmEoYmFzZSk9PVRSVUVdIDwtIDBcblxuI0FwcGVuZGluZyB5ZWFycy5cbmlmICh5cj09MjAwNyl7XG5iYXNlMSA8LSBiYXNlICAgXG5iYXNlMSR5ZWFyIDwtIDIwMDJcbmZpbmFsIDwtIHJiaW5kKGZpbmFsLCBiYXNlMSwgYmFzZSlcbn1cbmlmICh5cj09MjAxMil7ZmluYWwgPC0gcmJpbmQoZmluYWwsIGJhc2UpfVxufVxuYGBgIn0= -->
-<pre class="r"><code>final &lt;- c()
-for (yr in c(2007, 2012)){
-if (yr == 2007){
-# Import CFS data with both NAICS and CFS codes
-base &lt;- read_excel(paste(&quot;0-Raw_Data/CFS/NAICS to CFS Crosswalk.xlsx&quot;, sep=&quot;&quot;))
-# Re-code manufacturing as NAICS 3 and de-string NAICS code
-base &lt;- base %&gt;%
-  filter(GEOTYPE == 1) %&gt;%
-  # Redistribution matrix for 2002 is the same as the one for 2007.
-  dplyr::rename(NAICS2007 = NAICS2002) %&gt;%
-  dplyr::rename(NAICS2007_MEANING = NAICS2002_MEANING) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 == &quot;31-33&quot;, &quot;3&quot;,NAICS2007)) %&gt;%
-  mutate(NAICS2007 = as.numeric(NAICS2007)) %&gt;%
-  select(NAICS2007, NAICS2007_MEANING, COMM, COMM_MEANING, VAL)
-}
-if (yr == 2012){
-# Import CFS data with both NAICS and CFS codes.
-base &lt;- read.csv(paste(&quot;0-Raw_Data/CFS//CFS_2012_00A18_with_ann.csv&quot;, sep=&quot;&quot;), header = TRUE, sep = &quot;,&quot;, dec = &quot;.&quot;)
-base &lt;- base[(2:dim(base)[1]), ]
-# Re-code manufacturing as NAICS 3 and de-string NAICS code
-base &lt;- base %&gt;%
-  dplyr::rename(NAICS2012=NAICS.id) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == &quot;31-33&quot;, &quot;3&quot;,NAICS2012)) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == &quot;4931(CF1)&quot;, &quot;4931&quot;,NAICS2012)) %&gt;%
-  mutate(NAICS2012 = as.numeric(NAICS2012))
-# Keep just relevant variables: NAICS code, SCTG code, and value shipped
-base &lt;- base %&gt;%
-  dplyr::rename(NAICS2012_MEANING = NAICS.display.label) %&gt;%
-  dplyr::rename(COMM = COMM.id) %&gt;%
-  dplyr::rename(COMM_MEANING = COMM.display.label) %&gt;%
-  mutate(VAL = as.numeric(VAL)) %&gt;%
-  select(NAICS2012, NAICS2012_MEANING, COMM, COMM_MEANING, VAL)
-}
-
-#Re-code some commodity categories. Drop &quot;all commodities&quot; category and &quot;unknown commodity&quot; category.
-base &lt;- base %&gt;%
-  mutate(COMM = as.character(COMM)) %&gt;%
-  mutate(COMM = ifelse(COMM == &quot;07-R&quot;, &quot;07&quot;, COMM)) %&gt;%
-  mutate(COMM = ifelse(COMM == &quot;08-R&quot;, &quot;08&quot;, COMM)) %&gt;%
-  mutate(COMM = ifelse(COMM == &quot;17-R&quot;, &quot;17&quot;, COMM)) %&gt;%
-  mutate(COMM = ifelse(COMM == &quot;18-R&quot;, &quot;18&quot;, COMM)) %&gt;%
-  mutate(COMM = as.numeric(COMM)) %&gt;%
-  filter(COMM != 0 &amp; COMM != 99)
-#Drop superfluous NAICS and turn them all into 3 digit numbers
-if (yr == 2007){
-base &lt;- base %&gt;%
-  filter(NAICS2007 != 3 &amp; NAICS2007 != 423 &amp; NAICS2007 != 424) %&gt;%
-  filter(NAICS2007 &lt;= 4230 | NAICS2007 &gt;= 4250) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 == 42, 421, NAICS2007)) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 == 4541, 454, NAICS2007)) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 == 45431, 455, NAICS2007)) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 == 4931, 493, NAICS2007)) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 == 5111, 511, NAICS2007)) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 == 551114, 551, NAICS2007)) %&gt;%
-  #Map to 13 sectors.
-  mutate(NAICS2007 = as.numeric(recode(NAICS2007, &#39;551&#39;=&quot;600&quot;, &#39;311&#39;=&quot;1&quot;, &#39;312&#39;=&quot;1&quot;, &#39;313&#39;=&quot;2&quot;, &#39;314&#39;=&quot;2&quot;, &#39;315&#39;=&quot;2&quot;, &#39;316&#39;=&quot;2&quot;, &#39;321&#39;=&quot;3&quot;, &#39;322&#39;=&quot;3&quot;, &#39;323&#39;=&quot;3&quot;, &#39;324&#39;=&quot;4&quot;, &#39;325&#39;=&quot;5&quot;, &#39;326&#39;=&quot;6&quot;, &#39;327&#39;=&quot;7&quot;, &#39;331&#39;=&quot;8&quot;, &#39;332&#39;=&quot;8&quot;, &#39;333&#39;=&quot;9&quot;, &#39;334&#39;=&quot;10&quot;, &#39;335&#39;=&quot;10&quot;, &#39;336&#39;=&quot;11&quot;, &#39;337&#39;=&quot;12&quot;, &#39;339&#39;=&quot;12&quot;, &#39;421&#39;=&quot;14&quot;, &#39;454&#39;=&quot;14&quot;, &#39;455&#39;=&quot;14&quot;, &#39;493&#39;=&quot;22&quot;, &#39;511&#39;=&quot;16&quot;, &#39;551&#39;=&quot;22&quot;))) %&gt;%
-  filter(is.na(NAICS2007)==FALSE) %&gt;%
-  mutate(NAICS2007 = ifelse(NAICS2007 &gt;=13 &amp; NAICS2007 &lt;= 22, 13, NAICS2007)) %&gt;%
-  dplyr::rename(cdp = NAICS2007) 
-}
-#Drop superfluous NAICS and turn them all into 3 digit numbers
-if (yr == 2012){
-base &lt;- base %&gt;%
-  filter(NAICS2012 != 3 &amp; NAICS2012 != 423 &amp; NAICS2012 != 424) %&gt;%
-  filter(NAICS2012 &lt;= 4230 | NAICS2012 &gt;= 4250) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == 42, 421, NAICS2012)) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == 4541, 454, NAICS2012)) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == 45431, 455, NAICS2012)) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == 4931, 493, NAICS2012)) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == 5111, 511, NAICS2012)) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 == 551114, 551, NAICS2012)) %&gt;%
-  #Map to 13 sectors.
-  mutate(NAICS2012 = as.numeric(recode(NAICS2012, &#39;551&#39;=&quot;600&quot;, &#39;311&#39;=&quot;1&quot;, &#39;312&#39;=&quot;1&quot;, &#39;313&#39;=&quot;2&quot;, &#39;314&#39;=&quot;2&quot;, &#39;315&#39;=&quot;2&quot;, &#39;316&#39;=&quot;2&quot;, &#39;321&#39;=&quot;3&quot;, &#39;322&#39;=&quot;3&quot;, &#39;323&#39;=&quot;3&quot;, &#39;324&#39;=&quot;4&quot;, &#39;325&#39;=&quot;5&quot;, &#39;326&#39;=&quot;6&quot;, &#39;327&#39;=&quot;7&quot;, &#39;331&#39;=&quot;8&quot;, &#39;332&#39;=&quot;8&quot;, &#39;333&#39;=&quot;9&quot;, &#39;334&#39;=&quot;10&quot;, &#39;335&#39;=&quot;10&quot;, &#39;336&#39;=&quot;11&quot;, &#39;337&#39;=&quot;12&quot;, &#39;339&#39;=&quot;12&quot;, &#39;421&#39;=&quot;14&quot;, &#39;454&#39;=&quot;14&quot;, &#39;455&#39;=&quot;14&quot;, &#39;493&#39;=&quot;22&quot;, &#39;511&#39;=&quot;16&quot;, &#39;551&#39;=&quot;22&quot;))) %&gt;%
-  filter(is.na(NAICS2012)==FALSE) %&gt;%
-  mutate(NAICS2012 = ifelse(NAICS2012 &gt;=13 &amp; NAICS2012 &lt;= 22, 13, NAICS2012)) %&gt;%
-  dplyr::rename(cdp = NAICS2012) 
-}
-
-#Proportion of the amount of commodity &quot;c&quot; associated with NAICS &quot;n&quot;, with respect to the total amount of commodity &quot;c&quot;.
-base$cdp &lt;- paste(&quot;portion&quot;, base$cdp, sep=&quot;&quot;)  
-base &lt;- base %&gt;%
-  group_by(cdp, COMM) %&gt;% 
-  #Replace missing values with zeros.
-  mutate(VAL = ifelse(is.na(VAL)==TRUE, 0, VAL)) %&gt;%
-  mutate(VAL = sum(VAL)) %&gt;%
-  ungroup() %&gt;%
-  distinct(cdp, COMM, .keep_all = TRUE) %&gt;%
-  select(COMM, cdp, VAL) %&gt;%
-  arrange(COMM, cdp, VAL) %&gt;%
-  group_by(COMM) %&gt;%
-  mutate(totalsent = sum(VAL)) %&gt;%
-  ungroup() %&gt;%
-  mutate(portion = VAL/totalsent) %&gt;%
-  mutate(portion = ifelse(is.na(portion)==TRUE, 0, portion)) %&gt;%
-  select(-VAL, -totalsent)
-#Reshape to matrix form.
-base &lt;- spread(base, cdp, portion, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
-base$year &lt;- yr
-base[is.na(base)==TRUE] &lt;- 0
-
-#Appending years.
-if (yr==2007){
-base1 &lt;- base   
-base1$year &lt;- 2002
-final &lt;- rbind(final, base1, base)
-}
-if (yr==2012){final &lt;- rbind(final, base)}
-}</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiV2FybmluZzogVGhlcmUgd2FzIDEgd2FybmluZyBpbiBgbXV0YXRlKClgLlxuaSBJbiBhcmd1bWVudDogYE5BSUNTMjAwNyA9IGFzLm51bWVyaWMoLi4uKWAuXG5DYXVzZWQgYnkgd2FybmluZzpcbiEgVW5yZXBsYWNlZCB2YWx1ZXMgdHJlYXRlZCBhcyBOQSBhcyBgLnhgIGlzIG5vdCBjb21wYXRpYmxlLlxuUGxlYXNlIHNwZWNpZnkgcmVwbGFjZW1lbnRzIGV4aGF1c3RpdmVseSBvciBzdXBwbHkgYC5kZWZhdWx0YC5XYXJuaW5nOiBUaGVyZSB3YXMgMSB3YXJuaW5nIGluIGBtdXRhdGUoKWAuXG5pIEluIGFyZ3VtZW50OiBgVkFMID0gYXMubnVtZXJpYyhWQUwpYC5cbkNhdXNlZCBieSB3YXJuaW5nOlxuISBOQXMgaW50cm9kdWNlZCBieSBjb2VyY2lvbldhcm5pbmc6IFRoZXJlIHdhcyAxIHdhcm5pbmcgaW4gYG11dGF0ZSgpYC5cbmkgSW4gYXJndW1lbnQ6IGBOQUlDUzIwMTIgPSBhcy5udW1lcmljKC4uLilgLlxuQ2F1c2VkIGJ5IHdhcm5pbmc6XG4hIFVucmVwbGFjZWQgdmFsdWVzIHRyZWF0ZWQgYXMgTkEgYXMgYC54YCBpcyBub3QgY29tcGF0aWJsZS5cblBsZWFzZSBzcGVjaWZ5IHJlcGxhY2VtZW50cyBleGhhdXN0aXZlbHkgb3Igc3VwcGx5IGAuZGVmYXVsdGAuXG4ifQ== -->
-<pre><code>Warning: There was 1 warning in `mutate()`.
-i In argument: `NAICS2007 = as.numeric(...)`.
-Caused by warning:
-! Unreplaced values treated as NA as `.x` is not compatible.
-Please specify replacements exhaustively or supply `.default`.Warning: There was 1 warning in `mutate()`.
-i In argument: `VAL = as.numeric(VAL)`.
-Caused by warning:
-! NAs introduced by coercionWarning: There was 1 warning in `mutate()`.
-i In argument: `NAICS2012 = as.numeric(...)`.
-Caused by warning:
-! Unreplaced values treated as NA as `.x` is not compatible.
-Please specify replacements exhaustively or supply `.default`.</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuI1NlbGVjdCBjb21tb2RpdHkgY2F0ZWdvcmllcyBhbmQgZWFjaCBzZWN0b3IgcG9ydGlvbnMuXG5maW5hbCA8LSBmaW5hbCAlPiUgXG4gIHNlbGVjdChDT01NLCBwb3J0aW9uMSwgcG9ydGlvbjIsIHBvcnRpb24zLCBwb3J0aW9uNCwgcG9ydGlvbjUsIHBvcnRpb242LCBwb3J0aW9uNywgcG9ydGlvbjgsIHBvcnRpb245LCBwb3J0aW9uMTAsIHBvcnRpb24xMSwgcG9ydGlvbjEyLCBwb3J0aW9uMTMsIHllYXIpICU+JVxuICBhcnJhbmdlKHllYXIsIENPTU0pXG53cml0ZS50YWJsZShmaW5hbCwgZmlsZSA9IHBhc3RlKFwiMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGEvQ0ZTYXBwb3J0aW9ubWVudC5jc3ZcIiwgc2VwPVwiXCIpLCBzZXAgPSBcIixcIiwgcm93Lm5hbWVzID0gRkFMU0UpXG5cblxuIyAqIFRoZSAyMiBzZWN0b3JzIGluIENEUCBhcmU6XG4jIFxuIyAqIDAxKSBGb29kLCBCZXZlcmFnZSwgYW5kIFRvYmFjY28gUHJvZHVjdHMgKE5BSUNTIDMxMS0zMTIpOyBcbiMgKiAwMikgVGV4dGlsZSwgVGV4dGlsZSBQcm9kdWN0IE1pbGxzLCBBcHBhcmVsLCBMZWF0aGVyLCBhbmQgQWxsaWVkIFByb2R1Y3RzIChOQUlDUyAzMTMtMzE2KTtcbiMgKiAwMykgV29vZCBQcm9kdWN0cywgUGFwZXIsIFByaW50aW5nLCBhbmQgUmVsYXRlZCBTdXBwb3J0IEFjdGl2aXRpZXMgKE5BSUNTIDMyMS0zMjMpOyBcbiMgKiAwNCkgUGV0cm9sZXVtIGFuZCBDb2FsIFByb2R1Y3RzIChOQUlDUyAzMjQpOyBcbiMgKiAwNSkgQ2hlbWljYWwgKE5BSUNTIDMyNSk7IFxuIyAqIDA2KSBQbGFzdGljcyBhbmQgUnViYmVyIFByb2R1Y3RzIChOQUlDUyAzMjYpOyBcbiMgKiAwNykgTm9ubWV0YWxsaWMgTWluZXJhbCBQcm9kdWN0cyAoTkFJQ1MgMzI3KTtcbiMgKiAwOCkgUHJpbWFyeSBNZXRhbCBhbmQgRmFicmljYXRlZCBNZXRhbCBQcm9kdWN0cyAoTkFJQ1MgMzMxLTMzMik7IFxuIyAqIDA5KSBNYWNoaW5lcnkgKE5BSUNTIDMzMyk7XG4jICogMTApIENvbXB1dGVyIGFuZCBFbGVjdHJvbmljIFByb2R1Y3RzLCBhbmQgRWxlY3RyaWNhbCBFcXVpcG1lbnQgYW5kIEFwcGxpYW5jZSAoTkFJQ1MgMzM0LTMzNSk7IFxuIyAqIDExKSBUcmFuc3BvcnRhdGlvbiBFcXVpcG1lbnQgKE5BSUNTIDMzNik7IFxuIyAqIDEyKSBGdXJuaXR1cmUgYW5kIFJlbGF0ZWQgUHJvZHVjdHMsIGFuZCBNaXNjZWxsYW5lb3VzIE1hbnVmYWN0dXJpbmcgKE5BSUNTIDMzNy0zMzkpOyBcbiMgKiAxNCkgVHJhZGUgKE5BSUNTIDQyLTQ1KTtcbiMgKiAxMykgQ29uc3RydWN0aW9uIChOQUlDUyAyMyk7XG4jICogMTUpIFRyYW5zcG9ydCBTZXJ2aWNlcyAoTkFJQ1MgNDgxLTQ4OCk7IFxuIyAqIDE2KSBJbmZvcm1hdGlvbiBTZXJ2aWNlcyAoTkFJQ1MgNTExLTUxOCk7XG4jICogMTcpIEZpbmFuY2UgYW5kIEluc3VyYW5jZSAoTkFJQ1MgNTIxLTUyNSk7IFxuIyAqIDE4KSBSZWFsIEVzdGF0ZSAoTkFJQ1MgNTMxLTUzMyk7IFxuIyAqIDE5KSBFZHVjYXRpb24gKE5BSUNTIDYxKTsgXG4jICogMjApIEhlYWx0aCBDYXJlIChOQUlDUyA2MjEtNjI0KTsgXG4jICogMjEpIEFjY29tbW9kYXRpb24gYW5kIEZvb2QgU2VydmljZXMgKE5BSUNTIDcyMS03MjIpOyBcbiMgKiAyMikgT3RoZXIgU2VydmljZXMgKE5BSUNTIDQ5MywgNTQxLCA1NSwgNTYxLCA1NjIsIDcxMS03MTMsIDgxMS04MTQpO1xuIyAqMjMuXHQoTkFJQ1MgMTExLTExNSkgQWdyaWN1bHR1cmUsIEZvcmVzdHJ5LCBGaXNoaW5nLCBhbmQgSHVudGluZyAoYzEpXG4jICpNaW5pbmcsIFF1YXJyeWluZywgYW5kIE9pbCBhbmQgR2FzIEV4dHJhY3Rpb24gKGMyKS5cbmBgYCJ9 -->
-<pre class="r"><code>#Select commodity categories and each sector portions.
-final &lt;- final %&gt;% 
-  select(COMM, portion1, portion2, portion3, portion4, portion5, portion6, portion7, portion8, portion9, portion10, portion11, portion12, portion13, year) %&gt;%
-  arrange(year, COMM)
-write.table(final, file = paste(&quot;1-Intermediate_Processed_Data/CFSapportionment.csv&quot;, sep=&quot;&quot;), sep = &quot;,&quot;, row.names = FALSE)
-
-
-# * The 22 sectors in CDP are:
-# 
-# * 01) Food, Beverage, and Tobacco Products (NAICS 311-312); 
-# * 02) Textile, Textile Product Mills, Apparel, Leather, and Allied Products (NAICS 313-316);
-# * 03) Wood Products, Paper, Printing, and Related Support Activities (NAICS 321-323); 
-# * 04) Petroleum and Coal Products (NAICS 324); 
-# * 05) Chemical (NAICS 325); 
-# * 06) Plastics and Rubber Products (NAICS 326); 
-# * 07) Nonmetallic Mineral Products (NAICS 327);
-# * 08) Primary Metal and Fabricated Metal Products (NAICS 331-332); 
-# * 09) Machinery (NAICS 333);
-# * 10) Computer and Electronic Products, and Electrical Equipment and Appliance (NAICS 334-335); 
-# * 11) Transportation Equipment (NAICS 336); 
-# * 12) Furniture and Related Products, and Miscellaneous Manufacturing (NAICS 337-339); 
-# * 14) Trade (NAICS 42-45);
-# * 13) Construction (NAICS 23);
-# * 15) Transport Services (NAICS 481-488); 
-# * 16) Information Services (NAICS 511-518);
-# * 17) Finance and Insurance (NAICS 521-525); 
-# * 18) Real Estate (NAICS 531-533); 
-# * 19) Education (NAICS 61); 
-# * 20) Health Care (NAICS 621-624); 
-# * 21) Accommodation and Food Services (NAICS 721-722); 
-# * 22) Other Services (NAICS 493, 541, 55, 561, 562, 711-713, 811-814);
-# *23.  (NAICS 111-115) Agriculture, Forestry, Fishing, and Hunting (c1)
-# *Mining, Quarrying, and Oil and Gas Extraction (c2).</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<div id="cfs-state-to-state-manufacturing-trade-flows" class="section level2" number="2.1">
-<h2><span class="header-section-number">2.1</span> CFS state-to-state
-manufacturing trade flows</h2>
-<p>The following code assigns state-to-state trade flows from CFS to the
-NAICS level. We then calculate <span class="math inline">\(X_{ij,k}^{CFS}\)</span> for the 12 manufacturing
-sectors (where <span class="math inline">\(X_{ij,k}^{CFS}\)</span> is
-the sales of state <span class="math inline">\(i\)</span> to state <span class="math inline">\(j\)</span> in sector <span class="math inline">\(k\)</span> according to CFS). For simplicity, we
-calculate weights for 13 sectors here, and then we drop services in the
-last chunk to keep only our 12 manufacturing sectors.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuI01hdHJpeCBmb3IgcmVkaXN0cmlidXRpb24uXG5DRlNhcHBvcnRpb25tZW50IDwtIHJlYWQuY3N2KHBhc3RlKFwiMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGEvQ0ZTYXBwb3J0aW9ubWVudC5jc3ZcIiwgc2VwPVwiXCIpLCBoZWFkZXIgPSBUUlVFLCBzZXAgPSBcIixcIiwgZGVjID0gXCIuXCIpXG5maW5hbCA8LSBjKClcbiNTdGF0ZXMgbGlzdGVkIGFzIG9yaWdpbnMgYW5kIGFzIGRlc3RpbmF0aW9ucy5cbnN0YXRlZmlwcyA8LSByZWFkLmNzdihwYXN0ZShcIjAtUmF3X0RhdGEvRmlwcy9zdGF0ZWZpcHMuY3N2XCIsIHNlcD1cIlwiKSwgaGVhZGVyID0gVFJVRSwgc2VwID0gXCIsXCIsIGRlYyA9IFwiLlwiKVxubGlzdCA8LSBzdGF0ZWZpcHMkc3RhdGVuYW1lXG5vcmlnIDwtIHN0YXRlZmlwcyAlPiUgXG4gIGRwbHlyOjpyZW5hbWUob3JpZ19zdGF0ZSA9IHN0YXRlZmlwKSAlPiVcbiAgZHBseXI6OnJlbmFtZShvcmlnaW4gPSBzdGF0ZW5hbWUpXG5kZXN0IDwtIHN0YXRlZmlwcyAlPiUgXG4gIGRwbHlyOjpyZW5hbWUoZGVzdF9zdGF0ZSA9IHN0YXRlZmlwKSAlPiVcbiAgZHBseXI6OnJlbmFtZShkZXN0aW5hdGlvbiA9IHN0YXRlbmFtZSkgXG5cbmZvciAoeXIgaW4gYygyMDAyLCAyMDA3LCAyMDEyKSl7XG4jICogSW1wb3J0IENGUyBkYXRhIGZyb20gb3JpZ2luYWwgdGFibGVcbiMgKlwiU1RBVEUgVGFibGUgMjIuIFNoaXBtZW50IENoYXJhY3RlcmlzdGljcyBieSBEZXN0aW5hdGlvbiBhbmQgVHdvLURpZ2l0IENvbW1vZGl0eSBmb3IgU3RhdGUgb2YgT3JpZ2luOiAyMDAyXCJcbiMgKlwiT3JpZ2luIFN0YXRlXCIsXCJEZXN0aW5hdGlvbiBTdGF0ZVwiLFwiQ29kZVwiLFwiU0NURyAoMi1EaWdpdClcIixcIlZhbHVlICgkbWlsKSAwMlwiLFwiVmFsdWUgJSAwMlwiLFwiVG9ucyAodGhvdXMpIDAyXCIsXCJUb25zICUgMDJcIixcIlRvbi1taWxlcyAobWlsKSAwMlwiLFwiVG9uLW1pbGVzICUgMDJcIixcIkF2ZyBtaWxlcyAwMlwiICBcbmlmICh5ciA9PSAyMDAyKXtcbmJhc2UgPC0gZGF0YS5mcmFtZShyZWFkX2V4Y2VsKHBhc3RlKFwiMC1SYXdfRGF0YS9DRlMvQ0ZTMjAwMm1pbmUueGxzeFwiLHNlcD1cIlwiKSwgc2hlZXQgPSBcInN0dGJsMTQxMjI4MTcyNFwiLCBza2lwID0gMSkpXG4jIFJlbmFtaW5nIHZhcmlhYmxlc1xuYmFzZSA8LSBiYXNlICU+JVxuICBkcGx5cjo6cmVuYW1lKCAgIG9yaWdpbiA9IE9yaWdpbi5TdGF0ZSwgZGVzdGluYXRpb24gPSBEZXN0aW5hdGlvbi5TdGF0ZSwgY29tbW9kaXR5ID0gQ29kZSwgdmFsdWUgPSBWYWx1ZS4uLm1pbC4uMDIpXG5iYXNlJG9yaWdpbiA8LSBnc3ViKFwiLlwiLCBcIlwiLCBiYXNlJG9yaWdpbiwgZml4ZWQgPSBUUlVFKVxuYmFzZSRkZXN0aW5hdGlvbiA8LSBnc3ViKFwiLlwiLCBcIlwiLCBiYXNlJGRlc3RpbmF0aW9uLCBmaXhlZCA9IFRSVUUpXG5iYXNlIDwtIGJhc2UgJT4lXG4gICNGcm9tIHN0YXRlIHRvIHN0YXRlIG9ubHkuXG4gIGZpbHRlcihvcmlnaW4gJWluJSBsaXN0ICYgZGVzdGluYXRpb24gJWluJSBsaXN0KSAlPiVcbiAgbXV0YXRlKHZhbHVlID0gYXMubnVtZXJpYyh2YWx1ZSkpXG59XG5pZiAoeXIgPT0gMjAwNyl7XG5iYXNlIDwtIHJlYWRfZXhjZWwocGFzdGUoXCIwLVJhd19EYXRhL0NGUy9DRlMyMDA3Lnhsc3hcIiwgc2VwPVwiXCIpLCBzaGVldCA9IFwiQ0YwNzAwQTIyXCIpXG4jIFJlbmFtaW5nIHZhcmlhYmxlc1xuYmFzZSA8LSBiYXNlICU+JVxuICBkcGx5cjo6cmVuYW1lKG9yaWdpbiA9IEdFT0dSQVBIWSwgZGVzdGluYXRpb24gPSBEREVTVEdFT19NRUFOSU5HLCBjb21tb2RpdHkgPSBDT01NLCB2YWx1ZSA9IFZBTCkgJT4lXG4gICNGcm9tIHN0YXRlIHRvIHN0YXRlIG9ubHkuXG4gIGZpbHRlcihvcmlnaW4gJWluJSBsaXN0ICYgZGVzdGluYXRpb24gJWluJSBsaXN0KVxufVxuaWYgKHlyID09IDIwMTIpe1xuYmFzZSA8LSByZWFkLmNzdihwYXN0ZShcIjAtUmF3X0RhdGEvQ0ZTL0NGMTIwMEEyNC5jc3ZcIiwgc2VwPVwiXCIpLCBoZWFkZXIgPSBUUlVFLCBzZXAgPSBcIixcIiwgZGVjID0gXCIuXCIpICBcbiMgUmVuYW1pbmcgdmFyaWFibGVzXG5iYXNlIDwtIGJhc2UgJT4lXG4gIGRwbHlyOjpyZW5hbWUob3JpZ2luID0gZ2VvX3R0bCwgZGVzdGluYXRpb24gPSBkZGVzdGdlb190dGwsIGNvbW1vZGl0eSA9IGNvbW0sIHZhbHVlID0gdmFsKSAlPiVcbiAgI0Zyb20gc3RhdGUgdG8gc3RhdGUgb25seS5cbiAgZmlsdGVyKG9yaWdpbiAlaW4lIGxpc3QgJiBkZXN0aW5hdGlvbiAlaW4lIGxpc3QpXG59XG4jQ29udmVydCBvcmlnaW4vZGVzdCB0byBmaXBzIGNvZGVzICBcbmJhc2UgPC0gYmFzZSAlPiVcbiAgc2VsZWN0KG9yaWdpbiwgZGVzdGluYXRpb24sIHZhbHVlLCBjb21tb2RpdHkpICU+JVxuICAjT25seSBzdGF0ZXMgYXMgb3JpZ2lucy5cbiAgZmlsdGVyKG9yaWdpbiAhPSBcIlVuaXRlZCBTdGF0ZXNcIiAmIG9yaWdpbiAhPSBcIlRvdGFsXCIgJiBvcmlnaW4gIT0gXCJEaXN0cmljdCBvZiBDb2x1bWJpYVwiKSAlPiVcbiAgI09ubHkgc3RhdGVzIGFzIGRlc3RpbmF0aW9ucy5cbiAgZmlsdGVyKGRlc3RpbmF0aW9uICE9IFwiVW5pdGVkIFN0YXRlc1wiICYgZGVzdGluYXRpb24gIT0gXCJUb3RhbFwiICYgZGVzdGluYXRpb24gIT0gXCJEaXN0cmljdCBvZiBDb2x1bWJpYVwiKSAlPiVcbiAgbXV0YXRlKGNvbW1vZGl0eSA9IGFzLmNoYXJhY3Rlcihjb21tb2RpdHkpKVxuYmFzZSRvcmlnaW4gPC0gZ3N1YihcIiBcIiwgXCJcIiwgYmFzZSRvcmlnaW4sIGZpeGVkID0gVFJVRSlcbmJhc2UkZGVzdGluYXRpb24gPC0gZ3N1YihcIiBcIiwgXCJcIiwgYmFzZSRkZXN0aW5hdGlvbiwgZml4ZWQgPSBUUlVFKVxuXG4jIEdldCB0d28gZGlnaXQgY29kZXNcbmJhc2UgPC0gYmFzZSAlPiUgXG4gIG11dGF0ZShjb2RlPSBhcy5udW1lcmljKHN1YnN0cih4PWNvbW1vZGl0eSwgc3RhcnQ9MSwgc3RvcD0yKSkpICU+JVxuICBzZWxlY3Qob3JpZ2luLCBkZXN0aW5hdGlvbiwgY29kZSwgdmFsdWUpICU+JVxuICBkcGx5cjo6cmVuYW1lKENPTU0gPSBjb2RlKSAlPiVcbiAgZmlsdGVyKENPTU0gIT0gOTkgJiBDT01NICE9IDApICU+JSAjdGFrZXMgb3V0IE5BIGFzIHdlbGxcbiAgbXV0YXRlKHllYXIgPSB5cikgJT4lXG4gICNNZXJnZSB3aXRoIGRpc3RyaWJ1dGlvbiBtYXRyaXguXG4gIGxlZnRfam9pbihDRlNhcHBvcnRpb25tZW50LCBieT1jKCdDT01NJz0nQ09NTScsICd5ZWFyJz0neWVhcicpKVxuI1Jlc2hhcGUgdG8gbG9uZyB0byBlYXNlIHRoZSBjYWxjdWxhdGlvbiBvZiBYX3tpaixrfV57Q0ZTfS5cbmJhc2UgPC0gbWVsdChiYXNlLCBpZC52YXJzPWMoXCJvcmlnaW5cIiwgXCJkZXN0aW5hdGlvblwiLCBcIkNPTU1cIiwgXCJ2YWx1ZVwiLCBcInllYXJcIiksIHZhcmlhYmxlLm5hbWU9XCJwb3J0aW9uXCIsIHZhbHVlLm5hbWUgPSBcInBvcnRpb25fdmFsdWVcIilcbiMgQ2FsY3VsYXRlIFhfe2lqLGt9XntDRlN9LlxuYmFzZSA8LSBiYXNlICU+JVxuICBtdXRhdGUodmFsdWUgPSBpZmVsc2UoaXMubmEodmFsdWUpID09IFRSVUUsIDAsIHZhbHVlKSkgJT4lXG4gIG11dGF0ZShwb3J0aW9uX3ZhbHVlID0gcG9ydGlvbl92YWx1ZSAqIHZhbHVlKSAlPiVcbiAgc2VsZWN0KC12YWx1ZSwgLUNPTU0pICU+JVxuICBncm91cF9ieShvcmlnaW4sIGRlc3RpbmF0aW9uLCB5ZWFyLCBwb3J0aW9uKSAlPiVcbiAgbXV0YXRlKHBvcnRpb25fdmFsdWUgPSBzdW0ocG9ydGlvbl92YWx1ZSkpICU+JVxuICB1bmdyb3VwKCkgJT4lXG4gIGRpc3RpbmN0KG9yaWdpbiwgZGVzdGluYXRpb24sIHllYXIsIHBvcnRpb24sIC5rZWVwX2FsbCA9IFRSVUUpICU+JVxuICBtdXRhdGUoc2VjdG9yID0gYXMubnVtZXJpYyhzdWJzdHIoeD1wb3J0aW9uLCBzdGFydD04LCBzdG9wPTkpKSkgJT4lXG4gIHNlbGVjdCgtcG9ydGlvbikgJT4lXG4gIG11dGF0ZShvcmlnaW4gPSBwYXN0ZShcInRyYWRlXCIsb3JpZ2luLCBzZXA9XCJcIikpXG4jUmVzaGFwZSB0byB3aWRlLlxuYmFzZSA8LSBzcHJlYWQoYmFzZSwgb3JpZ2luLCBwb3J0aW9uX3ZhbHVlLCBmaWxsID0gMCwgY29udmVydCA9IFRSVUUsICBkcm9wID0gVFJVRSwgc2VwID0gTlVMTClcbmJhc2UgPC0gYmFzZSAlPiVcbiAgYXJyYW5nZShzZWN0b3IsIGRlc3RpbmF0aW9uKSAlPiVcbiAgZHBseXI6OnJlbmFtZShpbXBvcnRlciA9IGRlc3RpbmF0aW9uKSAlPiVcbiAgc2VsZWN0KHllYXIsIGV2ZXJ5dGhpbmcoKSlcblxuI0FwcGVuZGluZyB5ZWFycy5cbmZpbmFsIDwtIHJiaW5kKGZpbmFsLCBiYXNlKVxufVxuYGBgIn0= -->
-<pre class="r"><code>#Matrix for redistribution.
-CFSapportionment &lt;- read.csv(paste(&quot;1-Intermediate_Processed_Data/CFSapportionment.csv&quot;, sep=&quot;&quot;), header = TRUE, sep = &quot;,&quot;, dec = &quot;.&quot;)
-final &lt;- c()
-#States listed as origins and as destinations.
-statefips &lt;- read.csv(paste(&quot;0-Raw_Data/Fips/statefips.csv&quot;, sep=&quot;&quot;), header = TRUE, sep = &quot;,&quot;, dec = &quot;.&quot;)
-list &lt;- statefips$statename
-orig &lt;- statefips %&gt;% 
-  dplyr::rename(orig_state = statefip) %&gt;%
-  dplyr::rename(origin = statename)
-dest &lt;- statefips %&gt;% 
-  dplyr::rename(dest_state = statefip) %&gt;%
-  dplyr::rename(destination = statename) 
-
-for (yr in c(2002, 2007, 2012)){
-# * Import CFS data from original table
-# *&quot;STATE Table 22. Shipment Characteristics by Destination and Two-Digit Commodity for State of Origin: 2002&quot;
-# *&quot;Origin State&quot;,&quot;Destination State&quot;,&quot;Code&quot;,&quot;SCTG (2-Digit)&quot;,&quot;Value ($mil) 02&quot;,&quot;Value % 02&quot;,&quot;Tons (thous) 02&quot;,&quot;Tons % 02&quot;,&quot;Ton-miles (mil) 02&quot;,&quot;Ton-miles % 02&quot;,&quot;Avg miles 02&quot;  
-if (yr == 2002){
-base &lt;- data.frame(read_excel(paste(&quot;0-Raw_Data/CFS/CFS2002mine.xlsx&quot;,sep=&quot;&quot;), sheet = &quot;sttbl1412281724&quot;, skip = 1))
-# Renaming variables
-base &lt;- base %&gt;%
-  dplyr::rename(   origin = Origin.State, destination = Destination.State, commodity = Code, value = Value...mil..02)
-base$origin &lt;- gsub(&quot;.&quot;, &quot;&quot;, base$origin, fixed = TRUE)
-base$destination &lt;- gsub(&quot;.&quot;, &quot;&quot;, base$destination, fixed = TRUE)
-base &lt;- base %&gt;%
-  #From state to state only.
-  filter(origin %in% list &amp; destination %in% list) %&gt;%
-  mutate(value = as.numeric(value))
-}
-if (yr == 2007){
-base &lt;- read_excel(paste(&quot;0-Raw_Data/CFS/CFS2007.xlsx&quot;, sep=&quot;&quot;), sheet = &quot;CF0700A22&quot;)
-# Renaming variables
-base &lt;- base %&gt;%
-  dplyr::rename(origin = GEOGRAPHY, destination = DDESTGEO_MEANING, commodity = COMM, value = VAL) %&gt;%
-  #From state to state only.
-  filter(origin %in% list &amp; destination %in% list)
-}
-if (yr == 2012){
-base &lt;- read.csv(paste(&quot;0-Raw_Data/CFS/CF1200A24.csv&quot;, sep=&quot;&quot;), header = TRUE, sep = &quot;,&quot;, dec = &quot;.&quot;)  
-# Renaming variables
-base &lt;- base %&gt;%
-  dplyr::rename(origin = geo_ttl, destination = ddestgeo_ttl, commodity = comm, value = val) %&gt;%
-  #From state to state only.
-  filter(origin %in% list &amp; destination %in% list)
-}
-#Convert origin/dest to fips codes  
-base &lt;- base %&gt;%
-  select(origin, destination, value, commodity) %&gt;%
-  #Only states as origins.
-  filter(origin != &quot;United States&quot; &amp; origin != &quot;Total&quot; &amp; origin != &quot;District of Columbia&quot;) %&gt;%
-  #Only states as destinations.
-  filter(destination != &quot;United States&quot; &amp; destination != &quot;Total&quot; &amp; destination != &quot;District of Columbia&quot;) %&gt;%
-  mutate(commodity = as.character(commodity))
-base$origin &lt;- gsub(&quot; &quot;, &quot;&quot;, base$origin, fixed = TRUE)
-base$destination &lt;- gsub(&quot; &quot;, &quot;&quot;, base$destination, fixed = TRUE)
-
-# Get two digit codes
-base &lt;- base %&gt;% 
-  mutate(code= as.numeric(substr(x=commodity, start=1, stop=2))) %&gt;%
-  select(origin, destination, code, value) %&gt;%
-  dplyr::rename(COMM = code) %&gt;%
-  filter(COMM != 99 &amp; COMM != 0) %&gt;% #takes out NA as well
-  mutate(year = yr) %&gt;%
-  #Merge with distribution matrix.
-  left_join(CFSapportionment, by=c(&#39;COMM&#39;=&#39;COMM&#39;, &#39;year&#39;=&#39;year&#39;))
-#Reshape to long to ease the calculation of X_{ij,k}^{CFS}.
-base &lt;- melt(base, id.vars=c(&quot;origin&quot;, &quot;destination&quot;, &quot;COMM&quot;, &quot;value&quot;, &quot;year&quot;), variable.name=&quot;portion&quot;, value.name = &quot;portion_value&quot;)
-# Calculate X_{ij,k}^{CFS}.
-base &lt;- base %&gt;%
-  mutate(value = ifelse(is.na(value) == TRUE, 0, value)) %&gt;%
-  mutate(portion_value = portion_value * value) %&gt;%
-  select(-value, -COMM) %&gt;%
-  group_by(origin, destination, year, portion) %&gt;%
-  mutate(portion_value = sum(portion_value)) %&gt;%
-  ungroup() %&gt;%
-  distinct(origin, destination, year, portion, .keep_all = TRUE) %&gt;%
-  mutate(sector = as.numeric(substr(x=portion, start=8, stop=9))) %&gt;%
-  select(-portion) %&gt;%
-  mutate(origin = paste(&quot;trade&quot;,origin, sep=&quot;&quot;))
-#Reshape to wide.
-base &lt;- spread(base, origin, portion_value, fill = 0, convert = TRUE,  drop = TRUE, sep = NULL)
-base &lt;- base %&gt;%
-  arrange(sector, destination) %&gt;%
-  dplyr::rename(importer = destination) %&gt;%
-  select(year, everything())
-
-#Appending years.
-final &lt;- rbind(final, base)
-}</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiV2FybmluZzogVGhlcmUgd2FzIDEgd2FybmluZyBpbiBgbXV0YXRlKClgLlxuaSBJbiBhcmd1bWVudDogYHZhbHVlID0gYXMubnVtZXJpYyh2YWx1ZSlgLlxuQ2F1c2VkIGJ5IHdhcm5pbmc6XG4hIE5BcyBpbnRyb2R1Y2VkIGJ5IGNvZXJjaW9uV2FybmluZzogVGhlcmUgd2FzIDEgd2FybmluZyBpbiBgbXV0YXRlKClgLlxuaSBJbiBhcmd1bWVudDogYGNvZGUgPSBhcy5udW1lcmljKHN1YnN0cih4ID0gY29tbW9kaXR5LCBzdGFydCA9IDEsIHN0b3AgPVxuICAyKSlgLlxuQ2F1c2VkIGJ5IHdhcm5pbmc6XG4hIE5BcyBpbnRyb2R1Y2VkIGJ5IGNvZXJjaW9uXG4ifQ== -->
-<pre><code>Warning: There was 1 warning in `mutate()`.
-i In argument: `value = as.numeric(value)`.
-Caused by warning:
-! NAs introduced by coercionWarning: There was 1 warning in `mutate()`.
-i In argument: `code = as.numeric(substr(x = commodity, start = 1, stop =
-  2))`.
-Caused by warning:
-! NAs introduced by coercion</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud3JpdGUudGFibGUoZmluYWwsIGZpbGUgPSBwYXN0ZShcIjEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhL0NGU19YaWprLmNzdlwiLCBzZXA9XCJcIiksIHNlcCA9IFwiLFwiLCByb3cubmFtZXMgPSBGQUxTRSlcblxuXG5gYGAifQ== -->
-<pre class="r"><code>write.table(final, file = paste(&quot;1-Intermediate_Processed_Data/CFS_Xijk.csv&quot;, sep=&quot;&quot;), sep = &quot;,&quot;, row.names = FALSE)
-</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-</div>
-</div>
-<div id="final-state-to-state-manufacturing-trade-flows" class="section level1" number="3">
-<h1><span class="header-section-number">3</span> Final state-to-state
-manufacturing trade flows</h1>
-<p>Using CFS data we construct:</p>
-<p><span class="math display">\[x_{ij,k}^{CFS}\equiv\dfrac{X_{ij,k}^{CFS}}{\sum_{h}\sum_{l}X_{hl,k}^{CFS}},\]</span>
-Our object of interest is:</p>
-<p><span class="math display">\[X_{ij,k}=x_{ij,k}^{CFS}X_{US,US,k}^{WIOD},\]</span>
-where <span class="math inline">\(X_{US,US,k}^{WIOD}\)</span> is the
-consumption of the US in sector <span class="math inline">\(k\)</span>
-that is produced in the US, according to WIOD. Note that proportionality
-implies <span class="math display">\[\sum_{i} \sum_{j}
-X_{ij,k}=X_{US,US,k}^{WIOD}\]</span> for each manufacturing sector.</p>
-<div id="importing-datasets-to-r" class="section level2" number="3.1">
-<h2><span class="header-section-number">3.1</span> Importing datasets to
-R</h2>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuI0NGU1xuY2ZzX2Jhc2UgPC0gcmVhZC5jc3YoXCIxLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YS8vQ0ZTX1hpamsuY3N2XCIpXG4jV0lPRFxud2lvZF9iYXNlIDwtIGMoKVxuZm9yICh5ciBpbiAyMDAwOjIwMDcpIHtcbiAgd2lvZCA8LSBjb3VudHJ5LmNvdW50cnkgPC0gcmVhZC5jc3YocGFzdGUoJzEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhLy9jb3VudHJ5X2NvdW50cnlfc3RlcF8nLCB5ciwgJy5jc3YnLCBzZXA9IFwiXCIpLCBoZWFkZXIgPSBUUlVFLCBzZXAgPSBcIixcIiwgZGVjID0gXCIuXCIpXG4gIHdpb2RfYmFzZSA8LSByYmluZCh3aW9kX2Jhc2UsIHdpb2QpXG59XG5cbiNOdW1iZXIgb2Ygc3RhdGVzLlxucmVnaW9ucyA8LSByZWFkLmNzdihcIjAtUmF3X0RhdGEvcmVnaW9ucy5jc3ZcIilcbnNfbmFtZXMgPC0gcmVnaW9ucyAlPiUgZmlsdGVyKHN0YXR1cz09XCJzdGF0ZVwiKSBcbnNfbmFtZXMgPC0gc19uYW1lcyRyZWdpb25cbm5fcyA8LSBsZW5ndGgoc19uYW1lcylcbiNOdW1iZXIgb2Ygc2VjdG9ycyBtaW51cyAzICh3ZSB1c2UgaXQgdG8gZXhjbHVkZSBhZ3JpY3VsdHVyZSwgc2VydmljZXMsIGFuZCBub24tcGFydGljaXBhbnRzKS5cbnJlY2xhc3Nfc2VjdG9ycyA8LSByZWFkLmNzdihcIjAtUmF3X0RhdGEvc2VjdG9ycy5jc3ZcIilcbm5fc2VjIDwtIGxlbmd0aCh1bmlxdWUocmVjbGFzc19zZWN0b3JzJGZpbmFsX3NlY3RvcikpIC0gM1xuI1NtYWxsIHZhbHVlLlxuZXBzaWxvbiA8LSAwLjAwMDFcbmBgYCJ9 -->
-<pre class="r"><code>#CFS
-cfs_base &lt;- read.csv(&quot;1-Intermediate_Processed_Data//CFS_Xijk.csv&quot;)
-#WIOD
-wiod_base &lt;- c()
-for (yr in 2000:2007) {
-  wiod &lt;- country.country &lt;- read.csv(paste(&#39;1-Intermediate_Processed_Data//country_country_step_&#39;, yr, &#39;.csv&#39;, sep= &quot;&quot;), header = TRUE, sep = &quot;,&quot;, dec = &quot;.&quot;)
-  wiod_base &lt;- rbind(wiod_base, wiod)
-}
-
-#Number of states.
-regions &lt;- read.csv(&quot;0-Raw_Data/regions.csv&quot;)
-s_names &lt;- regions %&gt;% filter(status==&quot;state&quot;) 
-s_names &lt;- s_names$region
-n_s &lt;- length(s_names)
-#Number of sectors minus 3 (we use it to exclude agriculture, services, and non-participants).
-reclass_sectors &lt;- read.csv(&quot;0-Raw_Data/sectors.csv&quot;)
-n_sec &lt;- length(unique(reclass_sectors$final_sector)) - 3
-#Small value.
-epsilon &lt;- 0.0001</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-</div>
-<div id="manufacture-bilateral-trade-between-us-states" class="section level2" number="3.2">
-<h2><span class="header-section-number">3.2</span> Manufacture bilateral
-trade between US states</h2>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuXG5mb3IgKHlyIGluIDIwMDA6MjAwNykge1xuXG4jV2Ugb25seSBoYXZlIENGUyB3ZWlnaHRzIGZvciB0aHJlZSB5ZWFycywgYnV0IHdlIGhhdmUgV0lPRCBkYXRhIGZvciAyMDAwLTIwMDcsIHNvIHdlIGFzc29jaWF0ZSBlYWNoIHllYXIncyBXSU9EIGRhdGEgdG8gdGhlIG5lYXJlc3QgYXZhaWxhYmxlIHllYXIgb2YgQ0ZTIHdlaWdodHMuXG5jPWMoMjAwMiwgMjAwNywgMjAxMilcbmFwPTEwMDBcbmZvciAoaSBpbiAxOjMpIHtcbiAgcD15ci1jW2ldXG4gIGlmKGFicyhwKTxhcCkge1xuICAgIGFwcm94ID0gcFxuICAgIGFwID0gYWJzKHApXG4gIH1cbn1cbnlyXyA8LSB5ci1hcHJveFxucHJpbnQoeXIpXG5wcmludCh5cl8pXG4jQ0ZTXG5DRlMgPC0gc3Vic2V0KGNmc19iYXNlLCB5ZWFyID09IHlyXylcbkNGUyA8LSBzdWJzZXQoQ0ZTLCBzZWxlY3QgPSAteWVhciApXG5cbiNXSU9EXG53aW9kIDwtIHN1YnNldCh3aW9kX2Jhc2UsIHllYXIgPT0geXIpXG53aW9kIDwtIHN1YnNldCh3aW9kLCBzZWxlY3QgPSAteWVhcikgIFxuICBcbiMgQ3JlYXRlIGRhdGEgZnJhbWUgZm9yIFhfe2prLGt9XntDRlN9XG5kZiA8LSBkYXRhLmZyYW1lKENGUylcblxuIyBEaW1lbnNpb25zIG9mIGRhdGEgZnJhbWVcbm5fcm93cyA8LSBkaW0oZGYpWzFdXG5uX2NvbHVtbnMgPC0gZGltKGRmKVsyXVxuXG4jIFNlY3RvcnNcbm5fc2VjdG9ycyA8LSBsZW5ndGgodW5pcXVlKGRmJHNlY3RvcikpXG5cbiMgVW5pcXVlIHNlY3RvcnNcbnVuaXF1ZV9zZWN0b3JzIDwtIHVuaXF1ZShkZiRzZWN0b3IpXG5cbiMgQ3JlYXRlIHN1bSBvZiBYX3tobCxrfV57Q0ZTfVxuWGlqa0NGUyA8LSBkZlssMzpuX2NvbHVtbnNdXG5zdW1faGxfWGhsa0NGUyA8LSBudW1lcmljKG5fc2VjdG9ycylcbmZvcihrIGluIDE6bl9zZWN0b3JzKSB7XG4gIHN1bV9obF9YaGxrQ0ZTW2tdIDwtIHN1bShYaWprQ0ZTW2RmJHNlY3Rvcj09ayxdKVxufVxuWGlqa0NGU18xIDwtIGMoKVxuZGVub21pbmF0b3IgPC0gYygpXG4jS2VlcCBvbmx5IHRoZSAxMiBtYW51ZmFjdHVyaW5nIHNlY3RvcnMuXG5mb3IgKGkgaW4gMTpuX3NlYykge1xuICBkZW5vbWluYXRvciA8LSByYmluZChkZW5vbWluYXRvcixtYXRyaXgocmVwbGljYXRlKG5fcypuX3Msc3VtX2hsX1hobGtDRlNbaV0pLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbnJvdyA9IG5fcywgbmNvbCA9IG5fcykpXG4gIFhpamtDRlNfMSA8LSByYmluZChYaWprQ0ZTXzEsWGlqa0NGU1tkZiRzZWN0b3I9PWksXSlcbn1cbiMgQ3JlYXRlIHhfe2lqLGt9XntDRlN9XG54aWprQ0ZTIDwtIFhpamtDRlNfMS9kZW5vbWluYXRvciAgXG5cbiMgQ3JlYXRlIGRhdGEgZnJhbWUgZm9yIFhfe1VTLFVTLGt9XntXSU9EfS5cbmRmX3dpb2QgPC0gZGF0YS5mcmFtZSh3aW9kKVxuIyBJZ25vcmUgbm9uLVVTQSBleHBvcnRlcnNcbmRmX3dpb2QgPC0gZGZfd2lvZCAlPiUgc2VsZWN0KGltcG9ydGVyLCBzZWN0b3IsIFVTQSlcbiNGaWx0ZXIgb3V0IG5vbi1VU0EgaW1wb3J0ZXJzXG5VU0FfZXhwb3J0ZXJfaW5kaWNlcyA8LSBkZl93aW9kJGltcG9ydGVyID09IFwiVVNBXCJcbiMgVGFrZSBpbnRvIGFjY291bnQgb25seSB0aGUgZmlyc3QgMTIgc2VjdG9ycyBcblhfVVNBX1VTQV9rIDwtIGRmX3dpb2QkVVNBW1VTQV9leHBvcnRlcl9pbmRpY2VzXVxuWF9VU0FfVVNBX2sgPC0gWF9VU0FfVVNBX2tbMTpuX3NlY11cblhpamsgPC0gYygpXG4jQ3JlYXRlIFhfe2lqLGt9XG5mb3IoaSBpbiAxOm5fc2VjKSB7XG4gIFhpamsgPC0gcmJpbmQoWGlqaywgeGlqa0NGU1soKGktMSkqbl9zICsgMSk6KG5fcyppKSxdKlhfVVNBX1VTQV9rW2ldKVxufVxuXG4jQXBwcm9wcmlhdGUgY29sdW1ucyBvZiBzZWN0b3IgYW5kIGltcG9ydGVyLiBBbmQgYXJyYW5nZS4gXG5YaWprJHNlY3RvciA8LSBkZiRzZWN0b3JbMToobl9zZWMqbl9zKV1cblhpamskaW1wb3J0ZXIgPC0gZGYkaW1wb3J0ZXJbMToobl9zZWMqbl9zKV1cblhpamsgPC0gWGlqayAlPiUgc2VsZWN0KGltcG9ydGVyLCBzZWN0b3IsIGV2ZXJ5dGhpbmcoKSlcbnhpamtDRlMkc2VjdG9yIDwtIGRmJHNlY3RvclsxOihuX3NlYypuX3MpXVxueGlqa0NGUyRpbXBvcnRlciA8LSBkZiRpbXBvcnRlclsxOihuX3NlYypuX3MpXVxueGlqa0NGUyA8LSB4aWprQ0ZTICU+JSBzZWxlY3QoaW1wb3J0ZXIsIHNlY3RvciwgZXZlcnl0aGluZygpKVxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyNcbiNUaGUgc3VtIG92ZXIgc3RhdGVzIG9mIFhfe2lqLGt9IHNob3VsZCBzdW0gdXAgdG8gWF97VVMsVVMsa31ee1dJT0R9LlxuIyBDaGVjayBmb3IgYWxsICBrXG5mb3IoayBpbiAxOm5fc2VjKSB7XG4jSWYgdGhlIHN1bSBvdmVyIHN0YXRlcyBkb2VzIG5vdCBjb2luY2lkZSB3aXRoIFdJT0QgdXAgdG8gYSBzbWFsbCBkaWZmZXJlbmNlICh0b2xlcmFuY2UgbGV2ZWwpLCB0aGUgbG9vcCBzdG9wcyBhbmQgcHJpbnRzIGFuIGVycm9yIG1lc3NhZ2UuXG4gIGlmKGFicyhzdW0oWGlqa1tYaWprJHNlY3Rvcj09aywzOjUyXSkvWF9VU0FfVVNBX2tba10gLTEpPmVwc2lsb24pIFxuICAgIHN0b3AocGFzdGUoXCJzdGF0ZXMnIGV4cG9ydHMgdG8gc3RhdGVzICE9IFVTIFdJT0QgZXhwb3J0cyB0byBVUyBmb3IgeWVhclwiLCB5cikpXG59XG4jIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuI0luZGljYXRlIHllYXIuIE9yZ2FuaXplIGFuZCByZW5hbWUgY29sdW1ucy5cblN0ZXAyIDwtIFhpamsgXG5TdGVwMiA8LSBTdGVwMiAlPiVcbiAgbXV0YXRlKHllYXIgPSB5cikgJT4lXG4gIHNlbGVjdCh5ZWFyLCBpbXBvcnRlciwgc2VjdG9yLCBldmVyeXRoaW5nKCkpXG5jb2xuYW1lcyhTdGVwMilbNDpkaW0oU3RlcDIpWzJdXSA9IGNmc19iYXNlJGltcG9ydGVyWzE6bl9zXVxuXG4gICNFeHBvcnRpbmdcbndyaXRlLnRhYmxlKFN0ZXAyLCBmaWxlID0gcGFzdGUoXCIxLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YS8vc3RhdGVfY2ZzX3N0ZXBfXCIsIHlyLFwiLmNzdlwiLCBzZXA9XCJcIiksIHNlcCA9IFwiLFwiLCByb3cubmFtZXMgPSBGQUxTRSlcbn1cbmBgYCJ9 -->
-<pre class="r"><code>
-for (yr in 2000:2007) {
-
-#We only have CFS weights for three years, but we have WIOD data for 2000-2007, so we associate each year&#39;s WIOD data to the nearest available year of CFS weights.
-c=c(2002, 2007, 2012)
-ap=1000
-for (i in 1:3) {
-  p=yr-c[i]
-  if(abs(p)&lt;ap) {
-    aprox = p
-    ap = abs(p)
-  }
-}
-yr_ &lt;- yr-aprox
-print(yr)
-print(yr_)
-#CFS
-CFS &lt;- subset(cfs_base, year == yr_)
-CFS &lt;- subset(CFS, select = -year )
-
-#WIOD
-wiod &lt;- subset(wiod_base, year == yr)
-wiod &lt;- subset(wiod, select = -year)  
-  
-# Create data frame for X_{jk,k}^{CFS}
-df &lt;- data.frame(CFS)
-
-# Dimensions of data frame
-n_rows &lt;- dim(df)[1]
-n_columns &lt;- dim(df)[2]
-
-# Sectors
-n_sectors &lt;- length(unique(df$sector))
-
-# Unique sectors
-unique_sectors &lt;- unique(df$sector)
-
-# Create sum of X_{hl,k}^{CFS}
-XijkCFS &lt;- df[,3:n_columns]
-sum_hl_XhlkCFS &lt;- numeric(n_sectors)
-for(k in 1:n_sectors) {
-  sum_hl_XhlkCFS[k] &lt;- sum(XijkCFS[df$sector==k,])
-}
-XijkCFS_1 &lt;- c()
-denominator &lt;- c()
-#Keep only the 12 manufacturing sectors.
-for (i in 1:n_sec) {
-  denominator &lt;- rbind(denominator,matrix(replicate(n_s*n_s,sum_hl_XhlkCFS[i]), 
-                                         nrow = n_s, ncol = n_s))
-  XijkCFS_1 &lt;- rbind(XijkCFS_1,XijkCFS[df$sector==i,])
-}
-# Create x_{ij,k}^{CFS}
-xijkCFS &lt;- XijkCFS_1/denominator  
-
-# Create data frame for X_{US,US,k}^{WIOD}.
-df_wiod &lt;- data.frame(wiod)
-# Ignore non-USA exporters
-df_wiod &lt;- df_wiod %&gt;% select(importer, sector, USA)
-#Filter out non-USA importers
-USA_exporter_indices &lt;- df_wiod$importer == &quot;USA&quot;
-# Take into account only the first 12 sectors 
-X_USA_USA_k &lt;- df_wiod$USA[USA_exporter_indices]
-X_USA_USA_k &lt;- X_USA_USA_k[1:n_sec]
-Xijk &lt;- c()
-#Create X_{ij,k}
-for(i in 1:n_sec) {
-  Xijk &lt;- rbind(Xijk, xijkCFS[((i-1)*n_s + 1):(n_s*i),]*X_USA_USA_k[i])
-}
-
-#Appropriate columns of sector and importer. And arrange. 
-Xijk$sector &lt;- df$sector[1:(n_sec*n_s)]
-Xijk$importer &lt;- df$importer[1:(n_sec*n_s)]
-Xijk &lt;- Xijk %&gt;% select(importer, sector, everything())
-xijkCFS$sector &lt;- df$sector[1:(n_sec*n_s)]
-xijkCFS$importer &lt;- df$importer[1:(n_sec*n_s)]
-xijkCFS &lt;- xijkCFS %&gt;% select(importer, sector, everything())
-################################################################################
-#The sum over states of X_{ij,k} should sum up to X_{US,US,k}^{WIOD}.
-# Check for all  k
-for(k in 1:n_sec) {
-#If the sum over states does not coincide with WIOD up to a small difference (tolerance level), the loop stops and prints an error message.
-  if(abs(sum(Xijk[Xijk$sector==k,3:52])/X_USA_USA_k[k] -1)&gt;epsilon) 
-    stop(paste(&quot;states&#39; exports to states != US WIOD exports to US for year&quot;, yr))
-}
-################################################################################
-#Indicate year. Organize and rename columns.
-Step2 &lt;- Xijk 
-Step2 &lt;- Step2 %&gt;%
-  mutate(year = yr) %&gt;%
-  select(year, importer, sector, everything())
-colnames(Step2)[4:dim(Step2)[2]] = cfs_base$importer[1:n_s]
-
-  #Exporting
-write.table(Step2, file = paste(&quot;1-Intermediate_Processed_Data//state_cfs_step_&quot;, yr,&quot;.csv&quot;, sep=&quot;&quot;), sep = &quot;,&quot;, row.names = FALSE)
-}</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDIwMDBcblsxXSAyMDAyXG5bMV0gMjAwMVxuWzFdIDIwMDJcblsxXSAyMDAyXG5bMV0gMjAwMlxuWzFdIDIwMDNcblsxXSAyMDAyXG5bMV0gMjAwNFxuWzFdIDIwMDJcblsxXSAyMDA1XG5bMV0gMjAwN1xuWzFdIDIwMDZcblsxXSAyMDA3XG5bMV0gMjAwN1xuWzFdIDIwMDdcbiJ9 -->
-<pre><code>[1] 2000
-[1] 2002
-[1] 2001
-[1] 2002
-[1] 2002
-[1] 2002
-[1] 2003
-[1] 2002
-[1] 2004
-[1] 2002
-[1] 2005
-[1] 2007
-[1] 2006
-[1] 2007
-[1] 2007
-[1] 2007</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-</div>
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIjMtU3RhdGVfc3RhdGUiDQpvdXRwdXQ6DQogIGh0bWxfbm90ZWJvb2s6DQogICAgdG9jOiB5ZXMNCiAgICBkZl9wcmludDogcGFnZWQNCiAgICBudW1iZXJfc2VjdGlvbnM6IHllcyAgICANCiAgcGRmX2RvY3VtZW50Og0KICAgIG51bWJlcl9zZWN0aW9uczogeWVzDQogIHdvcmRfZG9jdW1lbnQ6IGRlZmF1bHQNCmhlYWRlci1pbmNsdWRlczoNCi0gXHVzZXBhY2thZ2V7YW1zbWF0aH0NCi0gXHVzZXBhY2thZ2V7YW1zc3ltYn0NCi0gXHVzZXBhY2thZ2V7cGlmb250fQ0KLSBcdXNlcGFja2FnZXttYXRocGF6b30NCi0tLQ0KDQojIEdlbmVyYWwgaW5mb3JtYXRpb24NCg0KVGhpcyBmaWxlIGRvZXMgdGhlIGZvbGxvd2luZzoNCg0KMSkgSW1wb3J0cyBhbmQgcHJlcGFyZXMgdGhlIENGUyBkYXRhc2V0LCB3aGljaCBjb250YWlucyB0aGUgc3RhdGUgdG8gc3RhdGUgdHJhZGUgZmxvdy4NCg0KMikgVXNlcyBDRlMgcGx1cyBwcm9wb3J0aW9uYWxpdHkgdG8gY2FsY3VsYXRlIHN0YXRlLXN0YXRlIHRyYWRlIGZsb3dzIGluIG1hbnVmYWN0dXJpbmcgJFhfe2lqLGt9JCBmb3IgJGlcaW4gVVNcOyAgXCZcOyAgIGogXGluIFVTJA0KDQojIyBJbnB1dCBmaWxlcw0KDQoxLiBgMC1SYXdfRGF0YS9DRlMvTkFJQ1MgdG8gQ0ZTIENyb3Nzd2Fsay54bHN4YA0KMi4gYDAtUmF3X0RhdGEvQ0ZTL0NGU18yMDEyXzAwQTE4X3dpdGhfYW5uLmNzdmANCjMuIGAwLVJhd19EYXRhL0NGUy9DRlMyMDA3Lnhsc3hgDQo0LiBgMC1SYXdfRGF0YS9DRlMvQ0ZTMjAwMm1pbmUueGxzeGANCjUuIGAwLVJhd19EYXRhL0NGUy9DRjEyMDBBMjQuY3N2YCAodGhpcyBmaWxlIHdhcyB0b28gaGVhdnksIHNvIGl0IHdhcyBjb21wcmVzc2VkIGluIGEgLnppcCBmb2xkZXIgd2l0aCB0aGUgc2FtZSBuYW1lOyBpdCBtdXN0IGJlIHRha2VuIG91dCBvZiB0aGUgZm9sZGVyIHRvIHJ1biB0aGUgc2NyaXB0KQ0KNi4gYDAtUmF3X0RhdGEvRmlwcy9zdGF0ZWZpcHMuY3N2YA0KNy4gYDAtUmF3X0RhdGEvcmVnaW9ucy5jc3ZgDQo4LiBgMC1SYXdfRGF0YS9zZWN0b3JzLmNzdmANCjkuIGAxLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YS9jb3VudHJ5X2NvdW50cnlfc3RlcF8uY3N2YA0KDQojIyBPdXRwdXQgZmlsZXMNCg0KMS4gYDEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhL0NGU2FwcG9ydGlvbm1lbnQuY3N2YA0KMi4gYDEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhL0NGU19YaWprLmNzdmANCjMuIGAxLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YS9zdGF0ZV9jZnNfc3RlcF8uY3N2YA0KDQpgYGB7ciBzZXR1cCwgaW5jbHVkZT1GQUxTRX0NCmtuaXRyOjpvcHRzX2NodW5rJHNldChlY2hvID0gVFJVRSkNCnJlbW92ZShsaXN0ID0gbHMoKSkNCmBgYA0KDQpgYGB7ciBwYWNrYWdlcywgd2FybmluZz1GQUxTRSwgaW5jbHVkZT1GQUxTRSwgbWVzc2FnZT1GQUxTRSwgcmVzdWx0cz0naGlkZScsIGNhY2hlPUZBTFNFfQ0KIyBsaWJyYXJpZXMNCnNldC5zZWVkKDIwMjMpDQpvcHRpb25zKCBzY2lwZW49MTAwLCBkaWdpdHMgPSAxNSwgc3RyaW5nc0FzRmFjdG9ycz1GQUxTRSApOw0KIyB2ZWN0b3Igb2YgbGlicmFyaWVzIHRvIGJlIHVzZWQNCmxpYnMgPC0gYyggJ2RwbHlyJywgJ3RpZHlyJywgJ3JlYWRzdGF0YTEzJywgJ2hhdmVuJywgJ3N0cmluZ3InLCAnbmxlcXNsdicsICdnZGF0YScsICdTdGF0YW1hcmtkb3duJywgJ2Zvcm1hdHRhYmxlJywgJ2dncGxvdDInLCAndmlyaWRpcycsICdSQ29sb3JCcmV3ZXInLCAncmVzaGFwZTInLCAnZm9yZWlnbicsICdyZWFkeGwnLCAnd3JpdGV4bCcsICdyanNvbicsICdyZWFkX2V4Y2VsJywgJ01hdHJpeCcsICdnZW9kaXN0Jyk7DQojIEluc3RhbGwgbGlicmFyaWVzIGluIGNhc2UgdGhleSBhcmUgbm90IGluc3RhbGxlZA0KZm9yKCBpIGluIGxlbmd0aChsaWJzKSl7IA0KaWYoICEobGlic1tpXSAlaW4lIGluc3RhbGxlZC5wYWNrYWdlcygpKSApIGluc3RhbGwucGFja2FnZXMoIGxpYnMgKSANCn07DQojIGxvYWQgbGlicmFyeQ0KbGFwcGx5KCBsaWJzLCByZXF1aXJlLCBjaGFyYWN0ZXIub25seT1UUlVFICk7DQpgYGANCg0KIyBJbXBvcnRpbmcgYW5kIHByZXBhcmluZyB0aGUgQ0ZTIGRhdGFzZXQsIGFuZCBjb25zdHJ1Y3RpbmcgY29tbW9kaXR5LXNlY3RvciByZWRpc3RyaWJ1dGlvbiBtYXRyaXguDQoNClRoZSBmb2xsb3dpbmcgY29kZSBhc3NvY2lhdGVzIGVhY2ggY29tbW9kaXR5IGNvZGUgd2l0aCBhIE5BSUNTIGNvZGUgYW5kIHRoZW4gdHJhbnNmb3JtcyB0aGUgbGF0dGVyIGluIHRoZSBmaW5hbCBkZXNpcmVkIHNlY3RvciBjYXRlZ29yaWVzLiBJdCBpcyBpbXBvcnRhbnQgdG8gbm90ZSB0aGF0IGVhY2ggY29tbW9kaXR5IGNhbiBiZSBhc3NvY2lhdGVkIHdpdGggbW9yZSB0aGFuIG9uZSBOQUlDUywgZGVwZW5kaW5nIG9uIHRoZSBpbmR1c3RyeSB0aGF0IHRoYXQgY29tbW9kaXR5IHdhcyBwcm9kdWNlZCBpbi4gIA0KVGhlIGNvZGUgdGFrZXMgQ0ZTIDIwMDcgYW5kIDIwMTIgZm9yIHRoZSBVUywgYW5kIGNhbGN1bGF0ZXMgdGhlIHByb3BvcnRpb24gb2YgdGhlIGFtb3VudCBvZiBjb21tb2RpdHkgJGMkIGFzc29jaWF0ZWQgd2l0aCBOQUlDUyAkbiQsIHdpdGggcmVzcGVjdCB0byB0aGUgdG90YWwgYW1vdW50IG9mIGNvbW1vZGl0eSAkYyQuIFRoaXMgZ2l2ZXMgYSBtYXRyaXggb2YgKCNjb21tb2RpdGllcyl4MTQgZm9yIGVhY2ggeWVhci4gVGhlIGNvZGUgcHJvZHVjZXMgYSBtYXRyaXggdGhhdCBzaG93cyBob3cgdG8gcmVkaXN0cmlidXRlIHRoZSBhbW91bnQgb2YgZWFjaCBjb21tb2RpdHkgaW50byAxMyBzZWN0b3JzIGZvciB0aGUgVVMgZm9yIDIwMDIsIDIwMDcgYW5kIDIwMTIuIFRoZSBtYXRyaXggZm9yIDIwMDIgaXMgdGhlIHNhbWUgYXMgdGhlIG9uZSBmb3IgMjAwNy4gDQoNCmBgYHtyfQ0KZmluYWwgPC0gYygpDQpmb3IgKHlyIGluIGMoMjAwNywgMjAxMikpew0KaWYgKHlyID09IDIwMDcpew0KIyBJbXBvcnQgQ0ZTIGRhdGEgd2l0aCBib3RoIE5BSUNTIGFuZCBDRlMgY29kZXMNCmJhc2UgPC0gcmVhZF9leGNlbChwYXN0ZSgiMC1SYXdfRGF0YS9DRlMvTkFJQ1MgdG8gQ0ZTIENyb3Nzd2Fsay54bHN4Iiwgc2VwPSIiKSkNCiMgUmUtY29kZSBtYW51ZmFjdHVyaW5nIGFzIE5BSUNTIDMgYW5kIGRlLXN0cmluZyBOQUlDUyBjb2RlDQpiYXNlIDwtIGJhc2UgJT4lDQogIGZpbHRlcihHRU9UWVBFID09IDEpICU+JQ0KICAjIFJlZGlzdHJpYnV0aW9uIG1hdHJpeCBmb3IgMjAwMiBpcyB0aGUgc2FtZSBhcyB0aGUgb25lIGZvciAyMDA3Lg0KICBkcGx5cjo6cmVuYW1lKE5BSUNTMjAwNyA9IE5BSUNTMjAwMikgJT4lDQogIGRwbHlyOjpyZW5hbWUoTkFJQ1MyMDA3X01FQU5JTkcgPSBOQUlDUzIwMDJfTUVBTklORykgJT4lDQogIG11dGF0ZShOQUlDUzIwMDcgPSBpZmVsc2UoTkFJQ1MyMDA3ID09ICIzMS0zMyIsICIzIixOQUlDUzIwMDcpKSAlPiUNCiAgbXV0YXRlKE5BSUNTMjAwNyA9IGFzLm51bWVyaWMoTkFJQ1MyMDA3KSkgJT4lDQogIHNlbGVjdChOQUlDUzIwMDcsIE5BSUNTMjAwN19NRUFOSU5HLCBDT01NLCBDT01NX01FQU5JTkcsIFZBTCkNCn0NCmlmICh5ciA9PSAyMDEyKXsNCiMgSW1wb3J0IENGUyBkYXRhIHdpdGggYm90aCBOQUlDUyBhbmQgQ0ZTIGNvZGVzLg0KYmFzZSA8LSByZWFkLmNzdihwYXN0ZSgiMC1SYXdfRGF0YS9DRlMvL0NGU18yMDEyXzAwQTE4X3dpdGhfYW5uLmNzdiIsIHNlcD0iIiksIGhlYWRlciA9IFRSVUUsIHNlcCA9ICIsIiwgZGVjID0gIi4iKQ0KYmFzZSA8LSBiYXNlWygyOmRpbShiYXNlKVsxXSksIF0NCiMgUmUtY29kZSBtYW51ZmFjdHVyaW5nIGFzIE5BSUNTIDMgYW5kIGRlLXN0cmluZyBOQUlDUyBjb2RlDQpiYXNlIDwtIGJhc2UgJT4lDQogIGRwbHlyOjpyZW5hbWUoTkFJQ1MyMDEyPU5BSUNTLmlkKSAlPiUNCiAgbXV0YXRlKE5BSUNTMjAxMiA9IGlmZWxzZShOQUlDUzIwMTIgPT0gIjMxLTMzIiwgIjMiLE5BSUNTMjAxMikpICU+JQ0KICBtdXRhdGUoTkFJQ1MyMDEyID0gaWZlbHNlKE5BSUNTMjAxMiA9PSAiNDkzMShDRjEpIiwgIjQ5MzEiLE5BSUNTMjAxMikpICU+JQ0KICBtdXRhdGUoTkFJQ1MyMDEyID0gYXMubnVtZXJpYyhOQUlDUzIwMTIpKQ0KIyBLZWVwIGp1c3QgcmVsZXZhbnQgdmFyaWFibGVzOiBOQUlDUyBjb2RlLCBTQ1RHIGNvZGUsIGFuZCB2YWx1ZSBzaGlwcGVkDQpiYXNlIDwtIGJhc2UgJT4lDQogIGRwbHlyOjpyZW5hbWUoTkFJQ1MyMDEyX01FQU5JTkcgPSBOQUlDUy5kaXNwbGF5LmxhYmVsKSAlPiUNCiAgZHBseXI6OnJlbmFtZShDT01NID0gQ09NTS5pZCkgJT4lDQogIGRwbHlyOjpyZW5hbWUoQ09NTV9NRUFOSU5HID0gQ09NTS5kaXNwbGF5LmxhYmVsKSAlPiUNCiAgbXV0YXRlKFZBTCA9IGFzLm51bWVyaWMoVkFMKSkgJT4lDQogIHNlbGVjdChOQUlDUzIwMTIsIE5BSUNTMjAxMl9NRUFOSU5HLCBDT01NLCBDT01NX01FQU5JTkcsIFZBTCkNCn0NCg0KI1JlLWNvZGUgc29tZSBjb21tb2RpdHkgY2F0ZWdvcmllcy4gRHJvcCAiYWxsIGNvbW1vZGl0aWVzIiBjYXRlZ29yeSBhbmQgInVua25vd24gY29tbW9kaXR5IiBjYXRlZ29yeS4NCmJhc2UgPC0gYmFzZSAlPiUNCiAgbXV0YXRlKENPTU0gPSBhcy5jaGFyYWN0ZXIoQ09NTSkpICU+JQ0KICBtdXRhdGUoQ09NTSA9IGlmZWxzZShDT01NID09ICIwNy1SIiwgIjA3IiwgQ09NTSkpICU+JQ0KICBtdXRhdGUoQ09NTSA9IGlmZWxzZShDT01NID09ICIwOC1SIiwgIjA4IiwgQ09NTSkpICU+JQ0KICBtdXRhdGUoQ09NTSA9IGlmZWxzZShDT01NID09ICIxNy1SIiwgIjE3IiwgQ09NTSkpICU+JQ0KICBtdXRhdGUoQ09NTSA9IGlmZWxzZShDT01NID09ICIxOC1SIiwgIjE4IiwgQ09NTSkpICU+JQ0KICBtdXRhdGUoQ09NTSA9IGFzLm51bWVyaWMoQ09NTSkpICU+JQ0KICBmaWx0ZXIoQ09NTSAhPSAwICYgQ09NTSAhPSA5OSkNCiNEcm9wIHN1cGVyZmx1b3VzIE5BSUNTIGFuZCB0dXJuIHRoZW0gYWxsIGludG8gMyBkaWdpdCBudW1iZXJzDQppZiAoeXIgPT0gMjAwNyl7DQpiYXNlIDwtIGJhc2UgJT4lDQogIGZpbHRlcihOQUlDUzIwMDcgIT0gMyAmIE5BSUNTMjAwNyAhPSA0MjMgJiBOQUlDUzIwMDcgIT0gNDI0KSAlPiUNCiAgZmlsdGVyKE5BSUNTMjAwNyA8PSA0MjMwIHwgTkFJQ1MyMDA3ID49IDQyNTApICU+JQ0KICBtdXRhdGUoTkFJQ1MyMDA3ID0gaWZlbHNlKE5BSUNTMjAwNyA9PSA0MiwgNDIxLCBOQUlDUzIwMDcpKSAlPiUNCiAgbXV0YXRlKE5BSUNTMjAwNyA9IGlmZWxzZShOQUlDUzIwMDcgPT0gNDU0MSwgNDU0LCBOQUlDUzIwMDcpKSAlPiUNCiAgbXV0YXRlKE5BSUNTMjAwNyA9IGlmZWxzZShOQUlDUzIwMDcgPT0gNDU0MzEsIDQ1NSwgTkFJQ1MyMDA3KSkgJT4lDQogIG11dGF0ZShOQUlDUzIwMDcgPSBpZmVsc2UoTkFJQ1MyMDA3ID09IDQ5MzEsIDQ5MywgTkFJQ1MyMDA3KSkgJT4lDQogIG11dGF0ZShOQUlDUzIwMDcgPSBpZmVsc2UoTkFJQ1MyMDA3ID09IDUxMTEsIDUxMSwgTkFJQ1MyMDA3KSkgJT4lDQogIG11dGF0ZShOQUlDUzIwMDcgPSBpZmVsc2UoTkFJQ1MyMDA3ID09IDU1MTExNCwgNTUxLCBOQUlDUzIwMDcpKSAlPiUNCiAgI01hcCB0byAxMyBzZWN0b3JzLg0KICBtdXRhdGUoTkFJQ1MyMDA3ID0gYXMubnVtZXJpYyhyZWNvZGUoTkFJQ1MyMDA3LCAnNTUxJz0iNjAwIiwgJzMxMSc9IjEiLCAnMzEyJz0iMSIsICczMTMnPSIyIiwgJzMxNCc9IjIiLCAnMzE1Jz0iMiIsICczMTYnPSIyIiwgJzMyMSc9IjMiLCAnMzIyJz0iMyIsICczMjMnPSIzIiwgJzMyNCc9IjQiLCAnMzI1Jz0iNSIsICczMjYnPSI2IiwgJzMyNyc9IjciLCAnMzMxJz0iOCIsICczMzInPSI4IiwgJzMzMyc9IjkiLCAnMzM0Jz0iMTAiLCAnMzM1Jz0iMTAiLCAnMzM2Jz0iMTEiLCAnMzM3Jz0iMTIiLCAnMzM5Jz0iMTIiLCAnNDIxJz0iMTQiLCAnNDU0Jz0iMTQiLCAnNDU1Jz0iMTQiLCAnNDkzJz0iMjIiLCAnNTExJz0iMTYiLCAnNTUxJz0iMjIiKSkpICU+JQ0KICBmaWx0ZXIoaXMubmEoTkFJQ1MyMDA3KT09RkFMU0UpICU+JQ0KICBtdXRhdGUoTkFJQ1MyMDA3ID0gaWZlbHNlKE5BSUNTMjAwNyA+PTEzICYgTkFJQ1MyMDA3IDw9IDIyLCAxMywgTkFJQ1MyMDA3KSkgJT4lDQogIGRwbHlyOjpyZW5hbWUoY2RwID0gTkFJQ1MyMDA3KSANCn0NCiNEcm9wIHN1cGVyZmx1b3VzIE5BSUNTIGFuZCB0dXJuIHRoZW0gYWxsIGludG8gMyBkaWdpdCBudW1iZXJzDQppZiAoeXIgPT0gMjAxMil7DQpiYXNlIDwtIGJhc2UgJT4lDQogIGZpbHRlcihOQUlDUzIwMTIgIT0gMyAmIE5BSUNTMjAxMiAhPSA0MjMgJiBOQUlDUzIwMTIgIT0gNDI0KSAlPiUNCiAgZmlsdGVyKE5BSUNTMjAxMiA8PSA0MjMwIHwgTkFJQ1MyMDEyID49IDQyNTApICU+JQ0KICBtdXRhdGUoTkFJQ1MyMDEyID0gaWZlbHNlKE5BSUNTMjAxMiA9PSA0MiwgNDIxLCBOQUlDUzIwMTIpKSAlPiUNCiAgbXV0YXRlKE5BSUNTMjAxMiA9IGlmZWxzZShOQUlDUzIwMTIgPT0gNDU0MSwgNDU0LCBOQUlDUzIwMTIpKSAlPiUNCiAgbXV0YXRlKE5BSUNTMjAxMiA9IGlmZWxzZShOQUlDUzIwMTIgPT0gNDU0MzEsIDQ1NSwgTkFJQ1MyMDEyKSkgJT4lDQogIG11dGF0ZShOQUlDUzIwMTIgPSBpZmVsc2UoTkFJQ1MyMDEyID09IDQ5MzEsIDQ5MywgTkFJQ1MyMDEyKSkgJT4lDQogIG11dGF0ZShOQUlDUzIwMTIgPSBpZmVsc2UoTkFJQ1MyMDEyID09IDUxMTEsIDUxMSwgTkFJQ1MyMDEyKSkgJT4lDQogIG11dGF0ZShOQUlDUzIwMTIgPSBpZmVsc2UoTkFJQ1MyMDEyID09IDU1MTExNCwgNTUxLCBOQUlDUzIwMTIpKSAlPiUNCiAgI01hcCB0byAxMyBzZWN0b3JzLg0KICBtdXRhdGUoTkFJQ1MyMDEyID0gYXMubnVtZXJpYyhyZWNvZGUoTkFJQ1MyMDEyLCAnNTUxJz0iNjAwIiwgJzMxMSc9IjEiLCAnMzEyJz0iMSIsICczMTMnPSIyIiwgJzMxNCc9IjIiLCAnMzE1Jz0iMiIsICczMTYnPSIyIiwgJzMyMSc9IjMiLCAnMzIyJz0iMyIsICczMjMnPSIzIiwgJzMyNCc9IjQiLCAnMzI1Jz0iNSIsICczMjYnPSI2IiwgJzMyNyc9IjciLCAnMzMxJz0iOCIsICczMzInPSI4IiwgJzMzMyc9IjkiLCAnMzM0Jz0iMTAiLCAnMzM1Jz0iMTAiLCAnMzM2Jz0iMTEiLCAnMzM3Jz0iMTIiLCAnMzM5Jz0iMTIiLCAnNDIxJz0iMTQiLCAnNDU0Jz0iMTQiLCAnNDU1Jz0iMTQiLCAnNDkzJz0iMjIiLCAnNTExJz0iMTYiLCAnNTUxJz0iMjIiKSkpICU+JQ0KICBmaWx0ZXIoaXMubmEoTkFJQ1MyMDEyKT09RkFMU0UpICU+JQ0KICBtdXRhdGUoTkFJQ1MyMDEyID0gaWZlbHNlKE5BSUNTMjAxMiA+PTEzICYgTkFJQ1MyMDEyIDw9IDIyLCAxMywgTkFJQ1MyMDEyKSkgJT4lDQogIGRwbHlyOjpyZW5hbWUoY2RwID0gTkFJQ1MyMDEyKSANCn0NCg0KI1Byb3BvcnRpb24gb2YgdGhlIGFtb3VudCBvZiBjb21tb2RpdHkgImMiIGFzc29jaWF0ZWQgd2l0aCBOQUlDUyAibiIsIHdpdGggcmVzcGVjdCB0byB0aGUgdG90YWwgYW1vdW50IG9mIGNvbW1vZGl0eSAiYyIuDQpiYXNlJGNkcCA8LSBwYXN0ZSgicG9ydGlvbiIsIGJhc2UkY2RwLCBzZXA9IiIpICANCmJhc2UgPC0gYmFzZSAlPiUNCiAgZ3JvdXBfYnkoY2RwLCBDT01NKSAlPiUgDQogICNSZXBsYWNlIG1pc3NpbmcgdmFsdWVzIHdpdGggemVyb3MuDQogIG11dGF0ZShWQUwgPSBpZmVsc2UoaXMubmEoVkFMKT09VFJVRSwgMCwgVkFMKSkgJT4lDQogIG11dGF0ZShWQUwgPSBzdW0oVkFMKSkgJT4lDQogIHVuZ3JvdXAoKSAlPiUNCiAgZGlzdGluY3QoY2RwLCBDT01NLCAua2VlcF9hbGwgPSBUUlVFKSAlPiUNCiAgc2VsZWN0KENPTU0sIGNkcCwgVkFMKSAlPiUNCiAgYXJyYW5nZShDT01NLCBjZHAsIFZBTCkgJT4lDQogIGdyb3VwX2J5KENPTU0pICU+JQ0KICBtdXRhdGUodG90YWxzZW50ID0gc3VtKFZBTCkpICU+JQ0KICB1bmdyb3VwKCkgJT4lDQogIG11dGF0ZShwb3J0aW9uID0gVkFML3RvdGFsc2VudCkgJT4lDQogIG11dGF0ZShwb3J0aW9uID0gaWZlbHNlKGlzLm5hKHBvcnRpb24pPT1UUlVFLCAwLCBwb3J0aW9uKSkgJT4lDQogIHNlbGVjdCgtVkFMLCAtdG90YWxzZW50KQ0KI1Jlc2hhcGUgdG8gbWF0cml4IGZvcm0uDQpiYXNlIDwtIHNwcmVhZChiYXNlLCBjZHAsIHBvcnRpb24sIGZpbGwgPSBOQSwgY29udmVydCA9IFRSVUUsICBkcm9wID0gVFJVRSwgc2VwID0gTlVMTCkNCmJhc2UkeWVhciA8LSB5cg0KYmFzZVtpcy5uYShiYXNlKT09VFJVRV0gPC0gMA0KDQojQXBwZW5kaW5nIHllYXJzLg0KaWYgKHlyPT0yMDA3KXsNCmJhc2UxIDwtIGJhc2UgICANCmJhc2UxJHllYXIgPC0gMjAwMg0KZmluYWwgPC0gcmJpbmQoZmluYWwsIGJhc2UxLCBiYXNlKQ0KfQ0KaWYgKHlyPT0yMDEyKXtmaW5hbCA8LSByYmluZChmaW5hbCwgYmFzZSl9DQp9DQojU2VsZWN0IGNvbW1vZGl0eSBjYXRlZ29yaWVzIGFuZCBlYWNoIHNlY3RvciBwb3J0aW9ucy4NCmZpbmFsIDwtIGZpbmFsICU+JSANCiAgc2VsZWN0KENPTU0sIHBvcnRpb24xLCBwb3J0aW9uMiwgcG9ydGlvbjMsIHBvcnRpb240LCBwb3J0aW9uNSwgcG9ydGlvbjYsIHBvcnRpb243LCBwb3J0aW9uOCwgcG9ydGlvbjksIHBvcnRpb24xMCwgcG9ydGlvbjExLCBwb3J0aW9uMTIsIHBvcnRpb24xMywgeWVhcikgJT4lDQogIGFycmFuZ2UoeWVhciwgQ09NTSkNCndyaXRlLnRhYmxlKGZpbmFsLCBmaWxlID0gcGFzdGUoIjEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhL0NGU2FwcG9ydGlvbm1lbnQuY3N2Iiwgc2VwPSIiKSwgc2VwID0gIiwiLCByb3cubmFtZXMgPSBGQUxTRSkNCg0KDQojICogVGhlIDIyIHNlY3RvcnMgaW4gQ0RQIGFyZToNCiMgDQojICogMDEpIEZvb2QsIEJldmVyYWdlLCBhbmQgVG9iYWNjbyBQcm9kdWN0cyAoTkFJQ1MgMzExLTMxMik7IA0KIyAqIDAyKSBUZXh0aWxlLCBUZXh0aWxlIFByb2R1Y3QgTWlsbHMsIEFwcGFyZWwsIExlYXRoZXIsIGFuZCBBbGxpZWQgUHJvZHVjdHMgKE5BSUNTIDMxMy0zMTYpOw0KIyAqIDAzKSBXb29kIFByb2R1Y3RzLCBQYXBlciwgUHJpbnRpbmcsIGFuZCBSZWxhdGVkIFN1cHBvcnQgQWN0aXZpdGllcyAoTkFJQ1MgMzIxLTMyMyk7IA0KIyAqIDA0KSBQZXRyb2xldW0gYW5kIENvYWwgUHJvZHVjdHMgKE5BSUNTIDMyNCk7IA0KIyAqIDA1KSBDaGVtaWNhbCAoTkFJQ1MgMzI1KTsgDQojICogMDYpIFBsYXN0aWNzIGFuZCBSdWJiZXIgUHJvZHVjdHMgKE5BSUNTIDMyNik7IA0KIyAqIDA3KSBOb25tZXRhbGxpYyBNaW5lcmFsIFByb2R1Y3RzIChOQUlDUyAzMjcpOw0KIyAqIDA4KSBQcmltYXJ5IE1ldGFsIGFuZCBGYWJyaWNhdGVkIE1ldGFsIFByb2R1Y3RzIChOQUlDUyAzMzEtMzMyKTsgDQojICogMDkpIE1hY2hpbmVyeSAoTkFJQ1MgMzMzKTsNCiMgKiAxMCkgQ29tcHV0ZXIgYW5kIEVsZWN0cm9uaWMgUHJvZHVjdHMsIGFuZCBFbGVjdHJpY2FsIEVxdWlwbWVudCBhbmQgQXBwbGlhbmNlIChOQUlDUyAzMzQtMzM1KTsgDQojICogMTEpIFRyYW5zcG9ydGF0aW9uIEVxdWlwbWVudCAoTkFJQ1MgMzM2KTsgDQojICogMTIpIEZ1cm5pdHVyZSBhbmQgUmVsYXRlZCBQcm9kdWN0cywgYW5kIE1pc2NlbGxhbmVvdXMgTWFudWZhY3R1cmluZyAoTkFJQ1MgMzM3LTMzOSk7IA0KIyAqIDE0KSBUcmFkZSAoTkFJQ1MgNDItNDUpOw0KIyAqIDEzKSBDb25zdHJ1Y3Rpb24gKE5BSUNTIDIzKTsNCiMgKiAxNSkgVHJhbnNwb3J0IFNlcnZpY2VzIChOQUlDUyA0ODEtNDg4KTsgDQojICogMTYpIEluZm9ybWF0aW9uIFNlcnZpY2VzIChOQUlDUyA1MTEtNTE4KTsNCiMgKiAxNykgRmluYW5jZSBhbmQgSW5zdXJhbmNlIChOQUlDUyA1MjEtNTI1KTsgDQojICogMTgpIFJlYWwgRXN0YXRlIChOQUlDUyA1MzEtNTMzKTsgDQojICogMTkpIEVkdWNhdGlvbiAoTkFJQ1MgNjEpOyANCiMgKiAyMCkgSGVhbHRoIENhcmUgKE5BSUNTIDYyMS02MjQpOyANCiMgKiAyMSkgQWNjb21tb2RhdGlvbiBhbmQgRm9vZCBTZXJ2aWNlcyAoTkFJQ1MgNzIxLTcyMik7IA0KIyAqIDIyKSBPdGhlciBTZXJ2aWNlcyAoTkFJQ1MgNDkzLCA1NDEsIDU1LCA1NjEsIDU2MiwgNzExLTcxMywgODExLTgxNCk7DQojICoyMy4JKE5BSUNTIDExMS0xMTUpIEFncmljdWx0dXJlLCBGb3Jlc3RyeSwgRmlzaGluZywgYW5kIEh1bnRpbmcgKGMxKQ0KIyAqTWluaW5nLCBRdWFycnlpbmcsIGFuZCBPaWwgYW5kIEdhcyBFeHRyYWN0aW9uIChjMikuDQpgYGANCg0KIyMgQ0ZTIHN0YXRlLXRvLXN0YXRlIG1hbnVmYWN0dXJpbmcgdHJhZGUgZmxvd3MNCg0KVGhlIGZvbGxvd2luZyBjb2RlIGFzc2lnbnMgc3RhdGUtdG8tc3RhdGUgdHJhZGUgZmxvd3MgZnJvbSBDRlMgdG8gdGhlIE5BSUNTIGxldmVsLiBXZSB0aGVuIGNhbGN1bGF0ZSAkWF97aWosa31ee0NGU30kIGZvciB0aGUgMTIgbWFudWZhY3R1cmluZyBzZWN0b3JzICh3aGVyZSAkWF97aWosa31ee0NGU30kIGlzIHRoZSBzYWxlcyBvZiBzdGF0ZSAkaSQgdG8gc3RhdGUgJGokIGluIHNlY3RvciAkayQgYWNjb3JkaW5nIHRvIENGUykuIEZvciBzaW1wbGljaXR5LCB3ZSBjYWxjdWxhdGUgd2VpZ2h0cyBmb3IgMTMgc2VjdG9ycyBoZXJlLCBhbmQgdGhlbiB3ZSBkcm9wIHNlcnZpY2VzIGluIHRoZSBsYXN0IGNodW5rIHRvIGtlZXAgb25seSBvdXIgMTIgbWFudWZhY3R1cmluZyBzZWN0b3JzLg0KDQpgYGB7cn0NCiNNYXRyaXggZm9yIHJlZGlzdHJpYnV0aW9uLg0KQ0ZTYXBwb3J0aW9ubWVudCA8LSByZWFkLmNzdihwYXN0ZSgiMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGEvQ0ZTYXBwb3J0aW9ubWVudC5jc3YiLCBzZXA9IiIpLCBoZWFkZXIgPSBUUlVFLCBzZXAgPSAiLCIsIGRlYyA9ICIuIikNCmZpbmFsIDwtIGMoKQ0KI1N0YXRlcyBsaXN0ZWQgYXMgb3JpZ2lucyBhbmQgYXMgZGVzdGluYXRpb25zLg0Kc3RhdGVmaXBzIDwtIHJlYWQuY3N2KHBhc3RlKCIwLVJhd19EYXRhL0ZpcHMvc3RhdGVmaXBzLmNzdiIsIHNlcD0iIiksIGhlYWRlciA9IFRSVUUsIHNlcCA9ICIsIiwgZGVjID0gIi4iKQ0KbGlzdCA8LSBzdGF0ZWZpcHMkc3RhdGVuYW1lDQpvcmlnIDwtIHN0YXRlZmlwcyAlPiUgDQogIGRwbHlyOjpyZW5hbWUob3JpZ19zdGF0ZSA9IHN0YXRlZmlwKSAlPiUNCiAgZHBseXI6OnJlbmFtZShvcmlnaW4gPSBzdGF0ZW5hbWUpDQpkZXN0IDwtIHN0YXRlZmlwcyAlPiUgDQogIGRwbHlyOjpyZW5hbWUoZGVzdF9zdGF0ZSA9IHN0YXRlZmlwKSAlPiUNCiAgZHBseXI6OnJlbmFtZShkZXN0aW5hdGlvbiA9IHN0YXRlbmFtZSkgDQoNCmZvciAoeXIgaW4gYygyMDAyLCAyMDA3LCAyMDEyKSl7DQojICogSW1wb3J0IENGUyBkYXRhIGZyb20gb3JpZ2luYWwgdGFibGUNCiMgKiJTVEFURSBUYWJsZSAyMi4gU2hpcG1lbnQgQ2hhcmFjdGVyaXN0aWNzIGJ5IERlc3RpbmF0aW9uIGFuZCBUd28tRGlnaXQgQ29tbW9kaXR5IGZvciBTdGF0ZSBvZiBPcmlnaW46IDIwMDIiDQojICoiT3JpZ2luIFN0YXRlIiwiRGVzdGluYXRpb24gU3RhdGUiLCJDb2RlIiwiU0NURyAoMi1EaWdpdCkiLCJWYWx1ZSAoJG1pbCkgMDIiLCJWYWx1ZSAlIDAyIiwiVG9ucyAodGhvdXMpIDAyIiwiVG9ucyAlIDAyIiwiVG9uLW1pbGVzIChtaWwpIDAyIiwiVG9uLW1pbGVzICUgMDIiLCJBdmcgbWlsZXMgMDIiICANCmlmICh5ciA9PSAyMDAyKXsNCmJhc2UgPC0gZGF0YS5mcmFtZShyZWFkX2V4Y2VsKHBhc3RlKCIwLVJhd19EYXRhL0NGUy9DRlMyMDAybWluZS54bHN4IixzZXA9IiIpLCBzaGVldCA9ICJzdHRibDE0MTIyODE3MjQiLCBza2lwID0gMSkpDQojIFJlbmFtaW5nIHZhcmlhYmxlcw0KYmFzZSA8LSBiYXNlICU+JQ0KICBkcGx5cjo6cmVuYW1lKCAgIG9yaWdpbiA9IE9yaWdpbi5TdGF0ZSwgZGVzdGluYXRpb24gPSBEZXN0aW5hdGlvbi5TdGF0ZSwgY29tbW9kaXR5ID0gQ29kZSwgdmFsdWUgPSBWYWx1ZS4uLm1pbC4uMDIpDQpiYXNlJG9yaWdpbiA8LSBnc3ViKCIuIiwgIiIsIGJhc2Ukb3JpZ2luLCBmaXhlZCA9IFRSVUUpDQpiYXNlJGRlc3RpbmF0aW9uIDwtIGdzdWIoIi4iLCAiIiwgYmFzZSRkZXN0aW5hdGlvbiwgZml4ZWQgPSBUUlVFKQ0KYmFzZSA8LSBiYXNlICU+JQ0KICAjRnJvbSBzdGF0ZSB0byBzdGF0ZSBvbmx5Lg0KICBmaWx0ZXIob3JpZ2luICVpbiUgbGlzdCAmIGRlc3RpbmF0aW9uICVpbiUgbGlzdCkgJT4lDQogIG11dGF0ZSh2YWx1ZSA9IGFzLm51bWVyaWModmFsdWUpKQ0KfQ0KaWYgKHlyID09IDIwMDcpew0KYmFzZSA8LSByZWFkX2V4Y2VsKHBhc3RlKCIwLVJhd19EYXRhL0NGUy9DRlMyMDA3Lnhsc3giLCBzZXA9IiIpLCBzaGVldCA9ICJDRjA3MDBBMjIiKQ0KIyBSZW5hbWluZyB2YXJpYWJsZXMNCmJhc2UgPC0gYmFzZSAlPiUNCiAgZHBseXI6OnJlbmFtZShvcmlnaW4gPSBHRU9HUkFQSFksIGRlc3RpbmF0aW9uID0gRERFU1RHRU9fTUVBTklORywgY29tbW9kaXR5ID0gQ09NTSwgdmFsdWUgPSBWQUwpICU+JQ0KICAjRnJvbSBzdGF0ZSB0byBzdGF0ZSBvbmx5Lg0KICBmaWx0ZXIob3JpZ2luICVpbiUgbGlzdCAmIGRlc3RpbmF0aW9uICVpbiUgbGlzdCkNCn0NCmlmICh5ciA9PSAyMDEyKXsNCmJhc2UgPC0gcmVhZC5jc3YocGFzdGUoIjAtUmF3X0RhdGEvQ0ZTL0NGMTIwMEEyNC5jc3YiLCBzZXA9IiIpLCBoZWFkZXIgPSBUUlVFLCBzZXAgPSAiLCIsIGRlYyA9ICIuIikgIA0KIyBSZW5hbWluZyB2YXJpYWJsZXMNCmJhc2UgPC0gYmFzZSAlPiUNCiAgZHBseXI6OnJlbmFtZShvcmlnaW4gPSBnZW9fdHRsLCBkZXN0aW5hdGlvbiA9IGRkZXN0Z2VvX3R0bCwgY29tbW9kaXR5ID0gY29tbSwgdmFsdWUgPSB2YWwpICU+JQ0KICAjRnJvbSBzdGF0ZSB0byBzdGF0ZSBvbmx5Lg0KICBmaWx0ZXIob3JpZ2luICVpbiUgbGlzdCAmIGRlc3RpbmF0aW9uICVpbiUgbGlzdCkNCn0NCiNDb252ZXJ0IG9yaWdpbi9kZXN0IHRvIGZpcHMgY29kZXMgIA0KYmFzZSA8LSBiYXNlICU+JQ0KICBzZWxlY3Qob3JpZ2luLCBkZXN0aW5hdGlvbiwgdmFsdWUsIGNvbW1vZGl0eSkgJT4lDQogICNPbmx5IHN0YXRlcyBhcyBvcmlnaW5zLg0KICBmaWx0ZXIob3JpZ2luICE9ICJVbml0ZWQgU3RhdGVzIiAmIG9yaWdpbiAhPSAiVG90YWwiICYgb3JpZ2luICE9ICJEaXN0cmljdCBvZiBDb2x1bWJpYSIpICU+JQ0KICAjT25seSBzdGF0ZXMgYXMgZGVzdGluYXRpb25zLg0KICBmaWx0ZXIoZGVzdGluYXRpb24gIT0gIlVuaXRlZCBTdGF0ZXMiICYgZGVzdGluYXRpb24gIT0gIlRvdGFsIiAmIGRlc3RpbmF0aW9uICE9ICJEaXN0cmljdCBvZiBDb2x1bWJpYSIpICU+JQ0KICBtdXRhdGUoY29tbW9kaXR5ID0gYXMuY2hhcmFjdGVyKGNvbW1vZGl0eSkpDQpiYXNlJG9yaWdpbiA8LSBnc3ViKCIgIiwgIiIsIGJhc2Ukb3JpZ2luLCBmaXhlZCA9IFRSVUUpDQpiYXNlJGRlc3RpbmF0aW9uIDwtIGdzdWIoIiAiLCAiIiwgYmFzZSRkZXN0aW5hdGlvbiwgZml4ZWQgPSBUUlVFKQ0KDQojIEdldCB0d28gZGlnaXQgY29kZXMNCmJhc2UgPC0gYmFzZSAlPiUgDQogIG11dGF0ZShjb2RlPSBhcy5udW1lcmljKHN1YnN0cih4PWNvbW1vZGl0eSwgc3RhcnQ9MSwgc3RvcD0yKSkpICU+JQ0KICBzZWxlY3Qob3JpZ2luLCBkZXN0aW5hdGlvbiwgY29kZSwgdmFsdWUpICU+JQ0KICBkcGx5cjo6cmVuYW1lKENPTU0gPSBjb2RlKSAlPiUNCiAgZmlsdGVyKENPTU0gIT0gOTkgJiBDT01NICE9IDApICU+JSAjdGFrZXMgb3V0IE5BIGFzIHdlbGwNCiAgbXV0YXRlKHllYXIgPSB5cikgJT4lDQogICNNZXJnZSB3aXRoIGRpc3RyaWJ1dGlvbiBtYXRyaXguDQogIGxlZnRfam9pbihDRlNhcHBvcnRpb25tZW50LCBieT1jKCdDT01NJz0nQ09NTScsICd5ZWFyJz0neWVhcicpKQ0KI1Jlc2hhcGUgdG8gbG9uZyB0byBlYXNlIHRoZSBjYWxjdWxhdGlvbiBvZiBYX3tpaixrfV57Q0ZTfS4NCmJhc2UgPC0gbWVsdChiYXNlLCBpZC52YXJzPWMoIm9yaWdpbiIsICJkZXN0aW5hdGlvbiIsICJDT01NIiwgInZhbHVlIiwgInllYXIiKSwgdmFyaWFibGUubmFtZT0icG9ydGlvbiIsIHZhbHVlLm5hbWUgPSAicG9ydGlvbl92YWx1ZSIpDQojIENhbGN1bGF0ZSBYX3tpaixrfV57Q0ZTfS4NCmJhc2UgPC0gYmFzZSAlPiUNCiAgbXV0YXRlKHZhbHVlID0gaWZlbHNlKGlzLm5hKHZhbHVlKSA9PSBUUlVFLCAwLCB2YWx1ZSkpICU+JQ0KICBtdXRhdGUocG9ydGlvbl92YWx1ZSA9IHBvcnRpb25fdmFsdWUgKiB2YWx1ZSkgJT4lDQogIHNlbGVjdCgtdmFsdWUsIC1DT01NKSAlPiUNCiAgZ3JvdXBfYnkob3JpZ2luLCBkZXN0aW5hdGlvbiwgeWVhciwgcG9ydGlvbikgJT4lDQogIG11dGF0ZShwb3J0aW9uX3ZhbHVlID0gc3VtKHBvcnRpb25fdmFsdWUpKSAlPiUNCiAgdW5ncm91cCgpICU+JQ0KICBkaXN0aW5jdChvcmlnaW4sIGRlc3RpbmF0aW9uLCB5ZWFyLCBwb3J0aW9uLCAua2VlcF9hbGwgPSBUUlVFKSAlPiUNCiAgbXV0YXRlKHNlY3RvciA9IGFzLm51bWVyaWMoc3Vic3RyKHg9cG9ydGlvbiwgc3RhcnQ9OCwgc3RvcD05KSkpICU+JQ0KICBzZWxlY3QoLXBvcnRpb24pICU+JQ0KICBtdXRhdGUob3JpZ2luID0gcGFzdGUoInRyYWRlIixvcmlnaW4sIHNlcD0iIikpDQojUmVzaGFwZSB0byB3aWRlLg0KYmFzZSA8LSBzcHJlYWQoYmFzZSwgb3JpZ2luLCBwb3J0aW9uX3ZhbHVlLCBmaWxsID0gMCwgY29udmVydCA9IFRSVUUsICBkcm9wID0gVFJVRSwgc2VwID0gTlVMTCkNCmJhc2UgPC0gYmFzZSAlPiUNCiAgYXJyYW5nZShzZWN0b3IsIGRlc3RpbmF0aW9uKSAlPiUNCiAgZHBseXI6OnJlbmFtZShpbXBvcnRlciA9IGRlc3RpbmF0aW9uKSAlPiUNCiAgc2VsZWN0KHllYXIsIGV2ZXJ5dGhpbmcoKSkNCg0KI0FwcGVuZGluZyB5ZWFycy4NCmZpbmFsIDwtIHJiaW5kKGZpbmFsLCBiYXNlKQ0KfQ0KDQp3cml0ZS50YWJsZShmaW5hbCwgZmlsZSA9IHBhc3RlKCIxLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YS9DRlNfWGlqay5jc3YiLCBzZXA9IiIpLCBzZXAgPSAiLCIsIHJvdy5uYW1lcyA9IEZBTFNFKQ0KDQoNCmBgYA0KDQojIEZpbmFsIHN0YXRlLXRvLXN0YXRlIG1hbnVmYWN0dXJpbmcgdHJhZGUgZmxvd3MNCg0KVXNpbmcgQ0ZTIGRhdGEgd2UgY29uc3RydWN0OiANCg0KJCR4X3tpaixrfV57Q0ZTfVxlcXVpdlxkZnJhY3tYX3tpaixrfV57Q0ZTfX17XHN1bV97aH1cc3VtX3tsfVhfe2hsLGt9XntDRlN9fSwkJCANCk91ciBvYmplY3Qgb2YgaW50ZXJlc3QgaXM6DQoNCiQkWF97aWosa309eF97aWosa31ee0NGU31YX3tVUyxVUyxrfV57V0lPRH0sJCQgDQp3aGVyZSAkWF97VVMsVVMsa31ee1dJT0R9JCBpcyB0aGUgY29uc3VtcHRpb24gb2YgdGhlIFVTIGluIHNlY3RvciAkayQgdGhhdCBpcyBwcm9kdWNlZCBpbiB0aGUgVVMsIGFjY29yZGluZyB0byBXSU9ELiBOb3RlIHRoYXQgcHJvcG9ydGlvbmFsaXR5IGltcGxpZXMgDQokJFxzdW1fe2l9IFxzdW1fe2p9IFhfe2lqLGt9PVhfe1VTLFVTLGt9XntXSU9EfSQkIGZvciBlYWNoIG1hbnVmYWN0dXJpbmcgc2VjdG9yLiANCg0KIyMgSW1wb3J0aW5nIGRhdGFzZXRzIHRvIFINCg0KYGBge3J9DQojQ0ZTDQpjZnNfYmFzZSA8LSByZWFkLmNzdigiMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGEvL0NGU19YaWprLmNzdiIpDQojV0lPRA0Kd2lvZF9iYXNlIDwtIGMoKQ0KZm9yICh5ciBpbiAyMDAwOjIwMDcpIHsNCiAgd2lvZCA8LSBjb3VudHJ5LmNvdW50cnkgPC0gcmVhZC5jc3YocGFzdGUoJzEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhLy9jb3VudHJ5X2NvdW50cnlfc3RlcF8nLCB5ciwgJy5jc3YnLCBzZXA9ICIiKSwgaGVhZGVyID0gVFJVRSwgc2VwID0gIiwiLCBkZWMgPSAiLiIpDQogIHdpb2RfYmFzZSA8LSByYmluZCh3aW9kX2Jhc2UsIHdpb2QpDQp9DQoNCiNOdW1iZXIgb2Ygc3RhdGVzLg0KcmVnaW9ucyA8LSByZWFkLmNzdigiMC1SYXdfRGF0YS9yZWdpb25zLmNzdiIpDQpzX25hbWVzIDwtIHJlZ2lvbnMgJT4lIGZpbHRlcihzdGF0dXM9PSJzdGF0ZSIpIA0Kc19uYW1lcyA8LSBzX25hbWVzJHJlZ2lvbg0Kbl9zIDwtIGxlbmd0aChzX25hbWVzKQ0KI051bWJlciBvZiBzZWN0b3JzIG1pbnVzIDMgKHdlIHVzZSBpdCB0byBleGNsdWRlIGFncmljdWx0dXJlLCBzZXJ2aWNlcywgYW5kIG5vbi1wYXJ0aWNpcGFudHMpLg0KcmVjbGFzc19zZWN0b3JzIDwtIHJlYWQuY3N2KCIwLVJhd19EYXRhL3NlY3RvcnMuY3N2IikNCm5fc2VjIDwtIGxlbmd0aCh1bmlxdWUocmVjbGFzc19zZWN0b3JzJGZpbmFsX3NlY3RvcikpIC0gMw0KI1NtYWxsIHZhbHVlLg0KZXBzaWxvbiA8LSAwLjAwMDENCmBgYA0KDQojIyBNYW51ZmFjdHVyZSBiaWxhdGVyYWwgdHJhZGUgYmV0d2VlbiBVUyBzdGF0ZXMNCg0KYGBge3IgY2FsY3VsYXRpb25zfQ0KDQpmb3IgKHlyIGluIDIwMDA6MjAwNykgew0KDQojV2Ugb25seSBoYXZlIENGUyB3ZWlnaHRzIGZvciB0aHJlZSB5ZWFycywgYnV0IHdlIGhhdmUgV0lPRCBkYXRhIGZvciAyMDAwLTIwMDcsIHNvIHdlIGFzc29jaWF0ZSBlYWNoIHllYXIncyBXSU9EIGRhdGEgdG8gdGhlIG5lYXJlc3QgYXZhaWxhYmxlIHllYXIgb2YgQ0ZTIHdlaWdodHMuDQpjPWMoMjAwMiwgMjAwNywgMjAxMikNCmFwPTEwMDANCmZvciAoaSBpbiAxOjMpIHsNCiAgcD15ci1jW2ldDQogIGlmKGFicyhwKTxhcCkgew0KICAgIGFwcm94ID0gcA0KICAgIGFwID0gYWJzKHApDQogIH0NCn0NCnlyXyA8LSB5ci1hcHJveA0KDQojQ0ZTDQpDRlMgPC0gc3Vic2V0KGNmc19iYXNlLCB5ZWFyID09IHlyXykNCkNGUyA8LSBzdWJzZXQoQ0ZTLCBzZWxlY3QgPSAteWVhciApDQoNCiNXSU9EDQp3aW9kIDwtIHN1YnNldCh3aW9kX2Jhc2UsIHllYXIgPT0geXIpDQp3aW9kIDwtIHN1YnNldCh3aW9kLCBzZWxlY3QgPSAteWVhcikgIA0KICANCiMgQ3JlYXRlIGRhdGEgZnJhbWUgZm9yIFhfe2prLGt9XntDRlN9DQpkZiA8LSBkYXRhLmZyYW1lKENGUykNCg0KIyBEaW1lbnNpb25zIG9mIGRhdGEgZnJhbWUNCm5fcm93cyA8LSBkaW0oZGYpWzFdDQpuX2NvbHVtbnMgPC0gZGltKGRmKVsyXQ0KDQojIFNlY3RvcnMNCm5fc2VjdG9ycyA8LSBsZW5ndGgodW5pcXVlKGRmJHNlY3RvcikpDQoNCiMgVW5pcXVlIHNlY3RvcnMNCnVuaXF1ZV9zZWN0b3JzIDwtIHVuaXF1ZShkZiRzZWN0b3IpDQoNCiMgQ3JlYXRlIHN1bSBvZiBYX3tobCxrfV57Q0ZTfQ0KWGlqa0NGUyA8LSBkZlssMzpuX2NvbHVtbnNdDQpzdW1faGxfWGhsa0NGUyA8LSBudW1lcmljKG5fc2VjdG9ycykNCmZvcihrIGluIDE6bl9zZWN0b3JzKSB7DQogIHN1bV9obF9YaGxrQ0ZTW2tdIDwtIHN1bShYaWprQ0ZTW2RmJHNlY3Rvcj09ayxdKQ0KfQ0KWGlqa0NGU18xIDwtIGMoKQ0KZGVub21pbmF0b3IgPC0gYygpDQojS2VlcCBvbmx5IHRoZSAxMiBtYW51ZmFjdHVyaW5nIHNlY3RvcnMuDQpmb3IgKGkgaW4gMTpuX3NlYykgew0KICBkZW5vbWluYXRvciA8LSByYmluZChkZW5vbWluYXRvcixtYXRyaXgocmVwbGljYXRlKG5fcypuX3Msc3VtX2hsX1hobGtDRlNbaV0pLCANCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbnJvdyA9IG5fcywgbmNvbCA9IG5fcykpDQogIFhpamtDRlNfMSA8LSByYmluZChYaWprQ0ZTXzEsWGlqa0NGU1tkZiRzZWN0b3I9PWksXSkNCn0NCiMgQ3JlYXRlIHhfe2lqLGt9XntDRlN9DQp4aWprQ0ZTIDwtIFhpamtDRlNfMS9kZW5vbWluYXRvciAgDQoNCiMgQ3JlYXRlIGRhdGEgZnJhbWUgZm9yIFhfe1VTLFVTLGt9XntXSU9EfS4NCmRmX3dpb2QgPC0gZGF0YS5mcmFtZSh3aW9kKQ0KIyBJZ25vcmUgbm9uLVVTQSBleHBvcnRlcnMNCmRmX3dpb2QgPC0gZGZfd2lvZCAlPiUgc2VsZWN0KGltcG9ydGVyLCBzZWN0b3IsIFVTQSkNCiNGaWx0ZXIgb3V0IG5vbi1VU0EgaW1wb3J0ZXJzDQpVU0FfZXhwb3J0ZXJfaW5kaWNlcyA8LSBkZl93aW9kJGltcG9ydGVyID09ICJVU0EiDQojIFRha2UgaW50byBhY2NvdW50IG9ubHkgdGhlIGZpcnN0IDEyIHNlY3RvcnMgDQpYX1VTQV9VU0FfayA8LSBkZl93aW9kJFVTQVtVU0FfZXhwb3J0ZXJfaW5kaWNlc10NClhfVVNBX1VTQV9rIDwtIFhfVVNBX1VTQV9rWzE6bl9zZWNdDQpYaWprIDwtIGMoKQ0KI0NyZWF0ZSBYX3tpaixrfQ0KZm9yKGkgaW4gMTpuX3NlYykgew0KICBYaWprIDwtIHJiaW5kKFhpamssIHhpamtDRlNbKChpLTEpKm5fcyArIDEpOihuX3MqaSksXSpYX1VTQV9VU0Ffa1tpXSkNCn0NCg0KI0FwcHJvcHJpYXRlIGNvbHVtbnMgb2Ygc2VjdG9yIGFuZCBpbXBvcnRlci4gQW5kIGFycmFuZ2UuIA0KWGlqayRzZWN0b3IgPC0gZGYkc2VjdG9yWzE6KG5fc2VjKm5fcyldDQpYaWprJGltcG9ydGVyIDwtIGRmJGltcG9ydGVyWzE6KG5fc2VjKm5fcyldDQpYaWprIDwtIFhpamsgJT4lIHNlbGVjdChpbXBvcnRlciwgc2VjdG9yLCBldmVyeXRoaW5nKCkpDQp4aWprQ0ZTJHNlY3RvciA8LSBkZiRzZWN0b3JbMToobl9zZWMqbl9zKV0NCnhpamtDRlMkaW1wb3J0ZXIgPC0gZGYkaW1wb3J0ZXJbMToobl9zZWMqbl9zKV0NCnhpamtDRlMgPC0geGlqa0NGUyAlPiUgc2VsZWN0KGltcG9ydGVyLCBzZWN0b3IsIGV2ZXJ5dGhpbmcoKSkNCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQojVGhlIHN1bSBvdmVyIHN0YXRlcyBvZiBYX3tpaixrfSBzaG91bGQgc3VtIHVwIHRvIFhfe1VTLFVTLGt9XntXSU9EfS4NCiMgQ2hlY2sgZm9yIGFsbCAgaw0KZm9yKGsgaW4gMTpuX3NlYykgew0KI0lmIHRoZSBzdW0gb3ZlciBzdGF0ZXMgZG9lcyBub3QgY29pbmNpZGUgd2l0aCBXSU9EIHVwIHRvIGEgc21hbGwgZGlmZmVyZW5jZSAodG9sZXJhbmNlIGxldmVsKSwgdGhlIGxvb3Agc3RvcHMgYW5kIHByaW50cyBhbiBlcnJvciBtZXNzYWdlLg0KICBpZihhYnMoc3VtKFhpamtbWGlqayRzZWN0b3I9PWssMzo1Ml0pL1hfVVNBX1VTQV9rW2tdIC0xKT5lcHNpbG9uKSANCiAgICBzdG9wKHBhc3RlKCJzdGF0ZXMnIGV4cG9ydHMgdG8gc3RhdGVzICE9IFVTIFdJT0QgZXhwb3J0cyB0byBVUyBmb3IgeWVhciIsIHlyKSkNCn0NCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQojSW5kaWNhdGUgeWVhci4gT3JnYW5pemUgYW5kIHJlbmFtZSBjb2x1bW5zLg0KU3RlcDIgPC0gWGlqayANClN0ZXAyIDwtIFN0ZXAyICU+JQ0KICBtdXRhdGUoeWVhciA9IHlyKSAlPiUNCiAgc2VsZWN0KHllYXIsIGltcG9ydGVyLCBzZWN0b3IsIGV2ZXJ5dGhpbmcoKSkNCmNvbG5hbWVzKFN0ZXAyKVs0OmRpbShTdGVwMilbMl1dID0gY2ZzX2Jhc2UkaW1wb3J0ZXJbMTpuX3NdDQoNCiAgI0V4cG9ydGluZw0Kd3JpdGUudGFibGUoU3RlcDIsIGZpbGUgPSBwYXN0ZSgiMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGEvL3N0YXRlX2Nmc19zdGVwXyIsIHlyLCIuY3N2Iiwgc2VwPSIiKSwgc2VwID0gIiwiLCByb3cubmFtZXMgPSBGQUxTRSkNCn0NCmBgYA0KDQoNCg==</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlJlYWRNZSINCm91dHB1dDoNCiAgaHRtbF9kb2N1bWVudDoNCiAgICB0b2M6IHllcw0KICAgIGRmX3ByaW50OiBwYWdlZA0KICBwZGZfZG9jdW1lbnQ6DQogICAgbnVtYmVyX3NlY3Rpb25zOiB5ZXMNCiAgaHRtbF9ub3RlYm9vazoNCiAgICB0b2M6IHllcw0KICAgIGRmX3ByaW50OiBwYWdlZA0KICAgIG51bWJlcl9zZWN0aW9uczogeWVzDQpoZWFkZXItaW5jbHVkZXM6DQotIFx1c2VwYWNrYWdle2Ftc21hdGh9DQotIFx1c2VwYWNrYWdle2Ftc3N5bWJ9DQotIFx1c2VwYWNrYWdle3BpZm9udH0NCi0gXHVzZXBhY2thZ2V7bWF0aHBhem99DQotLS0NClN1bW1hcnkgYW5kIGNvZGVzIHRvIHJ1bg0KPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQ0KDQoqMS1EYXRhLUNvZGVzLzEtV0lPRF9WQV9zaGFyZXNfaW9fc2hhcmVzX2Rpc3RhbmNlcy5SbWQqDQoNCiAtICoqR29hbDoqKiANCjEpIENhbGN1bGF0ZSBiaWxhdGVyYWwgdHJhZGUgZmxvd3MgYmV0d2VlbiBjb3VudHJpZXMgZm9yIGFsbCBzZWN0b3JzLg0KMikgQ2FsY3VsYXRlIHRoZSBzaGFyZSBvZiB2YWx1ZS1hZGRlZCBmb3IgZWFjaCBzZWN0b3Igb24gZWFjaCBjb3VudHJ5DQozKSBDYWxjdWxhdGUgdGhlIGlucHV0LW91dHB1dCBtYXRyaXggc2hhcmVzIGZvciBlYWNoIGNvdW50cnkuIA0KNCkgQ2FsY3VsYXRlIHRoZSBkaXN0YW5jZXMgYmV0d2VlbiBhbGwgcmVnaW9ucy4NCjUpIENhbGN1bGF0ZSB0aGUgZGlzdGFuY2UgZWxhc3RpY2l0eSBhbmQgb3duLWR1bW15IGNvZWZmaWNpZW50cyBmb3IgdHJhZGUgZmxvd3MgaW4gc2VydmljZXMgYW5kIGFncmljdWx0dXJlLg0KIC0gKipTb3VyY2U6KiogYDEtRGF0YS1Db2Rlcy8wLVJhd19EYXRhYA0KIC0gKipPdXRwdXRzOioqIGAxLURhdGEtQ29kZXMvMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGFgIGFuZCBgMS1EYXRhLUNvZGVzLzItRmluYWxfRGF0YWANCg0KKjEtRGF0YS1Db2Rlcy8yLVN0YXRlX2NvdW50cnkuUm1kKg0KDQogLSAqKkdvYWw6KiogQ2FsY3VsYXRlIHN0YXRlLWNvdW50cnkgYmlsYXRlcmFsIGZsb3dzIGZvciBhbGwgc2VjdG9ycyBleGNlcHQgc2VydmljZXMuIA0KLSAqKlNvdXJjZToqKiBgMS1EYXRhLUNvZGVzLzAtUmF3X0RhdGFgDQphbmQgYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWAgDQogLSAqKk91dHB1dHM6KiogDQpgMS1EYXRhLUNvZGVzLzEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhYCANCg0KKjEtRGF0YS1Db2Rlcy8zLVN0YXRlX3N0YXRlLlJtZCoNCg0KIC0gKipHb2FsOioqIENhbGN1bGF0ZSBzdGF0ZS1zdGF0ZSBiaWxhdGVyYWwgZmxvd3MgZm9yIGFsbCBzZWN0b3JzIGV4Y2VwdCBzZXJ2aWNlcyBhbmQgYWdyaWN1bHR1cmUuIA0KIC0gKipTb3VyY2U6KiogYDEtRGF0YS1Db2Rlcy8wLVJhd19EYXRhYA0KYW5kIGAxLURhdGEtQ29kZXMvMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGFgIA0KIC0gKipPdXRwdXQ6KiogYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWAgDQoNCioxLURhdGEtQ29kZXMvNC1HcmF2aXR5X3NlcnZpY2VzLlJtZCoNCg0KIC0gKipHb2FsOioqIENhbGN1bGF0ZSBzdGF0ZS1zdGF0ZSBhbmQgc3RhdGUtY291bnRyeSBiaWxhdGVyYWwgZmxvd3MgZm9yIHNlcnZpY2VzIHVzaW5nIGEgZ3Jhdml0eSBzeXN0ZW0gYXBwcm9hY2guIA0KIC0gKipTb3VyY2U6KiogYDEtRGF0YS1Db2Rlcy8wLVJhd19EYXRhYA0KYW5kIGAxLURhdGEtQ29kZXMvMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGFgIA0KIC0gKipPdXRwdXQ6KiogYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWAgDQoNCioxLURhdGEtQ29kZXMvNS1HcmF2aXR5X2FncmljdWx0dXJlLlJtZCoNCg0KIC0gKipHb2FsOioqIENhbGN1bGF0ZSBzdGF0ZS1zdGF0ZSBiaWxhdGVyYWwgZmxvd3MgZm9yIGFncmljdWx0dXJlIHVzaW5nIGEgZ3Jhdml0eSBzeXN0ZW0gYXBwcm9hY2guIA0KIC0gKipTb3VyY2U6KiogYDEtRGF0YS1Db2Rlcy8wLVJhd19EYXRhYA0KYW5kIGAxLURhdGEtQ29kZXMvMS1JbnRlcm1lZGlhdGVfUHJvY2Vzc2VkX0RhdGFgIA0KIC0gKipPdXRwdXQ6KiogYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWAgDQogDQogKjEtRGF0YS1Db2Rlcy82LU1hdHJpY2VzX2RlZmljaXRzX1ZBX3NoYXJlc19zdGF0ZXMqDQoNCiAtICoqR29hbDoqKiANCjEpIENvbWJpbmUgdGhlIHJlc3VsdHMgb2YgdGhlIHByZXZpb3VzIDUgc2NyaXB0cyB0byBvYnRhaW4gdGhlIGZpbmFsIG1hdHJpeCBvZiBiaWxhdGVyYWwgZmxvd3MgKGZvciBhbGwgc2VjdG9ycywgZm9yIGFsbCByZWdpb25zKSBmb3IgeWVhcnMgMjAwMC0yMDA3Lg0KMikgQ2FsY3VsYXRlIHJlZ2lvbi1zZWN0b3IgbGV2ZWwgZGVmaWNpdHMuIA0KMykgQ2FsY3VsYXRlIHRoZSBzaGFyZSBvZiB2YWx1ZSBhZGRlZCBpbiBncm9zcyBvdXRwdXQgZm9yIGVhY2ggVVMgc3RhdGUsIGZvciBlYWNoIHNlY3Rvci4NCiAtICoqU291cmNlOioqIGAxLURhdGEtQ29kZXMvMC1SYXdfRGF0YWANCmFuZCBgMS1EYXRhLUNvZGVzLzEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhYA0KIC0gKipPdXRwdXQ6KiogYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWAgYW5kIGAxLURhdGEtQ29kZXMvMi1GaW5hbF9EYXRhYA0KDQogKjEtRGF0YS1Db2Rlcy83LUV4cG9zdXJlcy5SbWQqDQoNCiAtICoqR29hbDoqKiANCjEpIENhbGN1bGF0ZSBlbXBsb3ltZW50IGxldmVscyBieSBzdGF0ZS1zZWN0b3IgZm9yIHllYXIgMjAwMCB1c2luZyBCTFMgYW5kIENFTlNVUy4NCjIpIENhbGN1bGF0ZSB0aGUgMjAwMC0yMDA3IGNoYW5nZSBpbiBpbXBvcnRzIGZyb20gQ2hpbmEgdG8gdGhlIFVTIGFuZCBvdGhlciBhZHZhbmNlZCBlY29ub21pZXMuIFRvIHJ1biBhIGxpbmVhciByZWdyZXNzaW9uIHVzaW5nIHRoZSBjaGFuZ2Ugb2Ygc2VjdG9yIFVTIGltcG9ydHMgZnJvbSBDaGluYSBhcyB0aGUgZGVwZW5kZW50IHZhcmlhYmxlIGFuZCB0aGUgY2hhbmdlIG9mIHNlY3RvciAgYWR2YW5jZWQgZWNvbm9taWVzJyBpbXBvcnRzIGZyb20gQ2hpbmEgYXMgdGhlIGluZGVwZW5kZW50IHZhcmlhYmxlLiANCjMpIENvbXB1dGVzIHRoZSBleHBvc3VyZSBtZWFzdXJlIG9mIGVxdWF0aW9uICgxNikgZnJvbSB0aGUgbWFudXNjcmlwdC4NCiAtICoqU291cmNlOioqIGAxLURhdGEtQ29kZXMvMC1SYXdfRGF0YWANCmFuZCBgMS1EYXRhLUNvZGVzLzEtSW50ZXJtZWRpYXRlX1Byb2Nlc3NlZF9EYXRhYA0KIC0gKipPdXRwdXQ6KiogYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWAgYW5kIGAxLURhdGEtQ29kZXMvMi1GaW5hbF9EYXRhYA0KDQoqMS1EYXRhLUNvZGVzLzgtRW1wbG95bWVudF8xOTk5XzIwMDAuUm1kKg0KDQogLSAqKkdvYWw6KiogDQoxKSBDb21wdXRlIHRoZSBlbXBsb3ltZW50IGxldmVsIGZvciBlYWNoIHN0YXRlIGFuZCBzZWN0b3IgaW4geWVhciAyMDAwIHVzaW5nIENCUyBkYXRhLg0KMikgQ29tcHV0ZSB0aGUgZW1wbG95bWVudCBsZXZlbCBmb3IgZWFjaCBzdGF0ZSBhbmQgc2VjdG9yIGluIHllYXIgMjAwMCBhbmQgeWVhciAxOTk5IHVzaW5nIEJMUyBkYXRhLg0KMykgQ29tcHV0ZSB0aGUgZW1wbG95bWVudCBsZXZlbCBmb3IgZWFjaCBjb3VudHJ5IGFuZCBzZWN0b3IgaW4geWVhciAxOTk5IGFuZCB5ZWFyIDIwMDAgdXNpbmcgSUxPIGFuZCBTRUEgZGF0YQ0KNCkgQ29tYmluZSB0aGUgcHJldmlvdXMgb3V0cHV0cywgYW5kIGFwcGx5IHByb3BvcnRpb25hbGl0eSB0byBlbnN1cmUgY29uc2lzdGVuY3kgd2l0aCBXSU9EIFNFQQ0KIC0gKipTb3VyY2U6KiogYDEtRGF0YS1Db2Rlcy8wLVJhd19EYXRhYA0KIC0gKipPdXRwdXQ6KiogYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWANCg0KKjEtRGF0YS1Db2Rlcy85LU1pZ3JhdGlvbl9tYXRyaXgqDQoNCiAtICoqR29hbDoqKiANCjEpIENvbXB1dGUgQUNTIHRvdGFsIHN0YXRlIHRvIHN0YXRlIG1pZ3JhdGlvbiBtb3ZlbWVudHMgKGtub3dpbmcgdGhlIHNlY3RvciBvZiBkZXN0aW5hdGlvbiwgYnV0IG5vdCB0aGUgc2VjdG9yIG9mIG9yaWdpbiksIGJ5IHllYXIgZm9yIDE5OTktMjAwMS4NCjIpIENvbXB1dGUgSVJTIHRvdGFsIHN0YXRlIHRvIHN0YXRlIG1pZ3JhdGlvbiBtb3ZlbWVudHMgKG5vdCBrbm93aW5nIHRoZSBzZWN0b3Igb2Ygb3JpZ2luLCBub3IgdGhlIHNlY3RvciBvZiBkZXN0aW5hdGlvbiksIGZvciAxOTk5Lg0KMykgQ29tcHV0ZSBDUFMgdG90YWwgc3RhdGUgdG8gc3RhdGUgbWlncmF0aW9uIG1vdmVtZW50cyAoa25vd2luZyBib3RoIHRoZSBzZWN0b3Igb2Ygb3JpZ2luIGFuZCB0aGUgc2VjdG9yIG9mIGRlc3RpbmF0aW9uKSwgYnkgeWVhciBmb3IgMTk5OS0yMDAxLiANCjQpIENvbWJpbmUgdGhlIGRhdGEgZnJvbSB0aGUgcHJldmlvdXMgdGhyZWUgc3RlcHMgdG8gY29tcHV0ZSBvdXIgZmluYWwgc2VjdG9yLXN0YXRlIHRvIHNlY3Rvci1zdGF0ZSBtb2JpbGl0eSBmbG93cy4gVGhlbiB3ZSBjYWxjdWxhdGUgdGhlIGNvcnJlc3BvbmRpbmcgbW9iaWxpdHkgc2hhcmVzIGluIGEgY2FzZSB3aXRoIG1pZ3JhdGlvbiBhbmQgYSBjYXNlIHdpdGhvdXQgbWlncmF0aW9uICh0aGF0IGlzLCBub3QgYWxsb3dpbmcgc3RhdGUgdG8gc3RhdGUgbW92ZW1lbnRzLCBqdXN0IGFsbG93aW5nIHNlY3RvciByZWFsbG9jYXRpb24pLg0KIC0gKipTb3VyY2U6KiogYDEtRGF0YS1Db2Rlcy8wLVJhd19EYXRhYA0KIC0gKipPdXRwdXQ6KiogYDEtRGF0YS1Db2Rlcy8xLUludGVybWVkaWF0ZV9Qcm9jZXNzZWRfRGF0YWAgYW5kIGAxLURhdGEtQ29kZXMvMi1GaW5hbF9EYXRhYA0KDQpNb3JlIGRldGFpbGVkIGRlc2NyaXB0aW9uDQo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQ0KDQojIyBJbnB1dC1vdXRwdXQgY29lZmZpY2llbnRzIGFuZCB2YWx1ZS1hZGRlZCBzaGFyZXMgKGZvciBjb3VudHJpZXMpDQoNClRoZSBmaXJzdCBzY3JpcHQgY2FsY3VsYXRlcyB0aGUgaW5wdXQtb3V0cHV0IG1hdHJpeCBmb3IgY291bnRyaWVzLiBEZWZpbmluZyAkXGFscGhhX3tqLGtzfSQgZm9yIHJlZ2lvbiAkaiQgYXMgdGhlIHNoYXJlIG9mIHB1cmNoYXNlcyBvZiBzZWN0b3IgJHMkIHRoYXQgY29tZSBmcm9tIHNlY3RvciAkayQgaW4gdGhlIHRvdGFsIHB1cmNoYXNlcyBvZiBzZWN0b3IgJHMkOg0KDQokJFxhbHBoYV97aixrc309XGRmcmFje1xzdW1fe2l9WF97aWosa3N9fXtcc3VtX3tyfVxzdW1fe2l9WF97aWoscnN9fT1cZGZyYWN7WF97aixrc319e1xzdW1fe3J9WF97aixyc319JCQNCg0KVGhpcyBzY3JpcHQgYWxzbyBjYWxjdWxhdGVzIHRoZSBzaGFyZSBvZiB2YWx1ZS1hZGRlZCAobWFwcGVkIGluIHRoZSBtb2RlbCB0byB0aGUgbGFib3Igc2hhcmUpIGZvciBlYWNoIGNvdW50cnksIGVhY2ggc2VjdG9yLCBhbmQgZWFjaCB5ZWFyIHVzaW5nIGRhdGEgZnJvbSBXSU9ELkluIHBhcnRpY3VsYXIsIA0KJCRMYWJvciBcOyBzaGFyZSA9IFxmcmFje1ZBX3tpLGt9fXtSX3tpLGt9fSQkDQp3aGVyZSAkUl97aSxrfSQgZGVub3RlcyB0b3RhbCByZXZlbnVlIGluIHNlY3RvciAkayQgb2YgY291bnRyeSAkaSQuIA0KDQojIyBCaWxhdGVyYWwgdHJhZGUgZmxvd3MNCg0KRmluYWxseSwgdGhlIGZpcnN0IHNjcmlwdCBiZWdpbnMgdGhlIG5lY2Vzc2FyeSBzdGVwcyB0byBjb25zdHJ1Y3QgYSBtYXRyaXggb2YgYmlsYXRlcmFsIHRyYWRlIGZsb3dzLiBTcGVjaWZpY2FsbHksIGl0IGNhbGN1bGF0ZXMgdGhlIGJpbGF0ZXJhbCB0cmFkZSBmbG93cyAoJFhfe2lqLGt9JCkgYmV0d2VlbiBjb3VudHJpZXMgZm9yIGFsbCBzZWN0b3JzLCBkaXJlY3RseSBmcm9tIFdJT0QgZGF0YS4NCg0KSG93ZXZlciwgZm9yIGJpbGF0ZXJhbCBmbG93cyB0aGF0IGludm9sdmUgc3RhdGVzLCB0aGVyZSBhcmUgcmVnaW9uLXNlY3RvciBjb21iaW5hdGlvbnMgdGhhdCB3ZSBjYW4gbm90IG9ic2VydmUgZGlyZWN0bHkgZnJvbSBkYXRhLiBGb3IgdGhvc2UgY29tYmluYXRpb25zLCB3ZSB1c2UgKGluIGxhdGVyIHNjcmlwdHMpIGEgZ3Jhdml0eSBzeXN0ZW0gYXBwcm9hY2ggdG8gZGVyaXZlIHRoZSBjb3JyZXNwb25kaW5nIHRyYW5zYWN0aW9ucy4gSW4gcGFydGljdWxhciwgdGhlICJwcm9ibGVtYXRpYyIgc2VjdG9ycyBhcmUgYWdyaWN1bHR1cmUgYW5kIHNlcnZpY2VzLiBIZW5jZSwgdGhlIGxhc3QgdGhpbmcgdGhhdCB0aGUgZmlyc3Qgc2NyaXB0IGRvZXMgaXMgdG8gY2FsY3VsYXRlIHRoZSBkaXN0YW5jZSBlbGFzdGljaXR5IGFuZCBvd24tZHVtbXkgY29lZmZpY2llbnRzIGZvciB0cmFkZSBmbG93cyBpbiBzZXJ2aWNlcyBhbmQgYWdyaWN1bHR1cmUgYmV0d2VlbiBjb3VudHJpZXMgKGluY2x1ZGluZyB0aGUgVVMpIGVzdGltYXRpbmc6DQokJA0KXGxuIFhfe2lqLHR9PVxsYW1iZGFfdCArIFxkZWx0YV97aX1ee299K1xkZWx0YV97an1ee2R9K1xiZXRhX3swfVxpb3RhX3tpan0rXGJldGFfezF9XGxuIGRpc3Rfe2lqfStceGlfe2lqLHR9DQokJA0Kd2hlcmUgJFxsYW1iZGFfdCQgaXMgYSB0aW1lIGZpeGVkIGVmZmVjdCwgJFxkZWx0YV97aX1ee299JCBpcyBhbiBvcmlnaW4gZml4ZWQgZWZmZWN0LCAkXGRlbHRhX3tqfV57ZH0kIGlzIGEgZGVzdGluYXRpb24gZml4ZWQgZWZmZWN0LCBhbmQgJFxpb3RhX3tpan0kIGlzIGFuIGluZGljYXRvciB2YXJpYWJsZSBlcXVhbCB0byAxIGlmICRpPWokLCBhbmQgemVybyBvdGhlcndpc2UuIEFzIHVzdWFsICRYX3tpaix0fSQgaXMgd2hhdCBjb3VudHJ5ICRpJCBzZWxscyB0byBjb3VudHJ5ICRqJCBpbiB5ZWFyICR0JC4gVGhlIGNvZWZmaWNpZW50cyBvZiBpbnRlcmVzdCBhcmUgJFxiZXRhXzAkIGFuZCAkXGJldGFfMSQgdGhhdCB3ZSB1c2UgdG8gY29uc3RydWN0OiAkJFx0aWxkZXtcdGF1fV97aWp9PVxleHAoXGhhdHtcYmV0YX1fezB9XGlvdGFfe2lqfStcaGF0e1xiZXRhfV97MX1cbG4gZGlzdF97aWp9KS4kJA0KDQpBZnRlciBzY3JpcHQgMiBjYWxjdWxhdGVzIHN0YXRlLWNvdW50cnkgYmlsYXRlcmFsIGZsb3dzIGZvciBhbGwgc2VjdG9ycyBleGNlcHQgc2VydmljZXMsIGZyb20gQ0VOU1VTIGRhdGEgKGFuZCBhIHByb3BvcnRpb25hbGl0eSBydWxlIHRoYXQgbWFrZXMgc3RhdGUgZmxvd3Mgc3VtIHVwIHRvIFVTIGZsb3dzIGFjY29yZGluZyB0byBXSU9EKSwgYW5kIHNjcmlwdCAzIGNhbGN1bGF0ZXMgc3RhdGUtc3RhdGUgYmlsYXRlcmFsIGZsb3dzIGZvciBhbGwgc2VjdG9ycyBleGNlcHQgc2VydmljZXMgYW5kIGFncmljdWx0dXJlLCBmcm9tIENGUyBkYXRhIChhbmQgYSBwcm9wb3J0aW9uYWxpdHkgcnVsZSB0aGF0IG1ha2VzIHN0YXRlIGZsb3dzIHN1bSB1cCB0byBVUyBmbG93cyBhY2NvcmRpbmcgdG8gV0lPRCkuIFNjcmlwdCA0IGNhbGN1bGF0ZXMgdGhlIHJlbWFpbmluZyBjb21iaW5hdGlvbnMgZm9yIHNlcnZpY2VzIChjb3VudHJ5LXN0YXRlIGFuZCBzdGF0ZS1zdGF0ZSBmbG93cykgYW5kIFNjcmlwdCA1IGNhbGN1bGF0ZXMgdGhlIHJlbWFpbmluZyBjb21iaW5hdGlvbnMgZm9yIGFncmljdWx0dXJlIChzdGF0ZS1zdGF0ZSBmbG93cyksIGJvdGggdXNpbmcgYSBncmF2aXR5IGFwcHJvYWNoLg0KDQpTcGVjaWZpY2FsbHksIGZyb20gdGhlIHRyYWRlIHJlc2lzdGFuY2VzIGltcGxpZWQgYnkgdGhlIGZpcnN0IHNjcmlwdCB3ZSBjYWxjdWxhdGUgdGhlIGNvcnJlc3BvbmRpbmcgYmlsYXRlcmFsIGZsb3dzIHVzaW5nIHRoZSBmb2xsb3dpbmcgZm9ybXVsYToNCiQkWF97aWp9PVx0aWxkZXtcdGF1fV97aWp9XHRpbGRle1xQaX1fe2l9XnstMX1cdGlsZGV7UH1fe2p9XnstMX1SX3tpfUVfe2p9LiQkDQp3aGVyZSAkUl97aX0kIGlzIHRvdGFsIHJldmVudWUgb2YgcmVnaW9uICRpJDsgJEVfe2p9JCBpcyB0b3RhbCBleHBlbmRpdHVyZSBvZiByZWdpb24gJGokOyBhbmQgJFx0aWxkZXtcUGl9X3tpfSQgYW5kICRcdGlsZGV7UH1fe2p9JCBhcmUgcHJpY2UgaW5kaWNlcyB0aGF0IHNvbHZlIHRoZSBncmF2aXR5IHN5c3RlbSAoc2VlIHNjcmlwdHMgNCBhbmQgNSBmb3IgYSBkZXRhaWxlZCBleHBvc2l0aW9uIG9mIHRoZSBzeXN0ZW0pLg0KDQpIYXZpbmcgYWxsIHRoZSBiaWxhdGVyYWwgdHJhZGUgZmxvd3MsIHNjcmlwdCA2IGNvbWJpbmVzIHRoZW0gYWxsIGluIGEgc2luZ2xlIG1hdHJpeC4NCg0KIyMgVHJhZGUgZGVmaWNpdHMNClRoZW4gc2NyaXB0IDYgY2FsY3VsYXRlcyB0aGUgZGVmaWNpdCBmb3IgYSByZWdpb24gJGkkIGluIGEgc2VjdG9yICRrJCwgZGVmaW5lZCBhczogDQokJCBEX3tpLGt9PVxzdW1faiBYX3tpaixrfSAtIFxzdW1faiBYX3tqaSxrfSAkJA0KDQojIyBWYWx1ZS1hZGRlZCBzaGFyZXMgDQpGaW5hbGx5LCBzY3JpcHQgNiBjYWxjdWxhdGVzIHRoZSBzaGFyZSBvZiB2YWx1ZSBhZGRlZCBpbiBncm9zcyBvdXRwdXQgZm9yIGVhY2ggVVMgc3RhdGUsIGZvciBlYWNoIHNlY3RvciAoYXMgd2Ugbm90ZWQgYWJvdmUsIHZhbHVlLWFkZGVkIHNoYXJlcyBmb3IgY291bnRyaWVzIHdlcmUgYWxyZWFkeSBjYWxjdWxhdGVkIGluIHRoZSBmaXJzdCBzY3JpcHQpLg0KDQojIyBFeHBvc3VyZSBtZWFzc3VyZXMNClRoZSBjYWxpYnJhdGlvbiBvZiB0aGUga2V5IG1vZGVsIHBhcmFtZXRlcnMgaXMgYmFzZWQgb24gbWF0Y2hpbmcgbW9tZW50cw0KdGhhdCBjYXB0dXJlIHRoZSByZWxhdGl2ZSBlZmZlY3Qgb2YgdGhlIENoaW5hIHNob2NrIG9uIGxhYm9yLiBUaGVzZSBtb21lbnRzIGFyZSBjYXB0dXJlZCBieSBhbiBleHBvc3VyZSBtZWFzdXJlIHRoYXQgZm9sbG93cyB0aGUgb25lIHByb3Bvc2VkIGJ5IEFESCBhbmQgdGhhdCB3ZSBjYWxjdWxhdGUgaW4gc2NyaXB0IDc6DQokJA0KRXhwb3N1cmVfaSBcZXF1aXYgXHN1bV97cz0xfV5TXGZyYWN7TF97aSxzLDIwMDB9fXtMX3tpLDIwMDB9fVxmcmFje1x3aWRlaGF0e1xEZWx0YSBYX3tDLFVTLHN9XnsyMDA3LTIwMDB9fX17Ul97VVMscywyMDAwfX0NCiQkDQp3aGVyZSAkTF97aSxzLDIwMDB9JCBhcmUgdGhlIGVtcGxveW1lbnQgbGV2ZWxzIGJ5IHN0YXRlLXNlY3RvciBmb3IgeWVhciAyMDAwOyAkTF97aSwyMDAwfVxlcXVpdlxzdW1fc0xfe2kscywyMDAwfSQgKHNjcmlwdCA3IGNhbGN1bGF0ZXMgJEV4cG9zdXJlX2kkIHVzaW5nIGxhYm9yIHNoYXJlcyBjb21pbmcgZnJvbSBDZW5zdXMgZGF0YSB3aXRob3V0IHBlcnNvbiB3ZWlnaHRzLCBhbmQgY29taW5nIGZyb20gQkxTIGRhdGEpOyAkUl97VVMscywyMDAwfSQgaXMgdG90YWwgVVMgMjAwMCBzYWxlcyBieSBzZWN0b3I7IGFuZCAoJFx3aWRlaGF0e1xEZWx0YSBYX3tDLFVTLHN9XnsyMDA3LTIwMDB9fSQpIGFyZSB0aGUgcHJlZGljdGVkIHZhbHVlcyBvZiBhIGxpbmVhciByZWdyZXNzaW9uICh0aGF0IHNjcmlwdCA3IGFsc28gZXN0aW1hdGVzKSB1c2luZyB0aGUgY2hhbmdlIG9mIHNlY3RvciBVUyBpbXBvcnRzIGZyb20gQ2hpbmEgYXMgdGhlIGRlcGVuZGVudCB2YXJpYWJsZSBhbmQgdGhlIGNoYW5nZSBvZiBzZWN0b3IgIGFkdmFuY2VkIGVjb25vbWllcycgaW1wb3J0cyBmcm9tIENoaW5hIGFzIHRoZSBpbmRlcGVuZGVudCB2YXJpYWJsZS4NCg0KIyMgRW1wbG95bWVudCB0b3RhbA0KU2NyaXB0IDggZG9lcyBhIHJhdGhlciAic2VwYXJhdGVkIiB0YXNrLiBJdCBjb21wdXRlcyB0aGUgZW1wbG95bWVudCBsZXZlbCBmb3IgZWFjaCBzdGF0ZSBhbmQgc2VjdG9yIGluIHllYXIgMjAwMCB1c2luZyBDQlMgZGF0YTsgdGhlIGVtcGxveW1lbnQgbGV2ZWwgZm9yIGVhY2ggc3RhdGUgYW5kIHNlY3RvciBpbiB5ZWFyIDIwMDAgYW5kIHllYXIgMTk5OSB1c2luZyBCTFMgZGF0YTsgYW5kIHRoZSBlbXBsb3ltZW50IGxldmVsIGZvciBlYWNoIGNvdW50cnkgYW5kIHNlY3RvciBpbiB5ZWFyIDE5OTkgYW5kIHllYXIgMjAwMCB1c2luZyBJTE8gYW5kIFNFQSBkYXRhLiBGaW5hbGx5LCBzY3JpcHQgOCBjb21iaW5lcyB0aGUgcHJldmlvdXMgVVMgZW1wbG95bWVudCBsZXZlbHMsIGFuZCBhcHBsaWVzIHByb3BvcnRpb25hbGl0eSB0byBlbnN1cmUgY29uc2lzdGVuY3kgd2l0aCBXSU9EIFNFQS4NCiMjIExhYm9yIGZsb3dzDQpGaW5hbGx5LCBzY3JpcHQgOSBjYWxjdWxhdGVzIG1pZ3JhdGlvbiBmbG93cyBiZXR3ZWVuIFVTIHN0YXRlcy4gU3BlY2lmaWNhbGx5LCBzY3JpcHQgOSBjb21wdXRlcyBtaWdyYXRpb24gZnJvbSBzdGF0ZSAkbiQgdG8gc3RhdGUgJGkkIGFuZCBzZWN0b3IgJHEkLCBhY2NvcmRpbmcgdG8gQUNTICgkTF97QUNTfV57bj8saXF9JCkgYnkgeWVhciBmb3IgMTk5OS0yMDAxOyBtaWdyYXRpb24gZnJvbSBzdGF0ZSAkbiQgdG8gc3RhdGUgJGkkLCBhY2NvcmRpbmcgdG8gSVJTICgkTF97SVJTfV57bixpfSQpIGZvciAxOTk5OyBhbmQgbWlncmF0aW9uIGZyb20gc3RhdGUgJG4kIGFuZCBzZWN0b3IgJGokIHRvIHN0YXRlICRpJCBhbmQgc2VjdG9yICRrJCwgYWNjb3JkaW5nIHRvIENQUyAoJExfe0NQU31ee3tuaixpa319JCkgYnkgeWVhciBmb3IgMTk5OS0yMDAxLg0KV2UgY29tYmluZSB0aGUgZGF0YSBmcm9tIHRoZSBwcmV2aW91cyB0aHJlZSBtaWdyYXRpb24gbWVhc3VyZXMgdG8gY29tcHV0ZSBvdXIgZmluYWwgJExee3tuaixpa319JCdzLiBGb3IgbW92ZW1lbnRzIGJldHdlZW4gc2VjdG9ycyB3aXRoaW4gdGhlIHNhbWUgc3RhdGUgd2UgdXNlIHRoZSBmb2xsb3dpbmcgcHJvcG9ydGlvbmFsaXR5IHJ1bGU6DQokJA0KTF57biBqLCBuIGt9PUxfe0kgUiBTfV57biwgbn0gXHRpbWVzIFxmcmFje0xfe0MgUCBTfV57biBqLCBuIGt9fXtcc3VtX3EgXHN1bV9oIExfe0MgUCBTfV57biBoLCBuIHF9fSBccXVhZCBcZm9yYWxsIG4gXGluIFUgUyBBLCBcZm9yYWxsIGosIGsNCiQkDQpGb3IgYWxsIHRoZSBvdGhlciBjYXNlcywgd2UgdXNlIHRoZSBmb2xsb3dpbmcgcHJvcG9ydGlvbmFsaXR5IHJ1bGU6DQokJA0KTF57bmosaWt9PVxmcmFje0xfe0NQU31ee2lqLGlrfX17XHN1bV97aH1MX3tDUFN9XntpaCxpa319XHRpbWVzIExfe0lSU31ee24saX1cdGltZXNcZnJhY3tcc3VtX3tpfUxfe0FDU31ee24/LGlrfX17XHN1bV97aX1cc3VtX3txfUxfe0FDU31ee24/LGlxfX0NCiQkDQpUaGVuIHdlIGNhbGN1bGF0ZSB0aGUgY29ycmVzcG9uZGluZyBtb2JpbGl0eSBzaGFyZXM6DQokJA0KXG11X3tuaixpa309XGZyYWN7TF57bmosaWt9fXtcc3VtX3twPTF9XntOfVxzdW1fe3E9MX1ee0p9TF57bmoscHF9fQ0KJCQNCg0KV2UgYWxzbyBjYWxjdWxhdGUgJFxtdV97bmosaWt9JCdzIGZvciBhIG5vbi1taWdyYXRpb24gY2FzZSAodGhhdCBpcywgbm90IGFsbG93aW5nIHN0YXRlIHRvIHN0YXRlIG1vdmVtZW50cywganVzdCBhbGxvd2luZyBzZWN0b3IgcmVhbGxvY2F0aW9uKS4NCg0KTm90ZTogUmF3IGRhdGEgbm90IGluIEdpdEh1Yg0KPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0NCjEpIEZvciBzY3JpcHQgMzogYDAtUmF3X0RhdGEvQ0ZTL0NGMTIwMEEyNC5jc3ZgICB3YXMgdG9vIGhlYXZ5LCBzbyBpdCB3YXMgY29tcHJlc3NlZCBpbiBhIC56aXAgZm9sZGVyIHdpdGggdGhlIHNhbWUgbmFtZTsgaXQgbXVzdCBiZSB0YWtlbiBvdXQgb2YgdGhlIGZvbGRlciB0byBydW4gdGhlIHNjcmlwdC4NCjIpIEZvciBzY3JpcHQgNTogdGhlIGNvbGxlY3Rpb24gb2YgYDAtUmF3X0RhdGEvQ0VOU1VTXzIwMDAvUFVNUzUvUFVNUzVfYCAudHh0IGZpbGVzIGZvciBlYWNoIFVTIHN0YXRlIHdhcyB0b28gaGVhdnkgdG8gYmUgdXBsb2FkZWQuIEhvd2V2ZXIsIHdlIGV4cGxhaW4gaW4gdGhlIHJhdyBkYXRhIFJlYWRNZSBmaWxlIGhvdyB0byBkb3dubG9hZCB0aGVzZSBmaWxlcyBkaXJlY3RseSBmcm9tICBVLlMuIENlbnN1cyBCdXJlYXUncyBwYWdlLiBUaGUgc2FtZSBjb21tZW50IGFwcGxpZXMgdG8gc2NyaXB0IDggYW5kIHRoZSBjb2xsZWN0aW9uIG9mIGAwLVJhd19EYXRhL0NFTlNVU18yMDAwL1JFVklTRURQVU1TNS9SRVZJU0VEUFVNUzVfYCAudHh0IGZpbGVzLg0KMykgRm9yIHNjcmlwdCA4OiBgMC1SYXdfRGF0YS9DRU5TVVNfMjAwMC9MXzE5OTlfMjAwMF9jb3VudHJpZXMuY3N2YCwgYDAtUmF3X0RhdGEvQ0VOU1VTXzIwMDAvRUFQXzJXQVBfU0VYX0FHRV9SVF9BLWZpbHRlcmVkLTIwMjMtMTEtMDIuY3N2YCwgYW5kIGAwLVJhd19EYXRhL0NFTlNVU18yMDAwL1BfV29ybGQgdW5lbXBsb3ltZW50IHJhdGVzLnhsc3hgIHdlcmUgbm90IHVwbG9hZGVkLiBIb3dldmVyLCB3ZSBleHBsYWluIGluIHRoZSByYXcgZGF0YSBSZWFkTWUgZmlsZSBob3cgdG8gZG93bmxvYWQgdGhlc2UgZmlsZXMgZGlyZWN0bHkgZnJvbSBXSU9EJ3MsIElMTydzIGFuZCBXb3JsZCBCYW5rJ3MgcGFnZXMsIHJlc3BlY3RpdmVseS4NCjQpIEZvciBzY3JpcHQgOTogdGhlIGNvbGxlY3Rpb24gb2YgYDAtUmF3X0RhdGEvQUNTLzIwKi9jMnNzcCoqLmNzdmAgLnR4dCBmaWxlcyBmb3IgZWFjaCBVUyBzdGF0ZSB3YXMgdG9vIGhlYXZ5IHRvIGJlIHVwbG9hZGVkLiBIb3dldmVyLCB3ZSBleHBsYWluIGluIHRoZSByYXcgZGF0YSBSZWFkTWUgZmlsZSBob3cgdG8gZG93bmxvYWQgdGhlc2UgZmlsZXMgZGlyZWN0bHkgZnJvbSAgVS5TLiBDZW5zdXMgQnVyZWF1J3MgcGFnZS4NCjUpIEZvciBzY3JpcHQgOTogdG8gZ2V0IGAwLVJhd19EYXRhL0NQUy9DUFNfTkJFUi9JbnB1dHMvY3BzX3BhbmVsLmR0YWAsIG9uZSBuZWVkcyB0byBydW4gZmlyc3QgdGhlIHNjcmlwdHMgaW4gYFJVVlxDUFNgLg0KDQoNCg0K</div>
 
 
 
@@ -2328,7 +2125,7 @@ $(document).ready(function () {
 <!-- code folding -->
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("3-State_state.Rmd");
+  window.initializeSourceEmbed("ReadMe.Rmd");
   window.initializeCodeFolding("show" === "show");
 });
 </script>

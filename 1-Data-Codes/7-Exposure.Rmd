@@ -358,7 +358,7 @@ bls$region <- tolower(bls$region)
 # Remove spaces in region variable
 bls$region <- str_replace(bls$region," ","")
 
-#Load ADH data (to obtain "1-Intermediate_Processed_Data/state_emp_2000.dta", one must run first ADH-0-cbp2000_imputations.do, ADH-1-cbp2000_to_cz.do, and ADH-2-cz_to_states.do, in that order; these scripts are at RUV/1-Data-Codes/0-Raw_Data).
+#Load ADH data (to obtain "1-Intermediate_Processed_Data/state_emp_2000.dta", one must run first ADH-0-cbp2000_imputations.do, ADH-1-cbp2000_to_cz.do, and ADH-2-cz_to_states.do, in that order; these scripts are at RUV/1-Data-Codes/0-Raw_Data/ADH_employment).
 
 ADH <- read_dta("1-Intermediate_Processed_Data/state_emp_2000.dta")
 

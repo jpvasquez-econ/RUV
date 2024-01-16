@@ -28,7 +28,7 @@ This script does the following:
 1. `0-Raw_Data/Fips/state_codes.csv`
 2. `0-Raw_Data/Expenditure/SAEXP1_1997_2017_ALL_AREAS_.csv`
 3. `1-Intermediate_Processed_Data/WIOD_countries.csv`
-4. `0-Raw_Data/SAGDP/`
+4. `0-Raw_Data/SAGDP/SAGDP2N_.csv`
 5. `1-Intermediate_Processed_Data/distances.csv`
 6. `0-Raw_Data/regions.csv`
 7. `0-Raw_Data/sectors.csv`

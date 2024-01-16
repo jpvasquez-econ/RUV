@@ -29,7 +29,7 @@ This file does the following:
 2. `0-Raw_Data/CFS/CFS_2012_00A18_with_ann.csv`
 3. `0-Raw_Data/CFS/CFS2007.xlsx`
 4. `0-Raw_Data/CFS/CFS2002mine.xlsx`
-5. `0-Raw_Data/CFS/CF1200A24.dat` (this file was too heavy, so it was compressed in a .zip folder with the same name; it must be taken out of the foler to run the script)
+5. `0-Raw_Data/CFS/CF1200A24.csv` (this file was too heavy, so it was compressed in a .zip folder with the same name; it must be taken out of the folder to run the script)
 6. `0-Raw_Data/Fips/statefips.csv`
 7. `0-Raw_Data/regions.csv`
 8. `0-Raw_Data/sectors.csv`
@@ -344,7 +344,7 @@ n_sec <- length(unique(reclass_sectors$final_sector)) - 3
 epsilon <- 0.0001
 ```
 
-## Manufacturing bilateral trade between US states
+## Manufacture bilateral trade between US states
 
 ```{r calculations}
 

@@ -653,7 +653,7 @@ To calculate the distance between regions ($dist_{ij}$), we follow the same proc
 We use population for 2010 and coordinates data for all U.S. counties, and all cities around the world with more than 300,000 inhabitants. For those countries with less than two cities of this size, we take the two largest cities. Coordinates are important to calculate the physical bilateral distances in kms between each county $r$ in state $i$ and county $s$ in state $j$ ($d_{rs}\; \forall r\in i \; ,\; s\in j \text{ and }\;\forall i,j=1,...,50$), and define $dist\left(ij\right)$ as:
 
 $$
-dist\left(ij\right) = \left(\sum_{r\, \in\, i} \sum_{s \, \in \, j} \left(\dfrac{pop_r}{pop_i}\right) \left(\dfrac{pop_s}{pop_j}\right) d_{rs}^\theta\right)^{1/ \theta},  \label{eq:distances}
+dist\left(ij\right) = \left(\sum_{r\, \in\, i} \sum_{s \, \in \, j} \left(\dfrac{pop_r}{pop_i}\right) \left(\dfrac{pop_s}{pop_j}\right) d_{rs}^\theta\right)^{1/ \theta},  
 $$
 where $pop_h$ is the population of country/state $h$. We set $\theta=-1$.
 

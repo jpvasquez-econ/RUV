@@ -29,7 +29,7 @@ This file does the following:
 2. `0-Raw_Data/sectors.csv`
 3. `0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-i.csv`
 4. `0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-i.csv`
-4. `1-Intermediate_Processed_Data/country_country_step_.csv` 
+5. `1-Intermediate_Processed_Data/country_country_step_.csv` 
 
 ## Output files
 
