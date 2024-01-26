@@ -41,6 +41,7 @@ This file does the following:
 4. `0-Raw_Data//Population_geography//Full_population.xlsx`
 5. `0-Raw_Data/Fips/us_states_coordinates_counties.xlsx`
 6. `0-Raw_Data/Fips/state_codes.csv`
+7. `0-Raw_Data/WIOD/wiot_.xlsx`
 
 ## Output files
 
@@ -68,18 +69,14 @@ set.seed(2023)
 options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 install.packages("geodist")
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist','plm');
  #Install libraries in case they are not installed
 for( i in length(libs)){ 
 if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
 };
-install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.3.9.zip", repos=NULL)
-install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.5.0.tar.gz", type="source", repos=NULL)
 
 # load library
 lapply( libs, require, character.only=TRUE );
-stataexe <- "C:/Users/alove/Desktop/Stata 16/Stata16MP-64.exe"
-knitr::opts_chunk$set(engine.path = list(stata=stataexe))
 ```
 
 
@@ -1005,8 +1002,8 @@ for (i in 1:dim(USserv)[1]){
 ```
 
 ### Final base for services regression
-
-```{r serv-regression}
+Save the final data set for the regression, then create the log-variables and run the regression.
+```{r serv-final}
 #Taking out countries that are not of interest
 final <- wiod3 %>%
   filter(dist != 0) %>%
@@ -1014,38 +1011,10 @@ final <- wiod3 %>%
   arrange(year, row_country) %>%
   dplyr::rename(origin = row_country , destination = col_country)
 write.csv(final, "1-Intermediate_Processed_Data//Country_Gravity_Services_WIOD.csv")
-```
+final$log_X <- log(final$X)
+final$log_dist <- log(final$dist)
+modelserv <- plm(log_X ~ iota + log_dist + as.factor(year) + as.factor(origin) +as.factor(destination), data = final, index = c("year","origin","destination"), model = "within", effect = "time")
 
-### Stata code for services
-Generating log-variables and running the regressions for services.
-```{stata, collectcode=TRUE}
-import delimited "1-Intermediate_Processed_Data//Country_Gravity_Services_WIOD.csv"
-
-
-gen log_X=ln(x)
-
-gen log_dist=ln(dist)
-
-drop ori_dest x dist
-
-*ssc install reghdfe
-
-*ssc install ftools
-
-*reghdfe, compile
-
-egen ori=group(origin)
-egen des=group(destin)
-
-reghdfe log_X iota log_dist , absorb(year ori des) vce(robust)
-reghdfe log_X iota log_dist , absorb(year#ori year#des) vce(robust)
-
-
-gen b0 = _b[iota]
-
-gen b1 = _b[log_dist]
-
-gen phi = exp((b0*iota) + (b1*log_dist))
 ```
 
 ## Gravity for agriculture
@@ -1174,7 +1143,7 @@ for (i in 1:dim(USagri)[1]){
 ```
 
 ### Final base for agriculture regression
-
+Save the final data set for the regression, then create the log-variables and run the regression.
 ```{r agri-regression}
 #Taking out countries that are not of interest.
 final <- wiod3 %>%
@@ -1183,24 +1152,8 @@ final <- wiod3 %>%
   arrange(year, row_country) %>%
   dplyr::rename(origin = row_country , destination = col_country)
 write.csv(final, "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv")
-```
-
-### Stata code for agriculture
-Generating log-variables and running the regressions for services.
-```{stata, collectcode=TRUE}
-import delimited "1-Intermediate_Processed_Data//Country_Gravity_Agriculture_WIOD.csv", clear
-
-gen log_X=ln(x)
-
-gen log_dist=ln(dist)
-
-drop ori_dest x dist
-
-egen ori=group(origin)
-egen des=group(destin)
-
-reghdfe log_X iota log_dist , absorb(year ori des) vce(robust)
-reghdfe log_X iota log_dist , absorb(year#ori year#des) vce(robust)
-
+final$log_X <- log(final$X)
+final$log_dist <- log(final$dist)
+modelagr <- plm(log_X ~ iota + log_dist + as.factor(year) + as.factor(origin) +as.factor(destination), data = final, index = c("year","origin","destination"), model = "within", effect = "time")
 ```
 

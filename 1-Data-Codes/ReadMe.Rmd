@@ -59,7 +59,7 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
 and `1-Data-Codes/1-Intermediate_Processed_Data` 
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` 
  
- *1-Data-Codes/6-Matrices_deficits_VA_shares_states*
+ *1-Data-Codes/6-Matrices_deficits_VA_shares_states.Rmd*
 
  - **Goal:** 
 1) Combine the results of the previous 5 scripts to obtain the final matrix of bilateral flows (for all sectors, for all regions) for years 2000-2007.
@@ -69,12 +69,12 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
 and `1-Data-Codes/1-Intermediate_Processed_Data`
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
 
- *1-Data-Codes/7-Exposures.Rmd*
+ *1-Data-Codes/7-Exposure.Rmd*
 
  - **Goal:** 
 1) Calculate employment levels by state-sector for year 2000 using BLS and CENSUS.
-2) Calculate the 2000-2007 change in imports from China to the US and other advanced economies. To run a linear regression using the change of sector US imports from China as the dependent variable and the change of sector  advanced economies' imports from China as the independent variable. 
-3) Computes the exposure measure of equation (16) from the manuscript.
+2) Calculate the 2000-2007 change in imports from China to the US and other advanced economies; to run a linear regression using the change of sector US imports from China as the dependent variable and the change of sector  advanced economies' imports from China as the independent variable. 
+3) Compute the exposure measures of equation (16) from the manuscript.
  - **Source:** `1-Data-Codes/0-Raw_Data`
 and `1-Data-Codes/1-Intermediate_Processed_Data`
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
@@ -84,12 +84,12 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
  - **Goal:** 
 1) Compute the employment level for each state and sector in year 2000 using CBS data.
 2) Compute the employment level for each state and sector in year 2000 and year 1999 using BLS data.
-3) Compute the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data
-4) Combine the previous outputs, and apply proportionality to ensure consistency with WIOD SEA
+3) Compute the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data.
+4) Combine the previous outputs, and apply proportionality to ensure consistency with WIOD SEA.
  - **Source:** `1-Data-Codes/0-Raw_Data`
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data`
 
-*1-Data-Codes/9-Migration_matrix*
+*1-Data-Codes/9-Migration_matrix.Rmd*
 
  - **Goal:** 
 1) Compute ACS total state to state migration movements (knowing the sector of destination, but not the sector of origin), by year for 1999-2001.
