@@ -1,22 +1,5 @@
----
-title: "3-State_state"
-output:
-  html_notebook:
-    toc: yes
-    df_print: paged
-    number_sections: yes    
-  pdf_document:
-    number_sections: yes
-  word_document: default
-header-includes:
-- \usepackage{amsmath}
-- \usepackage{amssymb}
-- \usepackage{pifont}
-- \usepackage{mathpazo}
----
-
 # General information
-
+ 
 This file does the following:
 
 1) Imports and prepares the CFS dataset, which contains the state to state trade flow.

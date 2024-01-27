@@ -1,41 +1,3 @@
----
-title: "8-Employment_1999_2000"
-output:
-  html_document:
-    toc: yes
-    df_print: paged
-  pdf_document:
-    number_sections: yes
-  html_notebook:
-    toc: yes
-    df_print: paged
-    number_sections: yes
-header-includes:
-- \usepackage{amsmath}
-- \usepackage{amssymb}
-- \usepackage{pifont}
-- \usepackage{mathpazo}
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-remove(list = ls())
-```
-
-```{r message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
-# libraries
-options( scipen=100, digits = 15, stringsAsFactors=FALSE ); # no scientific notation, up to 15 digits 
-
-# vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readxl', 'writexl', 'readr', 'data.table', "openxlsx", "readxl");
-# Install libraries in case they are not installed
-for( i in seq_along(libs)) { 
-     if( !(libs[i] %in% installed.packages()) ) install.packages( libs[i] ) 
-};
-# Loading libraries
-lapply( libs, require, character.only=TRUE );
-```
-
 # General Instructions
 
 This script does the following:
@@ -63,9 +25,28 @@ This script does the following:
 
 ## Output files
 
-1. `1-Intermediate_Processed_Data//L_`2000CENSUS`.csv`   
-2. `1-Intermediate_Processed_Data//L_`1999BLS`.csv`
-3. `1-Intermediate_Processed_Data//L_`2000BLS`.csv`
+1. `2-Final_Data//L_`2000CENSUS`.csv`   
+2. `2-Final_Data//L_`1999BLS`.csv`
+3. `2-Final_Data//L_`2000BLS`.csv`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
+# libraries
+options( scipen=100, digits = 15, stringsAsFactors=FALSE ); # no scientific notation, up to 15 digits 
+
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readxl', 'writexl', 'readr', 'data.table', "openxlsx", "readxl");
+# Install libraries in case they are not installed
+for( i in seq_along(libs)) { 
+     if( !(libs[i] %in% installed.packages()) ) install.packages( libs[i] ) 
+};
+# Loading libraries
+lapply( libs, require, character.only=TRUE );
+```
 
 # Sector-State employment for 2000 from Census
 
@@ -579,7 +560,7 @@ L_2000CENSUS <- rbind(states_2000CENSUS,countries_2000)
 fwrite(
   L_2000CENSUS,
   file.path(
-    "1-Intermediate_Processed_Data",
+    "2-Final_Data",
     "L_2000CENSUS.csv"
   )
 )
@@ -587,7 +568,7 @@ fwrite(
 fwrite(
   L_1999BLS,
   file.path(
-    "1-Intermediate_Processed_Data",
+    "2-Final_Data",
     "L_1999BLS.csv"
   )
 )
@@ -595,7 +576,7 @@ fwrite(
 fwrite(
   L_2000BLS,
   file.path(
-    "1-Intermediate_Processed_Data",
+    "2-Final_Data",
     "L_2000BLS.csv"
   )
 )

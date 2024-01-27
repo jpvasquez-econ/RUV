@@ -1,20 +1,3 @@
----
-title: "Code 1-WIOD_VA_shares_io_shares_distances.Rmd"
-output:
-  html_notebook:
-    toc: yes
-    df_print: paged
-    number_sections: yes    
-  pdf_document:
-    number_sections: yes
-  word_document: default
-header-includes:
-- \usepackage{amsmath}
-- \usepackage{amssymb}
-- \usepackage{pifont}
-- \usepackage{mathpazo}
----
-
 # General information
 
 This file does the following:
@@ -55,8 +38,6 @@ This file does the following:
 8. `2-Final_Data/io_allyears.xlsx`
 9. `1-Intermediate_Processed_Data//country_coordinates.csv`
 10. `1-Intermediate_Processed_Data/distances.csv`
-
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
