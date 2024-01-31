@@ -6,7 +6,6 @@ Unit of analysis are define in globals: Statefip (48 obs per year x 2 periods) o
 program drop _all
 clear
 set more off
-set matsize 1000
 capture log close
 ssc install ivreg2
 ssc install ranktest
@@ -80,7 +79,8 @@ order dnwr_yjj dnwr_nonzero_yjj r2w
 ***
 
  *  Rigidity Measures Interaction Graphs
-dnwr_figures
+	dnwr_figures_diff
+	dnwr_figures_both
 
 end
 ************************************************************************
@@ -194,9 +194,9 @@ prog cz
 end
 
 ************************************************************************
-*                           dnwr_figures
+*                           dnwr_figures_diff
 ************************************************************************
-program dnwr_figures
+program dnwr_figures_diff
 
 	foreach outcome in unempl {	
 	* logfile
@@ -206,19 +206,22 @@ program dnwr_figures
 	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
 	
 	* create interaction with rigidity measure and trade shock
+	capture drop exposure_rig* 
 	capture drop inter_*
-    capture gen inter_rigidity = (d_tradeusch_pw * `rig_measure')
-    capture gen inter_rigidity_iv = (d_tradeotch_pw_lag * `rig_measure')
+	gen exposure_rig = d_tradeusch_pw 
+	gen exposure_rig_iv = d_tradeotch_pw_lag 
+    gen inter_rigidity = d_tradeusch_pw * (1-`rig_measure') // diff high vs low 
+    gen inter_rigidity_iv = d_tradeotch_pw_lag * (1-`rig_measure')
 	
 	global estimates
 	global estimates2
 	forvalues i = 2006(1)2020 {
 
 	* here we estimate the main regressions of adh13 for each outcome
-	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (d_tradeusch_pw inter_rigidity = d_tradeotch_pw_lag inter_rigidity_iv) [aw=timepwt48] $cluster
+	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
 
-		global b_mp_2000_`i' = _b[d_tradeusch_pw]
-		global se_mp_2000_`i' = _se[d_tradeusch_pw]
+		global b_mp_2000_`i' = _b[exposure_rig]
+		global se_mp_2000_`i' = _se[exposure_rig]
 		global b_rm_2000_`i' = _b[inter_rigidity]
 		global se_rm_2000_`i' = _se[inter_rigidity]
 		global estimates "${estimates} mp_2000_`i'"
@@ -229,8 +232,122 @@ program dnwr_figures
  * display coefficientes for log file
 	noi dis "Coefficients for `outcome' variable with `rig_measure' interaction"
 	noi dis "${`rig_measure'}"
-	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , ar2 nocon keep(d_tradeusch_pw inter_rigidity)
-	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, ar2 nocon keep(d_tradeusch_pw inter_rigidity)
+	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , ar2 nocon keep(exposure_rig inter_rigidity)
+	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, ar2 nocon keep(exposure_rig inter_rigidity)
+		
+		***
+		*** creates graph
+		***
+		quiet{
+	preserve
+	clear 
+	local k : word count ${estimates}
+	set obs `k'
+	gen estimate = ""
+	gen b = . // coefficient of trade shock
+	gen se = . // se of coefficient
+	gen b_rm = . //intersection
+	gen se_rm = . // se of intersectino coefficient
+	
+	local count 1
+	foreach est in  $estimates {
+		replace estimate = "`est'"		if _n == `count'
+		replace b		 = ${b_`est'}	if _n == `count'
+		replace se		 = ${se_`est'}	if _n == `count'
+		local count		 = `count' + 1
+	}
+	
+	local count 1
+	foreach est in $estimates2 {
+		replace b_rm		 = ${b_`est'}	if _n == `count'
+		replace se_rm		 = ${se_`est'}	if _n == `count'
+		local count		 = `count' + 1
+	}
+	
+	
+	gen ub = b + invnormal(0.975)*se // upper bound of 95% CI
+	gen lb = b - invnormal(0.975)*se // lower bound of 95% CI
+	gen ub_rm = b_rm + invnormal(0.975)*se_rm // upper bound of 95% CI
+	gen lb_rm = b_rm - invnormal(0.975)*se_rm // lower bound of 95% CI
+	gen z = substr(estimate,-4,4) // year variable
+	destring z, replace
+	qui sum z
+
+	* x axis labels
+		foreach x in 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 {
+			local xlabline `xlabline' 20`x' `"`x'"'
+		}
+		
+	global pos = ${b_mp_2000_2007} + (${b_mp_2000_2007}/2)
+	local marker : display %9.3f ${b_mp_2000_2007}
+	
+	***
+	*** difference high vs low
+	***
+	tw	(connected b_rm z, mcolor(cranberry) msymbol (D) lcolor(red%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(red%10)) ///
+		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
+		xline(2007, lpattern(dash) lcolor(red)) ///
+		 xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(order(1 "Difference high vs low DNWR")) yscale(r(-0.1 0.8))
+		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
+	
+	graph export "$outputs/figures/`rig_measure'_diff_${unit}.pdf", as(pdf) name("Graph") replace
+
+	restore
+	} //quiet
+
+	global count = ${count} + 1
+  } //rigidity measures
+  
+	cap log close 
+	capture translate "$log.smcl" "$log.txt", 	replace linesize(250)
+	capture erase "$log.smcl"
+  
+  
+} //outcomes
+
+end 
+************************************************************************
+*                           dnwr_figures_both
+************************************************************************
+program dnwr_figures_both
+
+	foreach outcome in unempl {	
+	* logfile
+	cap log close
+ 	log using "$log" , replace
+	
+	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
+	
+	* create interaction with rigidity measure and trade shock
+	capture drop exposure_rig* 
+	capture drop inter_*
+	gen exposure_rig = d_tradeusch_pw * (1-`rig_measure') //effect high rigidity
+	gen exposure_rig_iv = d_tradeotch_pw_lag * (1-`rig_measure')
+    gen inter_rigidity = d_tradeusch_pw * `rig_measure' //effect low rigidity
+    gen inter_rigidity_iv = d_tradeotch_pw_lag * `rig_measure'
+	
+	global estimates
+	global estimates2
+	forvalues i = 2006(1)2020 {
+
+	* here we estimate the main regressions of adh13 for each outcome
+	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
+
+		global b_mp_2000_`i' = _b[exposure_rig]
+		global se_mp_2000_`i' = _se[exposure_rig]
+		global b_rm_2000_`i' = _b[inter_rigidity]
+		global se_rm_2000_`i' = _se[inter_rigidity]
+		global estimates "${estimates} mp_2000_`i'"
+		global estimates2 "${estimates2} rm_2000_`i'"
+
+}
+
+ * display coefficientes for log file
+	noi dis "Coefficients for `outcome' variable with `rig_measure' interaction"
+	noi dis "${`rig_measure'}"
+	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , ar2 nocon keep(exposure_rig inter_rigidity)
+	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, ar2 nocon keep(exposure_rig inter_rigidity)
 		
 		***
 		*** creates graph
@@ -279,17 +396,22 @@ program dnwr_figures
 	local marker : display %9.3f ${b_mp_2000_2007}
 	
 	
-	* coeffplots	
-	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
-		(rarea lb ub z , vertical col(navy%10)) /// 
-		|| (connected b_rm z, mcolor(cranberry) msymbol (O) lcolor(red%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(red%10)) ///
+	* coeffplots
+	***
+	*** BOTH
+	***
+	tw (connected b z, mcolor(forest_green) msymbol(O) lcolor(forest_green%20) lpattern(shortdash) ) ///
+		(rarea lb ub z , vertical col(forest_green%10)) /// 
+		|| (connected b_rm z, mcolor(midblue) msymbol (Th) lcolor(midblue%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(midblue%10)) ///
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
-		legend(order(1 "Trade shock" 3 "Interaction")) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
+		legend(order(1 "High rigidity" 3 "Low rigidity")) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
+		graphregion(fcolor(white)) yscale(r(-0.1 0.8))
+		
+		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
 
 		
-	graph export "$outputs/figures/`rig_measure'_${unit}.pdf", as(pdf) name("Graph") replace
+	graph export "$outputs/figures/`rig_measure'_sep_${unit}.pdf", as(pdf) name("Graph") replace
 
 	restore
 	} //quiet
