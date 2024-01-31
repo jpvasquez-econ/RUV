@@ -10,7 +10,7 @@ Ouputs:
 
 clear
 set more off
-
+global outputs "results"
 ***
 *** CPS 86-90
 *** 
@@ -61,8 +61,8 @@ forvalue i = 86/90 {
 **** creation of rigidity measures described in ReadMe file
 ****
 gen total_nonzero = total_pos + total_neg
-gen dnwr_yjj = 100 *(1- total_neg / N_total) 
-gen dnwr_nonzero_yjj = 100 * (1 - total_neg / total_nonzero)
+gen dnwr_yjj = 100 *total_neg / N_total
+gen dnwr_nonzero_yjj = 100 * total_neg / total_nonzero
 
 		foreach i of varlist dnwr_yjj dnwr_nonzero_yjj  {
 		qui sum `i', detail
@@ -114,8 +114,8 @@ gen nonzero = pdlhwneg + pdlhwpos
 ****
 **** creation of rigidity measures describe in ReadMe file
 ****
-gen dnwr_yjj = 100* (1- total_neg / N_total) 
-gen dnwr_nonzero_yjj = 100* (1-total_neg / total_nonzero)
+gen dnwr_yjj = 100* total_neg / N_total
+gen dnwr_nonzero_yjj = 100* total_neg / total_nonzero
 
 
 		foreach i of varlist dnwr_yjj dnwr_nonzero_yjj {
