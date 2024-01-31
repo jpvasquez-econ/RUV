@@ -1,9 +1,5 @@
 /*
-"Trade with Nominal Rigidities: Understanding the unemployment and welfare effects of the China Shock" 
-Rodriguez-Clare, A., Ulate, M., Vasquez, J.P.
-
-Author: Alonso Venegas
-General information: Data cleaning of CPS 86-90 and rigidity measures 
+General information: Data cleaning for CPS 86-90 and rigidity measures 
 Inputs
 	1. cps_86_90
 	2. morg`i'.dta
@@ -61,13 +57,12 @@ forvalue i = 86/90 {
 	
 	collapse (sum) zero total_pos = pos total_neg = neg N_total = tot [iw=earnwt], by(statefip)
 
-	
 ****
 **** creation of rigidity measures described in ReadMe file
 ****
 gen total_nonzero = total_pos + total_neg
-gen dnwr_yjj = 100 * total_neg / N_total 
-gen dnwr_nonzero_yjj = 100 * total_neg / total_nonzero
+gen dnwr_yjj = 100 *(1- total_neg / N_total) 
+gen dnwr_nonzero_yjj = 100 * (1 - total_neg / total_nonzero)
 
 		foreach i of varlist dnwr_yjj dnwr_nonzero_yjj  {
 		qui sum `i', detail
@@ -85,14 +80,13 @@ clear
 	
 	
 	
-	
-	************************************************************************
+************************************************************************
 *		Data from Yoon Joo Jo "Establishing Downward Nominal Wage
 *           Rigidity Through Cyclical Changes in the Wage Distribution" 
 *                               (2022)                         
 ************************************************************************
 * General Information
-* This codes uses data providad by Ms. Yoon Joo Joo for the period 1997-2020 and creates rigidity measures
+* This codes uses data providad by Yoon Joo Joo for the period 1997-2020 and creates rigidity measures
 * Input: Jo_state_level_dnwr.dta
 * Output: Jo_state_level_dnwr_proc.dta
 
@@ -120,8 +114,8 @@ gen nonzero = pdlhwneg + pdlhwpos
 ****
 **** creation of rigidity measures describe in ReadMe file
 ****
-gen dnwr_yjj = 100* total_neg / N_total 
-gen dnwr_nonzero_yjj = 100* total_neg / total_nonzero
+gen dnwr_yjj = 100* (1- total_neg / N_total) 
+gen dnwr_nonzero_yjj = 100* (1-total_neg / total_nonzero)
 
 
 		foreach i of varlist dnwr_yjj dnwr_nonzero_yjj {
@@ -137,9 +131,7 @@ gen dnwr_nonzero_yjj = 100* total_neg / total_nonzero
 ****
 cap drop  N_total total_nonzero total_neg zero
 rename statefips statefip
-gen yr = 2000
-
+gen yr = 2000 // for merge
 save "temp/Jo_state_level_dnwr_proc.dta", replace
 
-*****************************end***********************************
 
