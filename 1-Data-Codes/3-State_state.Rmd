@@ -2,7 +2,7 @@
  
 This file does the following:
 
-1) Imports and prepares the CFS dataset, which contains the state to state trade flow.
+1) Imports and prepares the CFS dataset, which contains the state to state trade flows.
 
 2) Uses CFS plus proportionality to calculate state-state trade flows in manufacturing $X_{ij,k}$ for $i\in US\;  \&\;   j \in US$
 
