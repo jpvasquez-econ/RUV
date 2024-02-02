@@ -101,7 +101,9 @@ However, for bilateral flows that involve states, there are region-sector combin
 
 $$\ln X_{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}$$
 
-where $\lambda_t$ is a time fixed effect, $\delta_{i}^{o}$ is an origin fixed effect, $\delta_{j}^{d}$ is a destination fixed effect, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$ that we use to construct $\tilde{\tau}_{ij}=e^{\hat{\beta}_{0}\iota_{ij}+\hat{\beta}_{1}\ln dist_{ij}}$.
+where $\lambda_t$ is a time fixed effect, $\delta_{i}^{o}$ is an origin fixed effect, $\delta_{j}^{d}$ is a destination fixed effect, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$ that we use to construct:
+
+$\tilde{\tau}_{ij}=\exp(\hat{\beta}_{0}\iota_{ij}+\hat{\beta}_{1}\ln d_{ij})$
 
 After script 2 calculates state-country bilateral flows for all sectors except services, from CENSUS data (and a proportionality rule that makes state flows sum up to US flows according to WIOD), and script 3 calculates state-state bilateral flows for all sectors except services and agriculture, from CFS data (and a proportionality rule that makes state flows sum up to US flows according to WIOD). Script 4 calculates the remaining combinations for services (country-state and state-state flows) and Script 5 calculates the remaining combinations for agriculture (state-state flows), both using a gravity approach.
 
