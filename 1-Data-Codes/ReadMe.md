@@ -98,15 +98,19 @@ where $R_{i,k}$ denotes total revenue in sector $k$ of country $i$.
 Finally, the first script begins the necessary steps to construct a matrix of bilateral trade flows. Specifically, it calculates the bilateral trade flows ($X_{ij,k}$) between countries for all sectors, directly from WIOD data.
 
 However, for bilateral flows that involve states, there are region-sector combinations that we can not observe directly from data. For those combinations, we use (in later scripts) a gravity system approach to derive the corresponding transactions. In particular, the "problematic" sectors are agriculture and services. Hence, the last thing that the first script does is to calculate the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US) estimating:
-$$
-\ln X_{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}
-$$
-where $\lambda_t$ is a time fixed effect, $\delta_{i}^{o}$ is an origin fixed effect, $\delta_{j}^{d}$ is a destination fixed effect, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$ that we use to construct: $$\tilde{\tau}_{ij}=\exp(\hat{\beta}_{0}\iota_{ij}+\hat{\beta}_{1}\ln dist_{ij}).$$
+
+$$\ln X_{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}$$
+
+where $\lambda_t$ is a time fixed effect, $\delta_{i}^{o}$ is an origin fixed effect, $\delta_{j}^{d}$ is a destination fixed effect, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$ that we use to construct: 
+
+$$\tilde{\tau}_{ij}=\exp(\hat{\beta}_{0}\iota_{ij}+\hat{\beta}_{1}\ln dist_{ij})$$
 
 After script 2 calculates state-country bilateral flows for all sectors except services, from CENSUS data (and a proportionality rule that makes state flows sum up to US flows according to WIOD), and script 3 calculates state-state bilateral flows for all sectors except services and agriculture, from CFS data (and a proportionality rule that makes state flows sum up to US flows according to WIOD). Script 4 calculates the remaining combinations for services (country-state and state-state flows) and Script 5 calculates the remaining combinations for agriculture (state-state flows), both using a gravity approach.
 
 Specifically, from the trade resistances implied by the first script we calculate the corresponding bilateral flows using the following formula:
-$$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}R_{i}E_{j}.$$
+
+$$X_{ij}=\tilde{\tau}_{ij}\tilde{\Pi}_{i}^{-1}\tilde{P}_{j}^{-1}R_{i}E_{j}$$
+
 where $R_{i}$ is total revenue of region $i$; $E_{j}$ is total expenditure of region $j$; and $\tilde{\Pi}_{i}$ and $\tilde{P}_{j}$ are price indices that solve the gravity system (see scripts 4 and 5 for a detailed exposition of the system).
 
 Having all the bilateral trade flows, script 6 combines them all in a single matrix.
@@ -117,9 +121,9 @@ Finally, script 6 calculates the share of value added in gross output for each U
 ## Exposure meassures
 The calibration of the key model parameters is based on matching moments
 that capture the relative effect of the China shock on labor. These moments are captured by an exposure measure that follows the one proposed by ADH and that we calculate in script 7:
-$$
-Exposure_i \equiv \sum_{s=1}^S\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}
-$$
+
+$$Exposure_i \equiv \sum_{s=1}^S\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Delta X_{C,US,s}^{2007-2000}}}{R_{US,s,2000}}$$
+
 where $L_{i,s,2000}$ are the employment levels by state-sector for year 2000; $L_{i,2000}\equiv\sum_sL_{i,s,2000}$ (script 7 calculates $Exposure_i$ using labor shares coming from Census data without person weights, and coming from BLS data); $R_{US,s,2000}$ is total US 2000 sales by sector; and ($\widehat{\Delta X_{C,US,s}^{2007-2000}}$) are the predicted values of a linear regression (that script 7 also estimates) using the change of sector US imports from China as the dependent variable and the change of sector  advanced economies' imports from China as the independent variable.
 
 ## Employment total
@@ -127,17 +131,16 @@ Script 8 does a rather "separated" task. It computes the employment level for ea
 ## Labor flows
 Finally, script 9 calculates migration flows between US states. Specifically, script 9 computes migration from state $n$ to state $i$ and sector $q$, according to ACS ($L_{ACS}^{n?,iq}$) by year for 1999-2001; migration from state $n$ to state $i$, according to IRS ($L_{IRS}^{n,i}$) for 1999; and migration from state $n$ and sector $j$ to state $i$ and sector $k$, according to CPS ($L_{CPS}^{{nj,ik}}$) by year for 1999-2001.
 We combine the data from the previous three migration measures to compute our final $L^{{nj,ik}}$'s. For movements between sectors within the same state we use the following proportionality rule:
-$$
-L^{n j, n k}=L_{I R S}^{n, n} \times \frac{L_{C P S}^{n j, n k}}{\sum_q \sum_h L_{C P S}^{n h, n q}} \quad \forall n \in U S A, \forall j, k
-$$
+
+$$L^{n j, n k}=L_{I R S}^{n, n} \times \frac{L_{C P S}^{n j, n k}}{\sum_q \sum_h L_{C P S}^{n h, n q}} \quad \forall n \in U S A, \forall j, k$$
+
 For all the other cases, we use the following proportionality rule:
-$$
-L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{\sum_{i}L_{ACS}^{n?,ik}}{\sum_{i}\sum_{q}L_{ACS}^{n?,iq}}
-$$
+
+$$L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\times\frac{\sum_{i}L_{ACS}^{n?,ik}}{\sum_{i}\sum_{q}L_{ACS}^{n?,iq}}$$
+
 Then we calculate the corresponding mobility shares:
-$$
-\mu_{nj,ik}=\frac{L^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=1}^{J}L^{nj,pq}}
-$$
+
+$$\mu_{nj,ik}=\frac{L^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=1}^{J}L^{nj,pq}}$$
 
 We also calculate $\mu_{nj,ik}$'s for a non-migration case (that is, not allowing state to state movements, just allowing sector reallocation).
 

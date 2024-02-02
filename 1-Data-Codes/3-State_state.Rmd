@@ -194,7 +194,7 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/CFSapportionment.
 
 ## CFS state-to-state manufacturing trade flows
 
-The following code assigns state-to-state trade flows from CFS to the NAICS level. We then calculate $X_{ij,k}^{CFS}$ for the 12 manufacturing sectors (where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS). For simplicity, we calculate weights for 13 sectors here, and then we drop services in the last chunk to keep only our 12 manufacturing sectors.
+The following code assigns state-to-state trade flows from CFS to the NAICS level. We then calculate $X_{ij,k}^{CFS}$ for the 12 manufacturing sectors (where $X_{ij,k}^{CFS}$ is the sales of state $i$ to state $j$ in sector $k$ according to CFS). We calculate weights for 13 sectors here; however, sector 13 contains the NAICS sectors we want to delete (basically because they are part of agriculture and services); so in the last chunk we will keep only our 12 manufacturing sectors.
 
 ```{r}
 #Matrix for redistribution.
