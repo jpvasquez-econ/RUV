@@ -151,7 +151,7 @@ $$L^{nj,ik}=\frac{L_{CPS}^{ij,ik}}{\sum_{h}L_{CPS}^{ih,ik}}\times L_{IRS}^{n,i}\
 Then we calculate the corresponding mobility shares:
 
 ```math
-\mu_{nj,ik}=\frac{L^{nj,ik}}{\sum_{p=1}^{N}\sum_{q=1}^{J}L^{nj,pq}}
+\mu_{nj,ik}=\frac{L^{nj,ik}}{\sum_{p}\sum_{q} L^{nj,pq}}
 ```
 
 We also calculate $\mu_{nj,ik}$'s for a non-migration case (that is, not allowing state to state movements, just allowing sector reallocation).
