@@ -99,9 +99,11 @@ where $R_{i,k}$ denotes total revenue in sector $k$ of country $i$.
 Finally, the first script begins the necessary steps to construct a matrix of bilateral trade flows. Specifically, it calculates the bilateral trade flows ($X_{ij,k}$) between countries for all sectors directly from WIOD data.
 
 However, for bilateral flows that involve states, there are region-sector combinations that we can not observe directly from the data. For those combinations, we use (in later scripts) a gravity system approach to derive the corresponding transactions. In particular, the "problematic" sectors are agriculture and services. Hence, the last thing that the first script does is to calculate the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US) estimating:
-$$
+
+```math
 \ln X{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}
-$$
+```
+
 where $\lambda_t$ is a time fixed effect, $\delta_{i}^{o}$ is an origin fixed effect, $\delta_{j}^{d}$ is a destination fixed effect, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$ that we use to construct:
 
 $$
