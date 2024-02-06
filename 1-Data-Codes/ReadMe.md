@@ -1,14 +1,14 @@
-﻿Summary and codes to run
+Summary and codes to run
 ===========================================================================================
 
 *1-Data-Codes/1-WIOD_VA_shares_io_shares_distances.Rmd*
 
  - **Goal:** 
 1) Calculate bilateral trade flows between countries for all sectors.
-2) Calculate the share of value-added for each sector on each country
+2) Calculate the share of value-added for each sector in each country
 3) Calculate the input-output matrix shares for each country. 
 4) Calculate the distances between all regions.
-5) Calculate the distance elasticity and own-dummy coefficients for trade flows in services and agriculture.
+5) Calculate the distance elasticity and own dummy coefficients for trade flows in services and agriculture.
  - **Source:** `1-Data-Codes/0-Raw_Data`
  - **Outputs:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
 
@@ -40,12 +40,12 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
  - **Source:** `1-Data-Codes/0-Raw_Data`
 and `1-Data-Codes/1-Intermediate_Processed_Data` 
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` 
- 
+
  *1-Data-Codes/6-Matrices_VA_shares_states.Rmd*
 
  - **Goal:** 
-1) Combine the results of the previous 5 scripts to obtain the final matrix of bilateral flows (for all sectors, for all regions) for years 2000-2007.
-2) Calculate the share of value added in gross output for each US state, for each sector.
+1) Combine the results of the previous 5 scripts to obtain the final matrix of bilateral flows (for all sectors and regions) for the years 2000-2007.
+2) Calculate the share of value added in gross output for each US state and sector.
  - **Source:** `1-Data-Codes/0-Raw_Data`
 and `1-Data-Codes/1-Intermediate_Processed_Data`
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
@@ -53,8 +53,8 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
  *1-Data-Codes/7-Exposure.Rmd*
 
  - **Goal:** 
-1) Calculate employment levels by state-sector for year 2000 using BLS and CENSUS.
-2) Calculate the 2000-2007 change in imports from China to the US and other advanced economies; to run a linear regression using the change of sector US imports from China as the dependent variable and the change of sector  advanced economies' imports from China as the independent variable. 
+1) Calculate employment levels by state-sector for the year 2000 using BLS and CENSUS.
+2) Calculate the 2000-2007 change in imports from China to the US and other advanced economies to run a linear regression using the change of sector US imports from China as the dependent variable and the change of sector advanced economies' imports from China as the independent variable. 
 3) Compute the exposure measures of equation (16) from the manuscript.
  - **Source:** `1-Data-Codes/0-Raw_Data`
 and `1-Data-Codes/1-Intermediate_Processed_Data`
@@ -63,20 +63,20 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
 *1-Data-Codes/8-Employment_1999_2000.Rmd*
 
  - **Goal:** 
-1) Compute the employment level for each state and sector in year 2000 using CBS data.
-2) Compute the employment level for each state and sector in year 2000 and year 1999 using BLS data.
-3) Compute the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data.
-4) Combine the previous outputs, and apply proportionality to ensure consistency with WIOD SEA.
+1) Compute the employment level for each state and sector in 2000 using CBS data.
+2) Compute the employment level for each state and sector in 2000 and 1999 using BLS data.
+3) Compute the employment level for each country and sector in 1999 and year 2000 using ILO and SEA data.
+4) Combine the previous outputs and apply proportionality to ensure consistency with WIOD SEA.
  - **Source:** `1-Data-Codes/0-Raw_Data`
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data`
 
 *1-Data-Codes/9-Migration_matrix.Rmd*
 
  - **Goal:** 
-1) Compute ACS total state to state migration movements (knowing the sector of destination, but not the sector of origin), by year for 1999-2001.
-2) Compute IRS total state to state migration movements (not knowing the sector of origin, nor the sector of destination), for 1999.
-3) Compute CPS total state to state migration movements (knowing both the sector of origin and the sector of destination), by year for 1999-2001. 
-4) Combine the data from the previous three steps to compute our final sector-state to sector-state mobility flows. Then we calculate the corresponding mobility shares in a case with migration and a case without migration (that is, not allowing state to state movements, just allowing sector reallocation).
+1) Compute ACS total state-to-state migration movements (knowing the sector of destination, but not the sector of origin) by year for 1999-2001.
+2) Compute IRS total state-to-state migration movements (not knowing the sector of origin nor the sector of destination) for 1999.
+3) Compute CPS total state-to-state migration movements (knowing both the sector of origin and the sector of destination) by year for 1999-2001. 
+4) Combine the data from the previous three steps to compute our final sector-state to-sector-state mobility flows. Then, we calculate the corresponding mobility sharesmigration and a case without migration (that is, not allowing state-to- in a case with state movements, just allowing sector reallocation).
  - **Source:** `1-Data-Codes/0-Raw_Data`
  - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
 
@@ -87,20 +87,21 @@ More detailed description
 
 The first script calculates the input-output matrix for countries. Defining $\alpha_{j,ks}$ for region $j$ as the share of purchases of sector $s$ that come from sector $k$ in the total purchases of sector $s$:
 
-$$\alpha_{j,ks}=\dfrac{\sum_{i}X_{ij,ks}}{\sum_{r}\sum_{i}X_{ij,rs}}=\dfrac{X_{j,ks}}{\sum_{r}X_{j,rs}}$$
-
+$$
+\alpha_{j,ks}=\dfrac{\sum_{i}X_{ij,ks}}{\sum_{r}\sum_{i}X_{ij,rs}}=\dfrac{X_{j,ks}}{\sum_{r}X_{j,rs}}
+$$
 This script also calculates the share of value-added (mapped in the model to the labor share) for each country, each sector, and each year using data from WIOD.In particular, 
 $$Labor \; share = \frac{VA_{i,k}}{R_{i,k}}$$
 where $R_{i,k}$ denotes total revenue in sector $k$ of country $i$. 
 
 ## Bilateral trade flows
 
-Finally, the first script begins the necessary steps to construct a matrix of bilateral trade flows. Specifically, it calculates the bilateral trade flows ($X_{ij,k}$) between countries for all sectors, directly from WIOD data.
+Finally, the first script begins the necessary steps to construct a matrix of bilateral trade flows. Specifically, it calculates the bilateral trade flows ($X_{ij,k}$) between countries for all sectors directly from WIOD data.
 
-However, for bilateral flows that involve states, there are region-sector combinations that we can not observe directly from data. For those combinations, we use (in later scripts) a gravity system approach to derive the corresponding transactions. In particular, the "problematic" sectors are agriculture and services. Hence, the last thing that the first script does is to calculate the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US) estimating:
-
-$$\ln X_{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}$$
-
+However, for bilateral flows that involve states, there are region-sector combinations that we can not observe directly from the data. For those combinations, we use (in later scripts) a gravity system approach to derive the corresponding transactions. In particular, the "problematic" sectors are agriculture and services. Hence, the last thing that the first script does is to calculate the distance elasticity and own-dummy coefficients for trade flows in services and agriculture between countries (including the US) estimating:
+$$
+\ln X{ij,t}=\lambda_t + \delta_{i}^{o}+\delta_{j}^{d}+\beta_{0}\iota_{ij}+\beta_{1}\ln dist_{ij}+\xi_{ij,t}
+$$
 where $\lambda_t$ is a time fixed effect, $\delta_{i}^{o}$ is an origin fixed effect, $\delta_{j}^{d}$ is a destination fixed effect, and $\iota_{ij}$ is an indicator variable equal to 1 if $i=j$, and zero otherwise. As usual $X_{ij,t}$ is what country $i$ sells to country $j$ in year $t$. The coefficients of interest are $\beta_0$ and $\beta_1$ that we use to construct:
 
 $$
