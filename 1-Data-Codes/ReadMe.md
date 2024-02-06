@@ -87,9 +87,10 @@ More detailed description
 
 The first script calculates the input-output matrix for countries. Defining $\alpha_{j,ks}$ for region $j$ as the share of purchases of sector $s$ that come from sector $k$ in the total purchases of sector $s$:
 
-$$
+```math
 \alpha_{j,ks}=\dfrac{\sum_{i}X_{ij,ks}}{\sum_{r}\sum_{i}X_{ij,rs}}=\dfrac{X_{j,ks}}{\sum_{r}X_{j,rs}}
-$$
+```
+
 This script also calculates the share of value-added (mapped in the model to the labor share) for each country, each sector, and each year using data from WIOD.In particular, 
 $$Labor \; share = \frac{VA_{i,k}}{R_{i,k}}$$
 where $R_{i,k}$ denotes total revenue in sector $k$ of country $i$. 
