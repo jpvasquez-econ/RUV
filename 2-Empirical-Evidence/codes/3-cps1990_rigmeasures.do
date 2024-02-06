@@ -74,7 +74,7 @@ gen dnwr_nonzero_yjj = 100 * total_neg / total_nonzero
 		
 cap drop zero total_pos total_nonzero total_neg total_nonzero N_total
 gen yr = 1990 // for merge
-
+drop if statefip == 2 | statefip == 15 | statefip == 11 //dropping Alaska and Hawaii and DC (not in ADH's data)
 save "temp/cps1990_rigmeasures", replace
 clear 
 	
@@ -127,11 +127,18 @@ gen dnwr_nonzero_yjj = 100* total_neg / total_nonzero
 		}
 		
 ****
-**** save data for merging
+**** save data 
 ****
-cap drop  N_total total_nonzero total_neg zero
+drop  N_total total_nonzero total_neg pos
 rename statefips statefip
 gen yr = 2000 // for merge
+drop if statefip == 2 | statefip == 15 | statefip == 11 //dropping Alaska and Hawaii and DC (not in ADH's data)
 save "temp/Jo_state_level_dnwr_proc.dta", replace
 
+***
+*** appending 
+***
+use "temp/cps1990_rigmeasures" , clear
+append using "temp/Jo_state_level_dnwr_proc.dta"
+save "temp/cps_rigmeasures.dta", replace 
 

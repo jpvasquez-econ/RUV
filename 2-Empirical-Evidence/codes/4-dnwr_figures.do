@@ -2,6 +2,13 @@
 ADH13 extension to 2006-2020 using 3-year pooled ACS data
 General information: Recreated econometric analysis for each year and creates coefficient graphs with interaction of downward wage rigidity measures. Changes in emp/pop outcomes are in decadal changes. 
 Unit of analysis are define in globals: Statefip (48 obs per year x 2 periods) or Community Zones (722 obs per year x 2 periods). 
+
+Inputs:
+	1. temp/workfile_china_RUV (produced in 1-ipums_acs.do)
+	2. raw_data/right2work.xlsx //from https://nrtwc.org/facts/state-right-to-work-timeline-2016/
+	3. "temp/cps_rigmeasures" (produced in code 3-cps1990_rigmeasures)
+Outputs:
+	1. Figures and tables 
 */
 program drop _all
 clear
@@ -42,16 +49,9 @@ restore
 		gen yr = 1990 if year == 2000
 		replace yr = 2000 if year > 2000
 		* right-to-work laws
-		merge m:1 statefip using "raw_data/right2work.dta" , nogen
-		* CPS rigidity measures for 2000 from Joo-Jo,Y.(2022)
-		merge m:1 statefip yr using "temp/Jo_state_level_dnwr_proc.dta", nogen keep(1 3)
-		* CPS rigidity measures for 1990 (constructed)
-		merge m:1 statefip yr using"temp/cps1990_rigmeasures.dta", update replace 
-		drop if _merge == 2
-		drop _merge
-			* Add data on inflation by state
-		merge m:1 statefip year using "temp/cpi_state_4unempl", nogen keep(1 3)
-		
+		merge m:1 statefip using "raw_data/right2work.dta" , assert(1 3) nogen 
+		* CPS rigidity measures for 2000 from Joo-Jo,Y.(2022) and for 1990 (constructed)
+		merge m:1 statefip yr using "temp/cps_rigmeasures.dta", assert(1 3) nogen 
 		
 * RIGHT TO WORK DUMMY BY YEAR
 cap drop N_total total_neg total_nonzero 
