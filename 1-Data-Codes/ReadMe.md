@@ -158,6 +158,9 @@ We also calculate $\mu_{nj,ik}$'s for a non-migration case (that is, not allowin
 
 Note: Raw data not in GitHub
 ============================================================================================
+
+The raw-data files that were not stored in the GitHub repository can be accessed [here](https://www.dropbox.com/scl/fo/82behprekhrbmlcw60mbr/h?rlkey=040evytauyt2pah44xo1q1pcq&dl=0). These files are the following:
+
 1) For script 3: `0-Raw_Data/CFS/CF1200A24.csv`  was too heavy, so it was compressed in a .zip folder with the same name; it must be taken out of the folder to run the script.
 2) For script 5: the collection of `0-Raw_Data/CENSUS_2000/PUMS5/PUMS5_` .txt files for each US state was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download these files directly from  U.S. Census Bureau's page. The same comment applies to script 8 and the collection of `0-Raw_Data/CENSUS_2000/REVISEDPUMS5/REVISEDPUMS5_` .txt files.
 3) For script 9: the collection of `0-Raw_Data/ACS/20*/c2ssp**.csv` .txt files for each US state was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download these files directly from  U.S. Census Bureau's page.
