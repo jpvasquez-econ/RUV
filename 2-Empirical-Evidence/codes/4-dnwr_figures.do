@@ -23,16 +23,14 @@ ssc install ranktest
 ************************************************************************
 prog main
 
+foreach unit in cz state {
+global unit `unit'
+
 ****				   
-*** State unit of analysis 
+*** State or CZ (unit of analysis) 
 ****	
 use temp/workfile_china_RUV.dta, clear			  		
-	quiet state
-****				   
-*** CZ unit of analysis 
-****	
-use temp/workfile_china_RUV.dta, clear			  		
-	quiet cz	
+	quiet $unit
 
 *** Generate dta from excel file (right2work) 
 *** from https://nrtwc.org/facts/state-right-to-work-timeline-2016/
@@ -77,11 +75,10 @@ order dnwr_yjj dnwr_nonzero_yjj r2w
 ***
 *** create estimates and coef graphs
 ***
-
- *  Rigidity Measures Interaction Graphs
+*  Rigidity Measures Interaction Graphs
 	dnwr_figures_diff
 	dnwr_figures_both
-
+}
 end
 ************************************************************************
 *                      State-level analysis 
@@ -89,6 +86,7 @@ end
 prog state
 
 	global unit "state"
+	global outputs results
 	 * define some globals 
 	global log "$outputs/log/unempl_dnwr_state"
 	global cluster ""
