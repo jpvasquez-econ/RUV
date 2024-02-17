@@ -1,7 +1,9 @@
 clear all
 set more off
 set matsize 1000
-global outputs "results"
+capture mkdir results
+capture mkdir results/tables
+capture mkdir results/figures
 
 * The 1-ipums_acs.do code creates a panel of employment indicators by CZ from 2006 to 2020. It follows the data construction from ADH 2013. 
 do "codes/1-ipums_acs.do"
@@ -14,9 +16,4 @@ qui do "codes/3-cps1990_rigmeasures"
 
 * Create trade exposure coef graphs on outcomes with rigidity interaction 
 qui do "codes/4-dnwr_figures"
-
-* Create tex tables for each outcome
-do "codes/5-dnwr_tables"
-
-
 
