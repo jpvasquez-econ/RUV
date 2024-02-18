@@ -2,6 +2,8 @@ clear all
 set more off
 set matsize 1000
 capture mkdir results
+capture mkdir temp
+capture mkdir results/log
 capture mkdir results/tables
 capture mkdir results/figures
 

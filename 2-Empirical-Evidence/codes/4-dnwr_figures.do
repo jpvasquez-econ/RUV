@@ -14,8 +14,8 @@ program drop _all
 clear
 set more off
 capture log close
-ssc install ivreg2
-ssc install ranktest
+ssc install ivreg2 , replace 
+ssc install ranktest , replace
 ************************************************************************
 ************************************************************************
 *                          MAIN PROGRAM
