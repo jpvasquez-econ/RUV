@@ -4,7 +4,7 @@ This file does the following:
 
 1) Takes WIOD and maps to the 14 relevant sectors that we consider.
 
-2) Calculates the sector-country bilateral trade flows $X_{ij,k}$ between countries using data from WIOD.
+2) Calculates the sector-country bilateral trade flows $X_{ij,k}$ between countries using data from WIOD. Also computes the predicted sector-level and yearly-level changes in imports from China to the US. These are going to be the calibration targets to calibrate the China Shock.
 
 3) Calculates the share of value-added (mapped in the model to the labor share) for each country, each sector, and each year using data from WIOD. 
 
@@ -50,7 +50,7 @@ set.seed(2023)
 options( scipen=100, digits = 15, stringsAsFactors=FALSE );
 install.packages("geodist")
 # vector of libraries to be used
-libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist','plm');
+libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdata', 'Statamarkdown', 'formattable', 'ggplot2', 'viridis', 'RColorBrewer', 'reshape2', 'foreign', 'readxl', 'writexl', 'rjson', 'read_excel', 'Matrix', 'geodist','plm', 'xts', 'MASS');
  #Install libraries in case they are not installed
 for( i in length(libs)){ 
 if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
@@ -72,7 +72,7 @@ regions <- read.csv(paste("0-Raw_Data/regions.csv", sep=""), header = TRUE, sep 
 #sector reclassification table
 reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 reclass_sectors <- reclass_sectors %>% 
-  select(final_sector, wiod_sector) %>%
+  dplyr:: select(final_sector, wiod_sector) %>%
   distinct(wiod_sector, .keep_all = TRUE)
 ```
 
@@ -153,6 +153,7 @@ write.table(final, file = paste("1-Intermediate_Processed_Data/WiodFixAgg", i,".
 list <- c("00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11")
 yr <- 2000
 final <- c()
+final2 <-c()
 for (i in list){
 print(yr)
 #Load WIOD (by year) in wide format.
@@ -178,9 +179,9 @@ wiod_full <- wiod_full %>%
   #Drop sectors 17, 31, and 35.
   filter(row_item != 17 & row_item != 31 & row_item != 35) %>% 
   filter(col_item != 17 & col_item != 31 & col_item != 35) %>% 
-  select(-row, -col) %>%
+  dplyr::select(-row, -col) %>%
   mutate(year = yr) %>%
-  select(year, row_country, col_country, row_item, col_item, value) %>%
+  dplyr::select(year, row_country, col_country, row_item, col_item, value) %>%
   arrange(year, row_country, col_country, row_item, col_item) %>%
   #Change the code for Romania.
   mutate(row_country = ifelse(row_country == "ROM", "ROU", row_country)) %>%
@@ -216,27 +217,154 @@ wiod_full <- wiod_full %>%
 wiod_full$value <- as.numeric(wiod_full$value)
 wiod_full <- wiod_full %>%
   left_join(reclass_sectors, by=c('row_item'='wiod_sector')) %>%
-  select(-row_item) %>%
+  dplyr::select(-row_item) %>%
   dplyr::rename(row_item = final_sector) %>%
   left_join(reclass_sectors, by=c('col_item'='wiod_sector')) %>%
-  select(-col_item) %>%
-  dplyr::rename(col_item = final_sector) %>%
+  dplyr::select(-col_item) %>%
+  dplyr::rename(col_item = final_sector) 
+#saving panel database.
+wiod_panel <-wiod_full
+#saving collapsed database.
+ wiod_full <- wiod_full %>% 
   group_by(year, row_country, col_country, row_item, col_item) %>%
   mutate(tot_value=sum(value)) %>%
   ungroup() %>%
   distinct(year, row_country, col_country, row_item, col_item, .keep_all = TRUE) %>%
-  select(-value) %>%
+  dplyr::select(-value) %>%
   dplyr::rename(value = tot_value)
   
 final <- rbind(final, wiod_full)  
+final2 <- rbind(final2, wiod_panel)  
 yr <- yr + 1
 }
-
 write.table(final, file = paste("1-Intermediate_Processed_Data//wiot_full.csv", sep=""), sep = ",", row.names = FALSE)
 
 
 ```
 
+
+## Calibration Targets
+
+This chunk computes the predicted sector-level and yearly-level changes in imports from China. These are going to be the calibration targets to calibrate the China Shock.
+
+```{r}
+#declare years
+first_year <- 2000
+last_year <-2007
+#Preparing data for the regressions.
+calibration_target<-final2
+final2 <- subset(final2, year == first_year | year == last_year)
+final2 <-  subset(final2 , col_country == "USA" |
+                 col_country == "AUS" |
+                 col_country == "DEU" |
+                 col_country == "DNK" |
+                 col_country == "ESP" |
+                 col_country == "FIN" |
+                 col_country == "JPN")
+# Keep observations where 'row_country' is "CHN"
+final2 <-  subset(final2 , row_country == "CHN")
+# Generate total imports by year, destination sector, and destination country
+ total_imports<- final2 %>%
+   group_by(year, col_country, row_item) %>%
+   summarise(chineseimports = sum(value))
+# Merge the data frames by year, col_country, and row_item
+final2  <- left_join(final2 , total_imports, by = c("year", "col_country", "row_item"))
+# Drop origin country (since only China is left), drop value and origin sector
+final2 <- subset(final2 , col_item == 1)
+final2  <- subset(final2 , select = -c(row_country, col_item, value))
+#Drop sectors with row_item equal to 0 or NA 
+final2  <- final2 [!is.na(final2$row_item), ] %>% filter(row_item != 0)
+#Collapsing data
+final2 <- final2  %>%
+    group_by(year, col_country, row_item) %>%
+    summarize(chineseimports=sum(chineseimports))
+# Reshape to countries
+final2 <- final2  |>
+  as.data.frame() |> reshape(idvar=c("year", "row_item"), timevar="col_country", direction="wide")
+# Generate total imports in other countries
+final2$chineseimportsOCO <- rowSums(final2[, c("chineseimports.AUS", "chineseimports.DEU", "chineseimports.DNK", "chineseimports.ESP", "chineseimports.FIN", "chineseimports.JPN")])
+final2 <- subset(final2, select = -c(chineseimports.AUS:chineseimports.JPN))
+
+#keeping manufacturing only 
+final2   <- final2   %>% filter(!(row_item %in% c(13, 14)))
+
+# Set time variable
+final2$t <- 1 
+final2 $t[final2$year == last_year] <- 2
+final2 <- pdata.frame(final2 , index = c("row_item", "year")) 
+final2 <- final2 %>% rename(chineseimportsUSA = chineseimports.USA)  %>%
+  group_by(row_item) %>%
+  mutate(diffchineseimportsUSA = c(NA, diff(chineseimportsUSA)))   %>%
+  mutate(diffchineseimportsOCO = c(NA, diff(chineseimportsOCO))) 
+
+# Drop initial year information and useless variables
+final2  <- subset(final2 , t == 2)
+final2  <- subset(final2 , select = -c(year, t))
+
+# Run ADH regressions to predict changes in imports in USA from the ones in other countries
+
+robust_model <- rlm(diffchineseimportsUSA ~ 0 +  diffchineseimportsOCO, data = final2 )
+final2$diffchineseimportsUSAPRE <- predict(robust_model)
+
+# Drop other countries changes
+final2  <- subset(final2, select = -c(chineseimportsOCO, diffchineseimportsOCO))
+
+#Computations across time
+# Keep observations for relevant countries (USA, AUS, DEU, DNK, ESP, FIN, JPN)
+calibration_target <- subset(calibration_target , col_country == "USA" |
+                 col_country == "AUS" |
+                 col_country == "DEU" |
+                 col_country == "DNK" |
+                 col_country == "ESP" |
+                 col_country == "FIN" |
+                 col_country == "JPN")
+
+# Generate total imports by year, destination sector, and destination country
+calibration_target <- subset(calibration_target, row_country == "CHN")
+total_imports<- calibration_target %>% 
+  group_by(year, col_country, row_item) %>% 
+  summarise(chineseimports = sum(value))
+# Merge the data frames by year, col_country, and row_item
+calibration_target <- left_join(calibration_target , total_imports, by = c("year", "col_country", "row_item"))
+# Drop origin country, value, and origin sector
+calibration_target <- subset(calibration_target, col_item == 1)
+calibration_target <- subset(calibration_target, select = -c(row_country, col_item, value))
+# Drop sectors without a row_item and collapse by row_item 
+calibration_target<- calibration_target[!is.na(calibration_target$row_item), ] %>% filter(row_item != 0)
+
+#Collapsing data
+calibration_target <- calibration_target %>%
+    group_by(year, col_country, row_item) %>%
+    summarize(chineseimports=sum(chineseimports))
+# Reshape to countries
+calibration_target <-calibration_target |>
+  as.data.frame() |> reshape(idvar=c("year", "row_item"), timevar="col_country", direction="wide")
+#This sould give the same than the stata code if we drop the sectors 13 and 14. 
+#I am going to drop them but this can be change latter
+calibration_target  <- calibration_target  %>% filter(!(row_item %in% c(13, 14)))
+
+# Generate total imports in other countries
+calibration_target$chineseimportsOCO <- rowSums(calibration_target[, c("chineseimports.AUS", "chineseimports.DEU", "chineseimports.DNK", "chineseimports.ESP", "chineseimports.FIN", "chineseimports.JPN")])
+calibration_target <- subset(calibration_target, select = -c(chineseimports.AUS:chineseimports.JPN))
+
+# Generate total imports by year
+calibration_target <- calibration_target %>%
+  group_by(year) %>%  rename(chineseimportsUSA = chineseimports.USA)  %>%
+  summarise(sumchineseimportsUSA = sum(chineseimportsUSA),
+            sumchineseimportsOCO = sum(chineseimportsOCO))
+#time-set
+calibration_target <- xts(calibration_target, order.by = as.POSIXct(calibration_target$year))
+# Generate differences
+calibration_target$diffimpUSA <- diff(calibration_target$sumchineseimportsUSA)
+calibration_target$diffimpOCO <- diff(calibration_target$sumchineseimportsOCO)
+# Keep only relevant years
+calibration_target <- subset(calibration_target, year > first_year & year < last_year)
+
+# Run ADH regressions to predict changes in imports in USA from the ones in other countries
+robust_model <- rlm(diffimpUSA ~ diffimpOCO, data = calibration_target)
+diffimpUSAPRE <- predict(robust_model )
+
+```
 
 ## WIOD in matrix form
 
