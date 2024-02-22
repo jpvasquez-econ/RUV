@@ -72,7 +72,7 @@ regions <- read.csv(paste("0-Raw_Data/regions.csv", sep=""), header = TRUE, sep 
 #sector reclassification table
 reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 reclass_sectors <- reclass_sectors %>% 
-  dplyr:: select(final_sector, wiod_sector) %>%
+  select(final_sector, wiod_sector) %>%
   distinct(wiod_sector, .keep_all = TRUE)
 ```
 
@@ -215,6 +215,7 @@ wiod_full <- wiod_full %>%
   
 #wiod sectors to final sectors   
 wiod_full$value <- as.numeric(wiod_full$value)
+wiod_panel <-wiod_full
 wiod_full <- wiod_full %>%
   left_join(reclass_sectors, by=c('row_item'='wiod_sector')) %>%
   dplyr::select(-row_item) %>%
@@ -222,9 +223,8 @@ wiod_full <- wiod_full %>%
   left_join(reclass_sectors, by=c('col_item'='wiod_sector')) %>%
   dplyr::select(-col_item) %>%
   dplyr::rename(col_item = final_sector) 
-#saving panel database.
-wiod_panel <-wiod_full
-#saving collapsed database.
+
+#saving collapsed database. 
  wiod_full <- wiod_full %>% 
   group_by(year, row_country, col_country, row_item, col_item) %>%
   mutate(tot_value=sum(value)) %>%
@@ -272,8 +272,27 @@ final2  <- left_join(final2 , total_imports, by = c("year", "col_country", "row_
 # Drop origin country (since only China is left), drop value and origin sector
 final2 <- subset(final2 , col_item == 1)
 final2  <- subset(final2 , select = -c(row_country, col_item, value))
-#Drop sectors with row_item equal to 0 or NA 
-final2  <- final2 [!is.na(final2$row_item), ] %>% filter(row_item != 0)
+#New reclasification for the calibration targets. 
+final2$jcode <- NA
+final2$jcode[final2$row_item == 3] <- 1
+final2$jcode[final2$row_item %in% c(4, 5)] <- 2
+final2$jcode[final2$row_item %in% c(6, 7)] <- 3
+final2$jcode[final2$row_item %in% c(8, 2)] <- 4
+final2$jcode[final2$row_item == 9] <- 5
+final2$jcode[final2$row_item == 10] <- 6
+final2$jcode[final2$row_item == 11] <- 7
+final2$jcode[final2$row_item == 12] <- 8
+final2$jcode[final2$row_item == 13] <- 9
+final2$jcode[final2$row_item == 14] <- 10
+final2$jcode[final2$row_item == 15] <- 11
+final2$jcode[final2$row_item == 16] <- 12
+#reordering items. 
+final2 <- final2 %>% mutate(row_item=jcode) %>%
+  dplyr::select(-jcode)
+
+#Droping NA
+final2  <- final2 [!is.na(final2$row_item), ]
+#%>% filter(row_item != 0) %>% filter(!(row_item %in% c(13, 14)))
 #Collapsing data
 final2 <- final2  %>%
     group_by(year, col_country, row_item) %>%
@@ -285,13 +304,14 @@ final2 <- final2  |>
 final2$chineseimportsOCO <- rowSums(final2[, c("chineseimports.AUS", "chineseimports.DEU", "chineseimports.DNK", "chineseimports.ESP", "chineseimports.FIN", "chineseimports.JPN")])
 final2 <- subset(final2, select = -c(chineseimports.AUS:chineseimports.JPN))
 
-#keeping manufacturing only 
-final2   <- final2   %>% filter(!(row_item %in% c(13, 14)))
 
 # Set time variable
 final2$t <- 1 
 final2 $t[final2$year == last_year] <- 2
+
+
 final2 <- pdata.frame(final2 , index = c("row_item", "year")) 
+
 final2 <- final2 %>% rename(chineseimportsUSA = chineseimports.USA)  %>%
   group_by(row_item) %>%
   mutate(diffchineseimportsUSA = c(NA, diff(chineseimportsUSA)))   %>%
@@ -309,6 +329,7 @@ final2$diffchineseimportsUSAPRE <- predict(robust_model)
 # Drop other countries changes
 final2  <- subset(final2, select = -c(chineseimportsOCO, diffchineseimportsOCO))
 
+##########################################################################
 #Computations across time
 # Keep observations for relevant countries (USA, AUS, DEU, DNK, ESP, FIN, JPN)
 calibration_target <- subset(calibration_target , col_country == "USA" |
@@ -329,8 +350,26 @@ calibration_target <- left_join(calibration_target , total_imports, by = c("year
 # Drop origin country, value, and origin sector
 calibration_target <- subset(calibration_target, col_item == 1)
 calibration_target <- subset(calibration_target, select = -c(row_country, col_item, value))
-# Drop sectors without a row_item and collapse by row_item 
-calibration_target<- calibration_target[!is.na(calibration_target$row_item), ] %>% filter(row_item != 0)
+#New reclasification for the calibration targets. 
+calibration_target$jcode <- NA
+calibration_target$jcode[calibration_target$row_item == 3] <- 1
+calibration_target$jcode[calibration_target$row_item %in% c(4, 5)] <- 2
+calibration_target$jcode[calibration_target$row_item %in% c(6, 7)] <- 3
+calibration_target$jcode[calibration_target$row_item %in% c(8, 2)] <- 4
+calibration_target$jcode[calibration_target$row_item == 9] <- 5
+calibration_target$jcode[calibration_target$row_item == 10] <- 6
+calibration_target$jcode[calibration_target$row_item == 11] <- 7
+calibration_target$jcode[calibration_target$row_item == 12] <- 8
+calibration_target$jcode[calibration_target$row_item == 13] <- 9
+calibration_target$jcode[calibration_target$row_item == 14] <- 10
+calibration_target$jcode[calibration_target$row_item == 15] <- 11
+calibration_target$jcode[calibration_target$row_item == 16] <- 12
+#reordering items. 
+calibration_target <- calibration_target %>% mutate(row_item=jcode) %>%
+  dplyr::select(-jcode)
+
+# Droping NA
+calibration_target<- calibration_target[!is.na(calibration_target$row_item), ] 
 
 #Collapsing data
 calibration_target <- calibration_target %>%
@@ -339,9 +378,6 @@ calibration_target <- calibration_target %>%
 # Reshape to countries
 calibration_target <-calibration_target |>
   as.data.frame() |> reshape(idvar=c("year", "row_item"), timevar="col_country", direction="wide")
-#This sould give the same than the stata code if we drop the sectors 13 and 14. 
-#I am going to drop them but this can be change latter
-calibration_target  <- calibration_target  %>% filter(!(row_item %in% c(13, 14)))
 
 # Generate total imports in other countries
 calibration_target$chineseimportsOCO <- rowSums(calibration_target[, c("chineseimports.AUS", "chineseimports.DEU", "chineseimports.DNK", "chineseimports.ESP", "chineseimports.FIN", "chineseimports.JPN")])
@@ -1252,7 +1288,9 @@ for (i in 1:dim(USagri)[1]){
 ```
 
 ### Final base for agriculture regression
+
 Save the final data set for the regression, then create the log-variables and run the regression.
+
 ```{r agri-regression}
 #Taking out countries that are not of interest.
 final <- wiod3 %>%
@@ -1265,4 +1303,3 @@ final$log_X <- log(final$X)
 final$log_dist <- log(final$dist)
 modelagr <- plm(log_X ~ iota + log_dist + as.factor(year) + as.factor(origin) +as.factor(destination), data = final, index = c("year","origin","destination"), model = "within", effect = "time")
 ```
-
