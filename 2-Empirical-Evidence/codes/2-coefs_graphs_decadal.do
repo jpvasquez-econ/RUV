@@ -21,7 +21,7 @@ prog main
 	quiet data_cleaning 
 
 * running the regressions and creating the main figures
-	quiet coef_graphs
+	coef_graphs
 
 * prepare model estimates
 	quiet models_coefs
@@ -85,7 +85,7 @@ prog coef_graphs
 
 quiet{
 
-	foreach outcome in empl mfg nmfg nilf unempl lnpop {
+	foreach outcome in mfg nmfg unempl nilf lnpop empl {
 	
 	global estimates
 	forvalues i = 2006(1)2020 {
@@ -100,8 +100,8 @@ quiet{
 }
  * display coefficientes for log file
 	noi dis "Coefficients for `outcome' variable"
-	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , ar2 nocon keep(d_tradeusch_pw)
-	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, ar2 nocon keep(d_tradeusch_pw)
+	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , keep(d_tradeusch_pw) nostar
+	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, keep(d_tradeusch_pw) nostar
 
 
 		***
