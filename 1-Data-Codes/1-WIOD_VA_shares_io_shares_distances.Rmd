@@ -55,9 +55,13 @@ libs <- c( 'dplyr', 'tidyr', 'readstata13', 'haven', 'stringr', 'nleqslv', 'gdat
 for( i in length(libs)){ 
 if( !(libs[i] %in% installed.packages()) ) install.packages( libs ) 
 };
+install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.3.9.zip", repos=NULL)
+install.packages("https://www.ssc.wisc.edu/~hemken/Stataworkshops/Stata%20and%20R%20Markdown/Statamarkdown_0.5.0.tar.gz", type="source", repos=NULL)
 
 # load library
 lapply( libs, require, character.only=TRUE );
+stataexe <- "C:/Program Files/Stata17/StataMP-64_old.exe"
+knitr::opts_chunk$set(engine.path = list(stata=stataexe))
 ```
 
 
@@ -72,7 +76,7 @@ regions <- read.csv(paste("0-Raw_Data/regions.csv", sep=""), header = TRUE, sep 
 #sector reclassification table
 reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 reclass_sectors <- reclass_sectors %>% 
-  select(final_sector, wiod_sector) %>%
+  dplyr::select(final_sector, wiod_sector) %>%
   distinct(wiod_sector, .keep_all = TRUE)
 ```
 
@@ -389,7 +393,8 @@ calibration_target <- calibration_target %>%
   summarise(sumchineseimportsUSA = sum(chineseimportsUSA),
             sumchineseimportsOCO = sum(chineseimportsOCO))
 #time-set
-calibration_target <- xts(calibration_target, order.by = as.POSIXct(calibration_target$year))
+origin <- as.POSIXct("2000-01-01")
+calibration_target <- xts(calibration_target, order.by = as.POSIXct(calibration_target$year, origin = origin))
 # Generate differences
 calibration_target$diffimpUSA <- diff(calibration_target$sumchineseimportsUSA)
 calibration_target$diffimpOCO <- diff(calibration_target$sumchineseimportsOCO)
@@ -409,7 +414,7 @@ diffimpUSAPRE <- predict(robust_model )
 regions <- regions %>% 
   filter(status == "country") %>%
   mutate(number = ifelse(region == "USA", 1, number)) %>%
-  select(-status) 
+  dplyr::select(-status) 
 #Load WIOD full in long format.
 wiot_full <- read.csv(paste("1-Intermediate_Processed_Data//wiot_full.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 
@@ -429,13 +434,13 @@ wiod_matrix <- wiod_matrix %>%
   dplyr::rename(importer_country = col_country) %>%
   dplyr::rename(exporter_country = row_country) %>%
   arrange(year, sector, importer, exporter) %>%
-  select(-col_item, -exporter, -value)
+  dplyr::select(-col_item, -exporter, -value)
 #Rename exporter countries to identify columns after reshaping.
 wiod_matrix$exporter_country <- paste("value", wiod_matrix$exporter_country, sep="_")  
 #Reshape.
 wiod_matrix <- spread(wiod_matrix, exporter_country, tot_value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 #Put US first and arrange.
-wiod_matrix <- wiod_matrix %>% select(year, importer_country, sector, importer, value_USA, everything())
+wiod_matrix <- wiod_matrix %>% dplyr::select(year, importer_country, sector, importer, value_USA, everything())
 wiod_matrix <- wiod_matrix %>% arrange(year, sector, importer)
 
 write.table(wiod_matrix, file = paste("1-Intermediate_Processed_Data//WIOD_countries.csv", sep=""), sep = ",", row.names = FALSE)
@@ -474,7 +479,7 @@ wiot <- wiot %>%
   mutate(val = sum(value)) %>%
   ungroup() %>%
   distinct(year, row_country, col_country, row_item, .keep_all = TRUE) %>%
-  select(-value, -col_item) %>%
+  dplyr::select(-value, -col_item) %>%
   dplyr::rename(value = val)
 #Change names of columns and arrange.
 colnames(wiot) <- c("year", "exporter", "importer", "sector", "value")  
@@ -485,7 +490,7 @@ wiot <- data.frame(wiot)
 for (yr in 2000:2007) {
   Step1 <- wiot %>%
     filter(year == yr) %>%
-    select(year, importer, sector, everything())
+    dplyr::select(year, importer, sector, everything())
   #Exporting
   write.table(Step1, file = paste("1-Intermediate_Processed_Data//country_country_step_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
 }
@@ -515,7 +520,7 @@ R <- wiot_full %>%
   mutate(val = sum(value)) %>%
   ungroup() %>%
   distinct(year, row_country, row_item, .keep_all = TRUE) %>%
-  select(-col_country, -col_item, -value) %>%
+  dplyr::select(-col_country, -col_item, -value) %>%
   dplyr::rename(sector = row_item, region = row_country) %>%
   arrange(year, sector, region)
 
@@ -532,7 +537,7 @@ sum_s_X_jsk <- wiot_inter %>%
   mutate(val = sum(value)) %>%
   ungroup() %>%
   distinct(year, col_country, col_item, .keep_all = TRUE) %>%
-  select(-row_country, -row_item, -value) %>%
+  dplyr::select(-row_country, -row_item, -value) %>%
   dplyr::rename(region = col_country, sector = col_item) %>%
   arrange(year, sector, region)
 VA <- R$val - sum_s_X_jsk$val
@@ -587,7 +592,7 @@ num <- wiot_inter %>%
   mutate(val = sum(value)) %>%
   ungroup() %>%
   distinct(year, col_country, col_item, row_item, .keep_all = TRUE) %>%
-  select(-row_country, -value) %>%
+  dplyr::select(-row_country, -value) %>%
   dplyr::rename(region = col_country, sector_o = row_item, sector_d = col_item)
 #Reshape to make the calculation of alpha_{j,ks} easier.
 num <- spread(num, sector_o, val, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
@@ -604,7 +609,7 @@ colnames(id_tot) <- c("regions", "id")
 io <- io %>%
   left_join(id_tot, by=c('region'='regions')) %>%
   mutate(region = id) %>%
-  select(-id) %>%
+  dplyr::select(-id) %>%
   arrange(year, region, sector_d)
 #Reshape to wide.
 io <-spread(io, sector_d, share, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
@@ -612,7 +617,7 @@ io <- io %>%
   dplyr::rename(sector = sector_o) %>%
   left_join(id_tot, by=c('region'='id')) %>%
   mutate(region = regions) %>%
-  select(-regions)
+  dplyr::select(-regions)
 io$sector <- as.numeric(as.character(io$sector))
 
 #Separate io matrices by year.
@@ -711,7 +716,7 @@ codes <- data.frame(cbind(all_country_names, all_country_codes))
 UN_0 <- UN
 UN_0 <- UN_0 %>%
   dplyr::rename(Country.code.num = Country.Code, Country.name = country) %>%
-  select(Index, Country.code.num, Country.name, everything())
+  dplyr::select(Index, Country.code.num, Country.name, everything())
 
 #Merge with the codes for "countries" that we created in the previous chunk.
 UN_0 <- UN_0 %>%
@@ -726,7 +731,7 @@ city_count <- UN_0 %>% #doesn't include count for RoW
   mutate(city.count = sum(c)) %>%
   ungroup() %>%
   distinct(country, .keep_all = TRUE) %>%
-  select(country, city.count)
+  dplyr::select(country, city.count)
 ```
 
 ## Create a data-set of coordinates and population.
@@ -734,16 +739,16 @@ city_count <- UN_0 %>% #doesn't include count for RoW
 ```{r main-variables}
 
 UN_1 <- UN_0 %>%
-  select(-Index, -Note, -City.Code)
+  dplyr::select(-Index, -Note, -City.Code)
 #Reshape to keep coordinates constant over years, but not population.
 UN_1 <- data.frame(melt(UN_1, id.vars = c("Country.code.num", "Country.name", "country", "city", "Latitude", "Longitude"),  variable.name ="year", value.name = "city.population"))
 #Year as the first column and drop the "X" at the beginning of the ID of the corresponding year.
-UN_1 <- UN_1 %>% select(year, everything())
+UN_1 <- UN_1 %>% dplyr::select(year, everything())
 UN_1$year <- substr(UN_1$year, 2, 5)
 
 #Incorporation of countries' population to cities' population.
 Full_pop1 <- data.frame(melt(Full_pop, id.vars = "Country", variable.name ="year", value.name = "country.population"))
-Full_pop1 <- Full_pop1 %>% select(year, everything())
+Full_pop1 <- Full_pop1 %>% dplyr::select(year, everything())
 Full_pop1$year <- substr(Full_pop1$year, 2, 5)
 UN_1 <- UN_1 %>%
   left_join(Full_pop1, by=c('year'='year', 'Country.name'='Country')) 
@@ -756,7 +761,7 @@ UN_2 <- UN_1 %>%
 UN_special <- UN_1
 #Rename columns and arrange them.
 UN_1 <- UN_1 %>% mutate(country.name.original = Country.name, country.population.original = country.population)
-UN_1 <- UN_1 %>% select(year, Country.code.num, Country.name, country.name.original, everything())
+UN_1 <- UN_1 %>% dplyr::select(year, Country.code.num, Country.name, country.name.original, everything())
 
 #Create ROW population:
 #1) Countries not in regions.csv are going to be included in RoW (but we keep the original countries identified with the column country.name.original) .
@@ -775,12 +780,12 @@ UN_temp <- UN_special %>%
   mutate(tot.pop.RoW=sum(country.population)) %>%
   ungroup() %>%
   distinct(year, .keep_all = TRUE) %>%
-  select(year, country, tot.pop.RoW)
+  dplyr::select(year, country, tot.pop.RoW)
 #3) Include RoW's values in the original data-set.
 UN_1 <- UN_1 %>%
   left_join(UN_temp, by=c('year'='year', 'country'='country')) %>%
   mutate(country.population= ifelse(country == "RoW", tot.pop.RoW, country.population)) %>%
-  select(-tot.pop.RoW) %>%
+  dplyr::select(-tot.pop.RoW) %>%
   arrange(year, Country.code.num)
 
 write.table(UN_1, file = paste("1-Intermediate_Processed_Data//country_coordinates.csv", sep=""), sep = ",", row.names = FALSE)
@@ -846,16 +851,16 @@ country_coor <- country_coordinates %>%
   mutate(pop = pop/country.population)
 #Dataset of population shares.
 country_pop <- country_coor %>%
-  select(state, fips, pop)
+  dplyr::select(state, fips, pop)
 #Data-set of coordinates.
 country_coor <- country_coor %>%
-  select(state, fips,  Latitude, Longitude) %>%
+  dplyr::select(state, fips,  Latitude, Longitude) %>%
   dplyr::rename(lat = Latitude, lon = Longitude)
 
 # Population shares (and a separated data-set for coordinates): states.
 pops_i <- state_0 %>%
   #Select year 2010 values.
-  select(state, fips, Population_2010) %>%
+  dplyr::select(state, fips, Population_2010) %>%
   dplyr::rename(pop = Population_2010) %>%
   #Calculate population shares (counties with respect to state).
   group_by(state) %>%
@@ -863,7 +868,7 @@ pops_i <- state_0 %>%
   ungroup() %>%
   mutate(pop = pop/tot_pop) %>%
   #Leave only the population shares
-  select(-tot_pop)
+  dplyr::select(-tot_pop)
 
 # Appending cities/countries population shares data-set with counties/states population shares data-sets.
 pops_i <- rbind(pops_i, country_pop)
@@ -878,19 +883,19 @@ pops_j <- data.frame(pops_j)
 
 #Final coordinates for states.    
 cities <- state_0 %>%
-  select(state, fips, Latitude, Longitude, State, County) %>%
+  dplyr::select(state, fips, Latitude, Longitude, State, County) %>%
   dplyr::rename(lat = Latitude, lon = Longitude) %>%
   #Change the hyphen for a minus (except for Alaska's "Aleutians West[4]").
   mutate(lon = as.numeric(substr(x=lon, start=2, stop=10))) %>% 
   mutate(lon = -lon) %>%
   mutate(lon = ifelse( State == "Alaska" & County == "Aleutians West[4]", 178.33881299999999, lon)) %>%	
   #FIPS code as the only ID (to be consistent with the data-set for countries).
-  select(-State, -County)
+  dplyr::select(-State, -County)
 #Append final coordinates for countries and rename columns, to get a complete data-set for cities' coordinates.
 cities <- rbind(cities, country_coor) 
 colnames(cities) <- c("state_s", "fips_s", "lat_s", "lon_s")
 #Vector of latitude and longitude for each city (to ease the calculation of distances).
-cities_lat_lon <- as.matrix(cities %>% select(lat_s, lon_s))
+cities_lat_lon <- as.matrix(cities %>% dplyr::select(lat_s, lon_s))
 cities_no_s <- data.frame(cities)
 colnames(cities_no_s) <- c("state", "fips", "lat", "lon")
 
@@ -912,7 +917,7 @@ dist$fips <- gsub("_", "", dist$fips, fixed = TRUE)
 dist <- dist %>%
   mutate(state = as.numeric(state), fips = as.numeric(fips)) %>%
   arrange(state, state_s, fips, fips_s) %>%
-  select(state, state_s, fips, fips_s, d_rs) 
+  dplyr::select(state, state_s, fips, fips_s, d_rs) 
 
 #	3. Renames variables
 dist <- dist %>%
@@ -940,7 +945,7 @@ dist <- dist %>%
 dist <- dist %>%
   left_join(state_i, by=c('state_i'='state_i')) %>%
   left_join(state_j, by=c('state_j'='state_j')) %>%
-  select(iso_o, iso_d, dist) %>%
+  dplyr::select(iso_o, iso_d, dist) %>%
   arrange(iso_o, iso_d)
 #Separate by years.
 final <- c()
@@ -988,7 +993,7 @@ n_sec <- length(unique(reclass_sectors$final_sector)) -3
 #Reclassification table.
 reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
 reclass_sectors <- reclass_sectors %>% 
-  select(final_sector, wiod_sector) %>%
+  dplyr::select(final_sector, wiod_sector) %>%
   distinct(wiod_sector, .keep_all = TRUE)
 
 #WIOD
@@ -1025,7 +1030,7 @@ wiod1 <- wiod %>%
   mutate(ag_value = sum(value)) %>% 
   ungroup() %>%  
   distinct(year, row_country, col_country, .keep_all=TRUE ) %>% 
-  select(-col_item, -value, -row_item) %>%
+  dplyr::select(-col_item, -value, -row_item) %>%
   #Indicator variable for origin = destination.
   mutate(iota = 0) %>%
   mutate(iota = replace(iota, row_country == col_country, 1)) %>%
@@ -1038,7 +1043,7 @@ data_services1 <- data_services %>%
   mutate(ch_o = nchar(as.character(iso_o))) %>%
   mutate(ch_d = nchar(as.character(iso_d))) %>%
   filter(ch_d <= 3 & ch_o <= 3) %>%
-  select(year, dist, ori_dest)
+  dplyr::select(year, dist, ori_dest)
 
 #Add distances (country-country, excluding US)
 wiod2 <- wiod1
@@ -1055,11 +1060,11 @@ for (i in 1:dim(data_services1)[1]){
 #creating weights
 #States' population in 2010.
 us_pop1 <- us_pop %>%
-  select(State, Population_2010) %>%
+  dplyr::select(State, Population_2010) %>%
   group_by(State) %>%
   mutate(state_pop = sum(Population_2010)) %>%
   ungroup() %>%
-  select(-Population_2010) %>%
+  dplyr::select(-Population_2010) %>%
   distinct(State, .keep_all=TRUE) %>%
   filter(State != "DC")
 #Distances for states before weighting.
@@ -1095,7 +1100,7 @@ data_servicesUS3 <- data_servicesUS3 %>%
   mutate(iso_d = "USA") %>%
   unite(name1, c("iso_o", "iso_d"), remove = FALSE) %>%
   unite(name2, c("iso_d", "iso_o"), remove = FALSE) %>%
-  select(year, name1, name2, dist_US)
+  dplyr::select(year, name1, name2, dist_US)
 
 #add distances (US-country) to the data-set for regressions
 wiod3 <- wiod2
@@ -1172,7 +1177,7 @@ wiod1 <- wiod %>%
   mutate(ag_value = sum(value)) %>% 
   ungroup() %>% 
   distinct(year, row_country, col_country, .keep_all=TRUE ) %>% 
-  select(-col_item, -value, -row_item) %>%
+  dplyr::select(-col_item, -value, -row_item) %>%
   mutate(iota = 0) %>%
   mutate(iota=replace(iota, row_country == col_country, 1)) %>%
   unite(ori_dest, c("row_country", "col_country"), remove = FALSE) %>%
@@ -1184,7 +1189,7 @@ data_agriculture1 <- data_agriculture %>%
   mutate(ch_o = nchar(as.character(iso_o))) %>%
   mutate(ch_d = nchar(as.character(iso_d))) %>%
   filter(ch_d <= 3 & ch_o <= 3) %>%
-  select(year, dist, ori_dest)
+  dplyr::select(year, dist, ori_dest)
 
 #add distances (country-country, excluding US)
 wiod2 <- wiod1
@@ -1201,11 +1206,11 @@ for (i in 1:dim(data_agriculture1)[1]){
 #creating weights
 #States' population in 2010.
 us_pop1 <- us_pop %>%
-  select(State, Population_2010) %>%
+  dplyr::select(State, Population_2010) %>%
   group_by(State) %>%
   mutate(state_pop = sum(Population_2010)) %>%
   ungroup() %>%
-  select(-Population_2010) %>%
+  dplyr::select(-Population_2010) %>%
   distinct(State, .keep_all = TRUE) %>%
   filter(State != "DC")
 #Distances for states before weighting.
@@ -1241,7 +1246,7 @@ data_agricultureUS3 <- data_agricultureUS3 %>%
   mutate(iso_d="USA") %>%
   unite(name1, c("iso_o", "iso_d"), remove = FALSE) %>%
   unite(name2, c("iso_d", "iso_o"), remove = FALSE) %>%
-  select(year, name1, name2, dist_US)
+  dplyr::select(year, name1, name2, dist_US)
 
 #add distances (US-country) to the data-set for regressions
 wiod3 <- wiod2

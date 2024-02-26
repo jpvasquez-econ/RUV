@@ -129,9 +129,9 @@ b) Create an account at the *Register* option.
 c) Go to *Data*->*Browse and select data*
 d) Select the samples. It is important to select the cross-sectional format and unselect the ASEC supplement. Go to the monthly based section and select the desired months of each year.
 e) Click *Submit sample selections*. 
-f) Select the variables (for Household and Person): The core variables selected for the creation of the base were: year, month, hwtfinl, mish, cpsid, age, sex, race, popstat, bpl, statefip, ind, wtfinl, cpsidp cpsidv, nativity, labforce. 
-7-Go to view cart and create the data extract. The variable *mish* is important because it identifies the month in a survey at the household level.
-8-Download the data extract in a .dta format.
+f) Select the variables (for Household and Person): The core variables selected for the creation of the base were: year, serial, month, hwtfinl, cpsid,	asecflag,	mish, numprec, statefip, nfams,	hrhhid,	hrhhid2, hhrespln, pernum, wtfinl,	cpsidv,	cpsidp,	age, sex,	race,	marst, popstat,	bpl, nativity, empstat, labforce,	occ, and ind. 
+g) Go to view cart and create the data extract. The variable *mish* is important because it identifies the month in a survey at the household level.
+h) Download the data extract in a .dta format.
 
 4. The CPS surveys households in a 4-8-4 format; that is, it interviews the household for 4 consecutive months, gives them an 8 month break and interviews them again for 4 consecutive months. Also, a new household can start the 4-8-4 sequence any month of the year. Since the CPS data comes in a monthly frequency and we are interested in workers' movements across time, we have to match households and individuals across time. Each household ID is a concatenation of 4 variables (see code). However, this ID suffers a simplification in May-2004, which makes automatic matches harder around that period. The necessary adjustment is detailed in the new dictionary and implemented in the code; basically, the new household ID is the previous one with some specific digits taken out. Persons within a household do not have a unique ID, therefore, one is created for them using the household ID and the person's age and gender.
 
