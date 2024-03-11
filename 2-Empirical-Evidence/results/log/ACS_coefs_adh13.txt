@@ -7,7 +7,7 @@
             name:  <unnamed>
              log:  /Users/vasquejp/Library/CloudStorage/Dropbox/0-mycomputer/mydocuments/0-LSE/0-Research/NK_trade/JP/Data_Construction/RUV/2-Empirical-Evidence/results/log/ACS_coefs_adh13.smcl
         log type:  smcl
-       opened on:  24 Feb 2024, 16:01:45
+       opened on:  11 Mar 2024, 10:51:46
       Coefficients for mfg variable
       
       --------------------------------------------------------------------------------------------------------------------

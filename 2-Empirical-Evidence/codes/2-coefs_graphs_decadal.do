@@ -21,7 +21,14 @@ prog main
 	quiet data_cleaning 
 
 * running the regressions and creating the main figures
+	global range ""
+	global range_name ""
 	coef_graphs
+	
+* figures with range fixed 
+	global range "yscale(range(0 0.9))"
+	global range_name "_range"
+	quiet coef_graphs		
 
 * prepare model estimates
 	quiet models_coefs
@@ -80,7 +87,7 @@ prog coef_graphs
 *** create estimates for coef graphs
 *** 
 	cap log close
-	log using "results/log/ACS_coefs_adh13", replace
+	log using "results/log/ACS_coefs_adh13${range_name}", replace
 	
 
 quiet{
@@ -143,10 +150,10 @@ quiet{
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		legend(off) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'")
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") $range
 		
 	*saving figure
-		graph export "results/figures/`outcome'_decadal_adh13.pdf", as(pdf) name("Graph") replace
+		graph export "results/figures/`outcome'_decadal_adh13${range_name}.pdf", as(pdf) name("Graph") replace
 
 	restore
 
@@ -154,8 +161,8 @@ quiet{
 }
 
 cap log close 
-capture translate "results/log/ACS_coefs_adh13.smcl" "results/log/ACS_coefs_adh13.txt", 	replace linesize(250)
-capture erase "results/log/ACS_coefs_adh13.smcl"
+capture translate "results/log/ACS_coefs_adh13${range_name}.smcl" "results/log/ACS_coefs_adh13${range_name}.txt", 	replace linesize(250)
+capture erase "results/log/ACS_coefs_adh13${range_name}.smcl"
 
 end 
 *******************************************************************************
