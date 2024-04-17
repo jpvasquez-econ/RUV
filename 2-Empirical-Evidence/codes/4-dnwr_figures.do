@@ -282,11 +282,15 @@ program dnwr_figures_diff
 	***
 	*** difference high vs low
 	***
+	global legend ""Difference high vs low DNWR""
+	if "`rig_measure'" == "r2w"{
+	global legend ""Difference non-RTW vs RTW""	
+	}
 	tw	(connected b_rm z, mcolor(cranberry) msymbol (D) lcolor(red%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(red%10)) ///
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		 xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(order(1 "Difference high vs low DNWR")) yscale(r(-0.1 0.8))
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(order(1 ${legend})) yscale(r(-0.1 0.8))
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
 	
 	graph export "$outputs/figures/`rig_measure'_diff_${unit}.pdf", as(pdf) name("Graph") replace
@@ -398,12 +402,18 @@ program dnwr_figures_both
 	***
 	*** BOTH
 	***
+	global legend1 ""High rigidity""
+	global legend2 ""Low rigidity""
+	if "`rig_measure'" == "r2w"{
+	global legend1 ""non-RTW""
+	global legend2 ""RTW""
+	}
 	tw (connected b z, mcolor(forest_green) msymbol(O) lcolor(forest_green%20) lpattern(shortdash) ) ///
 		(rarea lb ub z , vertical col(forest_green%10)) /// 
 		|| (connected b_rm z, mcolor(midblue) msymbol (Th) lcolor(midblue%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(midblue%10)) ///
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
-		legend(order(1 "High rigidity" 3 "Low rigidity")) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
+		legend(order(1 ${legend1} 3 ${legend2})) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
 		graphregion(fcolor(white)) yscale(r(-0.1 0.8))
 		
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 

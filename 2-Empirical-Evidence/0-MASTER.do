@@ -6,6 +6,7 @@ capture mkdir temp
 capture mkdir results/log
 capture mkdir results/tables
 capture mkdir results/figures
+global outputs "results"
 
 * The 1-ipums_acs.do code creates a panel of employment indicators by CZ from 2006 to 2020. It follows the data construction from ADH 2013. 
 do "codes/1-ipums_acs.do"
