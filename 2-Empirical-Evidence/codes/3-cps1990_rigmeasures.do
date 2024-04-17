@@ -10,7 +10,6 @@ Ouputs:
 
 clear
 set more off
-global outputs "results"
 ***
 *** CPS 86-90
 *** 
