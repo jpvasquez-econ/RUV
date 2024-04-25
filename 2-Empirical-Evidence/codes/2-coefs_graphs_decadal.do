@@ -256,11 +256,11 @@ quiet{
 	
 	* coeffplots	
 	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
-		(connected `outcome'_11 z, mcolor(midgreen) lcolor(midgreen) lpattern(shortdash)) (connected `outcome'_07 z, mcolor(black) lcolor(black) lpattern(shortdash)) (rarea lb ub z , vertical col(navy%10)) ///
+		(connected `outcome'_11 z, mcolor(midgreen) lcolor(midgreen) msymbol(Dh) lpattern(dash)) (connected `outcome'_07 z, mcolor(black) lcolor(black) msymbol(T)) (rarea lb ub z , vertical col(navy%10)) ///
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") note("Ten-year equivalent changes" "Regression specification: ADH${adh}" "Unit: Commuting Zone") legend(row(1) order(1 "Beta" 2 "Shock 2011" 3 "Shock 2007"))
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(row(1) order(1 "Data" 2 "Model Shock 2011" 3 "Model Shock 2007"))
 		
 		graph export "results/figures/`outcome'_models_coefs.pdf", as(pdf) name("Graph") replace
 
