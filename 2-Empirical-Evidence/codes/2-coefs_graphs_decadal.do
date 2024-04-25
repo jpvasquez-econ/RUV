@@ -170,18 +170,8 @@ end
 ********************** COMPARING MODELS AND DATA ******************************
 *******************************************************************************
 ***
-*** Prepare matilde and baseline data
 prog models_coefs
 preserve
-	/*
-	import excel "raw_data/ADHCoeffsModel.xlsx", sheet("Sheet1") firstrow clear
-	keep if _n < 26
-	keep year bs* mtld*
-	gen adj = 10/(year-2000)
-	foreach var of varlist bs* mtld* {
-	replace `var' = `var'*adj
-	}
-	*/
 	import excel "raw_data/ToPlotwithADH2021.xlsx", sheet("Sheet1") firstrow clear
 	keep if _n < 26
 	rename * , lower
@@ -196,7 +186,7 @@ end
 prog coef_graphs_and_models
 quiet{
 
-	foreach outcome in mfg nmfg unempl nilf   {
+	foreach outcome in mfg nmfg unempl nilf  {
 	
 	global estimates
 	forvalues i = 2006(1)2020 {
