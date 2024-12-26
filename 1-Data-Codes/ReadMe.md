@@ -136,8 +136,9 @@ Exposure_i \equiv \sum_{s=1}^S\frac{L_{i,s,2000}}{L_{i,2000}}\frac{\widehat{\Del
 
 where $L_{i,s,2000}$ are the employment levels by state-sector for year 2000; $L_{i,2000}\equiv\sum_sL_{i,s,2000}$ (script 7 calculates $Exposure_i$ using labor shares coming from Census data without person weights, and coming from BLS data); $R_{US,s,2000}$ is total US 2000 sales by sector; and ($\widehat{\Delta X_{C,US,s}^{2007-2000}}$) are the predicted values of a linear regression (that script 7 also estimates) using the change of sector US imports from China as the dependent variable and the change of sector  advanced economies' imports from China as the independent variable.
 
-## Employment total
-Script 8 does a rather "separated" task. It computes the employment level for each state and sector in year 2000 using CBS data; the employment level for each state and sector in year 2000 and year 1999 using BLS data; and the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data. Finally, script 8 combines the previous US employment levels, and applies proportionality to ensure consistency with WIOD SEA.
+## Employment 
+Script 8 computes the employment level for each state and sector in year 2000 using CBS data; the employment level for each state and sector in year 2000 and year 1999 using BLS data; and the employment level for each country and sector in year 1999 and year 2000 using ILO and SEA data. Finally, script 8 combines the previous US employment levels, and applies proportionality to ensure consistency with WIOD SEA.
+
 ## Labor flows
 Finally, script 9 calculates migration flows between US states. Specifically, script 9 computes migration from state $n$ to state $i$ and sector $q$, according to ACS ($L_{ACS}^{n?,iq}$) by year for 1999-2001; migration from state $n$ to state $i$, according to IRS ($L_{IRS}^{n,i}$) for 1999; and migration from state $n$ and sector $j$ to state $i$ and sector $k$, according to CPS ($L_{CPS}^{{nj,ik}}$) by year for 1999-2001.
 We combine the data from the previous three migration measures to compute our final $L^{{nj,ik}}$'s. For movements between sectors within the same state we use the following proportionality rule:
