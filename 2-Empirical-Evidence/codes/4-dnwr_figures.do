@@ -14,8 +14,9 @@ program drop _all
 clear
 set more off
 capture log close
-ssc install ivreg2 , replace 
-ssc install ranktest , replace
+global outputs results
+*ssc install ivreg2 , replace 
+*ssc install ranktest , replace
 ************************************************************************
 ************************************************************************
 *                          MAIN PROGRAM
@@ -23,7 +24,7 @@ ssc install ranktest , replace
 ************************************************************************
 prog main
 
-foreach unit in cz state {
+foreach unit in state cz {
 global unit `unit'
 
 ****				   
@@ -76,25 +77,32 @@ order dnwr_yjj dnwr_nonzero_yjj r2w
 *** create estimates and coef graphs
 ***
 *  Rigidity Measures Interaction Graphs
+* logfile
+cap log close
+ log using "$log" , replace
 	dnwr_figures_diff
 	dnwr_figures_both
+cap log close 
+capture translate "$log.smcl" "$log.txt", 	replace linesize(250)
+capture erase "$log.smcl"	
+	
 }
 end
 ************************************************************************
 *                      State-level analysis 
 ************************************************************************
 prog state
-
+	
 	global unit "state"
-	global outputs results
 	 * define some globals 
 	global log "$outputs/log/unempl_dnwr_state"
 	global cluster ""
 	global uofa "State (N=96)"
 	
+	merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen	
+	
 	* this rename command help us in the loops code
 	rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg)
-
 
 	* 0.7 is multiplies to ten-year equivalent changes to recover original shares of 2000 and 2007
 	gen popcount = (0.7)*d_popcount + l_popcount if yr > 2000
@@ -127,7 +135,6 @@ prog state
 	gen d_sh_unempl = sh_unempl_007-l_sh_unempl if yr == 2000
 	replace d_sh_unempl = (10/7)*(sh_unempl_007-l_sh_unempl) if yr > 2000
 	
-
 * here the 10 year differences are created (l_* vars are data of 2000)
 	forval year = 2006/2020 {
 
@@ -177,6 +184,27 @@ prog cz
 	* here we create the outcomes as shares of the working pop
 	gen sh_unempl = 100*(unempl/pop_1664) 
 
+***
+*** new Jan 2025
+***
+*merge unemp / pop from SEER and LAUS
+merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen
+gen sh_unempl_seer = 100*(unemployment / pop)
+gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
+replace l_sh_unempl_seer = l_sh_unemp_seer2000 if yr > 2000
+gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
+
+* here the 10 year differences are created (l_* vars are the lagged values")
+forval year = 2006/2020 {
+ * Gen ten-year equivalent changes in pop shares by employment status
+	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
+	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
+	}
+
+***
+*** end new Jan 2025
+***
+	
 	* here the 10 year differences are created (l_* vars are data of 2000)
 	forval year = 2006/2020 {
 		* here we replace values from ADH 2013 for year 2007
@@ -196,10 +224,11 @@ end
 ************************************************************************
 program dnwr_figures_diff
 
-	foreach outcome in unempl {	
-	* logfile
-	cap log close
- 	log using "$log" , replace
+	foreach outcome in unempl unempl_seer {	
+	global outc ""	
+	if "`outcome'" == "unempl_seer" {
+		global outc "_seer"
+	}
 	
 	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
 	
@@ -293,18 +322,14 @@ program dnwr_figures_diff
 		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(order(1 ${legend})) yscale(r(-0.1 0.8))
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
 	
-	graph export "$outputs/figures/`rig_measure'_diff_${unit}.pdf", as(pdf) name("Graph") replace
+	graph export "$outputs/figures/`rig_measure'_diff_${unit}${outc}.pdf", as(pdf) name("Graph") replace
 
 	restore
 	} //quiet
 
 	global count = ${count} + 1
   } //rigidity measures
-  
-	cap log close 
-	capture translate "$log.smcl" "$log.txt", 	replace linesize(250)
-	capture erase "$log.smcl"
-  
+
   
 } //outcomes
 
@@ -314,10 +339,12 @@ end
 ************************************************************************
 program dnwr_figures_both
 
-	foreach outcome in unempl {	
-	* logfile
-	cap log close
- 	log using "$log" , replace
+
+	foreach outcome in unempl unempl_seer {	
+	global outc ""	
+	if "`outcome'" == "unempl_seer" {
+		global outc "_seer"
+	}
 	
 	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
 	
@@ -419,7 +446,7 @@ program dnwr_figures_both
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
 
 		
-	graph export "$outputs/figures/`rig_measure'_sep_${unit}.pdf", as(pdf) name("Graph") replace
+	graph export "$outputs/figures/`rig_measure'_sep_${unit}${outc}.pdf", as(pdf) name("Graph") replace
 
 	restore
 	} //quiet
@@ -427,13 +454,9 @@ program dnwr_figures_both
 	global count = ${count} + 1
   } //rigidity measures
   
-	cap log close 
-	capture translate "$log.smcl" "$log.txt", 	replace linesize(250)
-	capture erase "$log.smcl"
-  
   
 } //outcomes
-
+	
 end 
 
 ************************************************************************

@@ -64,9 +64,9 @@ gen sh_`var' = 100*(`var'/pop_1664)
 *merge unemp / pop from SEER and LAUS
 merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen
 gen sh_unempl_seer = 100*(unemployment / pop)
-gen l_sh_unempl_seer = l_sh_unemp_seer90 if yr == 2000
-replace l_sh_unempl_seer = l_sh_unemp_seer00 if yr > 2000
-gen d_sh_unempl_seer = l_sh_unemp_seer00 - l_sh_unemp_seer90
+gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
+replace l_sh_unempl_seer = l_sh_unemp_seer2000 if yr > 2000
+gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
 
 * here the 10 year differences are created (l_* vars are the lagged values")
 forval year = 2006/2020 {
@@ -197,6 +197,8 @@ preserve
 	keep if _n < 26
 	rename * , lower
 	keep year *11 *07
+	gen unempl_seer_07  = unempl_07 
+	gen unempl_seer_11 = unempl_11
 	save temp/models_coefs.dta, replace
 restore
 end 
@@ -207,7 +209,7 @@ end
 prog coef_graphs_and_models
 quiet{
 
-	foreach outcome in mfg nmfg unempl nilf  {
+	foreach outcome in mfg nmfg unempl unempl_seer nilf  {
 	
 	global estimates
 	forvalues i = 2006(1)2020 {
