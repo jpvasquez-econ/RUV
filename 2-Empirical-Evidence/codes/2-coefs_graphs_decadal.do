@@ -58,6 +58,27 @@ foreach var in empl mfg nmfg nilf unempl {
 gen sh_`var' = 100*(`var'/pop_1664) 
 }
 
+***
+*** new Jan 2025
+***
+*merge unemp / pop from SEER and LAUS
+merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen
+gen sh_unempl_seer = 100*(unemployment / pop)
+gen l_sh_unempl_seer = l_sh_unemp_seer90 if yr == 2000
+replace l_sh_unempl_seer = l_sh_unemp_seer00 if yr > 2000
+gen d_sh_unempl_seer = l_sh_unemp_seer00 - l_sh_unemp_seer90
+
+* here the 10 year differences are created (l_* vars are the lagged values")
+forval year = 2006/2020 {
+ * Gen ten-year equivalent changes in pop shares by employment status
+	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
+	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
+	}
+
+***
+*** end new Jan 2025
+***
+
 * here the 10 year differences are created (l_* vars are data of 2000)
 forval year = 2006/2020 {
 foreach var in empl mfg nmfg unempl nilf lnpop {
@@ -92,7 +113,7 @@ prog coef_graphs
 
 quiet{
 
-	foreach outcome in mfg nmfg unempl nilf lnpop empl {
+	foreach outcome in mfg nmfg unempl nilf lnpop empl unempl_seer {
 	
 	global estimates
 	forvalues i = 2006(1)2020 {
