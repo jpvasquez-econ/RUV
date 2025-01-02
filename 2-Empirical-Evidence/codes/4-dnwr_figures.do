@@ -99,8 +99,6 @@ prog state
 	global cluster ""
 	global uofa "State (N=96)"
 	
-	merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen	
-	
 	* this rename command help us in the loops code
 	rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg)
 
@@ -150,7 +148,41 @@ prog state
 
 * crete dummy for second period
 	gen t2 = (yr>2000)
-	
+
+***
+*** new Jan 2025
+***
+preserve 
+use "temp/unemp_pop.dta" , clear
+drop if pop == 0
+merge 1:1 czone yr using temp/workfile_china_RUV.dta, assert(3 1) keep(3) nogen	keepusing(statefip)
+collapse (sum) unemployment pop l_unemp_seer1990 l_pop_seer1990 l_pop_seer2000 l_unemp_seer2000 , by( statefip yr)
+gen l_sh_unemp_seer1990 = l_unemp_seer1990 / l_pop_seer1990
+gen l_sh_unemp_seer2000 = l_unemp_seer2000 / l_pop_seer2000
+
+gen sh_unempl_seer = 100*(unemployment / pop)
+gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
+replace l_sh_unempl_seer = l_sh_unemp_seer2000 if yr > 2000
+gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
+
+* here the 10 year differences are created (l_* vars are the lagged values")
+forval year = 2006/2020 {
+ * Gen ten-year equivalent changes in pop shares by employment status
+	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
+	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
+	}
+tempfile temp_seer
+save `temp_seer', replace		
+	keep if inlist(yr,2000,2007)
+	drop if statefip == .
+	drop d_sh_unempl_seer	
+tempfile temp_seer0
+save `temp_seer0', replace	
+restore
+merge 1:1 statefip yr using `temp_seer' , assert(3) nogen 
+***
+*** end new Jan 2025
+***
 	
 	*save data for log files (tables)
 	preserve
@@ -159,9 +191,9 @@ prog state
 	drop d_sh_unempl
 	rename d_sh_unempl_2007 d_sh_unempl
 	drop d_sh_unempl_*
+	merge 1:1 statefip yr using `temp_seer0' , assert(3) nogen 
 	save temp/state_workfile_china, replace
 	restore
-		
 end 
 ************************************************************************
 *                       CZ-level analysis
