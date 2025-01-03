@@ -9,46 +9,127 @@ Summary and codes to run
 3) Calculate the input-output matrix shares for each country. 
 4) Calculate the distances between all regions.
 5) Calculate the distance elasticity and own dummy coefficients for trade flows in services and agriculture.
- - **Source:** `1-Data-Codes/0-Raw_Data`
- - **Outputs:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
+ - **Input:** 
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `0-Raw_Data//Population_geography//UN_coordinates.xls`
+4. `0-Raw_Data//Population_geography//Full_population.xlsx`
+5. `0-Raw_Data/Fips/us_states_coordinates_counties.xlsx`
+6. `0-Raw_Data/Fips/state_codes.csv`
+7. `0-Raw_Data/WIOD/wiot_.xlsx`
+ - **Output:**
+1. `Intermediate_Processed_Data/WiodFixAgg, i,".csv`
+2. `1-Intermediate_Processed_Data/wiot_full.csv`
+3. `1-Intermediate_Processed_Data//WIOD_countries.csv`
+4. `1-Intermediate_Processed_Data/country_country_step_.csv`
+5. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
+6. `1-Intermediate_Processed_Data//value_added_countries", yr, ".csv`
+7. `1-Intermediate_Processed_Data/io_shares.csv`
+8. `2-Final_Data/io_allyears.xlsx`
+9. `1-Intermediate_Processed_Data//country_coordinates.csv`
+10. `1-Intermediate_Processed_Data/distances.csv`
 
 *1-Data-Codes/2-State_country.Rmd*
 
  - **Goal:** Calculate state-country bilateral flows for all sectors except services. 
-- **Source:** `1-Data-Codes/0-Raw_Data`
-and `1-Data-Codes/1-Intermediate_Processed_Data` 
- - **Outputs:** 
-`1-Data-Codes/1-Intermediate_Processed_Data` 
+ - **Input:**
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `0-Raw_Data//State-Exports-Imports//State Exports by NAICS Commodities-i.csv`
+4. `0-Raw_Data//State-Exports-Imports//State Imports by NAICS Commodities-i.csv`
+5. `1-Intermediate_Processed_Data/country_country_step_.csv` 
+ - **Output:** 
+1. `1-Intermediate_Processed_Data//census_exports.csv`
+2. `1-Intermediate_Processed_Data//census_imports.csv`
+3. `1-Intermediate_Processed_Data/state_imports_exports.csv`
+4. `1-Intermediate_Processed_Data//state_country_step_y_.csv`
+5. `1-Intermediate_Processed_Data//state_country_step_e_.csv`
 
 *1-Data-Codes/3-State_state.Rmd*
 
  - **Goal:** Calculate state-state bilateral flows for all sectors except services and agriculture. 
- - **Source:** `1-Data-Codes/0-Raw_Data`
-and `1-Data-Codes/1-Intermediate_Processed_Data` 
- - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` 
+ - **Input:**
+1. `0-Raw_Data/CFS/NAICS to CFS Crosswalk.xlsx`
+2. `0-Raw_Data/CFS/CFS_2012_00A18_with_ann.csv`
+3. `0-Raw_Data/CFS/CFS2007.xlsx`
+4. `0-Raw_Data/CFS/CFS2002mine.xlsx`
+5. `0-Raw_Data/CFS/CF1200A24.csv` (this file was too heavy, so it was compressed in a .zip folder with the same name; it must be taken out of the folder to run the script)
+6. `0-Raw_Data/Fips/statefips.csv`
+7. `0-Raw_Data/regions.csv`
+8. `0-Raw_Data/sectors.csv`
+9. `1-Intermediate_Processed_Data/country_country_step_.csv`
+ - **Output:**
+1. `1-Intermediate_Processed_Data/CFSapportionment.csv`
+2. `1-Intermediate_Processed_Data/CFS_Xijk.csv`
+3. `1-Intermediate_Processed_Data/state_cfs_step_.csv` 
 
 *1-Data-Codes/4-Gravity_services.Rmd*
 
  - **Goal:** Calculate state-state and state-country bilateral flows for services using a gravity system approach. 
- - **Source:** `1-Data-Codes/0-Raw_Data`
-and `1-Data-Codes/1-Intermediate_Processed_Data` 
- - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` 
+ - **Input:**
+1. `0-Raw_Data/Fips/state_codes.csv`
+2. `0-Raw_Data/Expenditure/SAEXP1_1997_2017_ALL_AREAS_.csv`
+3. `1-Intermediate_Processed_Data/WIOD_countries.csv`
+4. `0-Raw_Data/SAGDP/SAGDP2N_.csv`
+5. `1-Intermediate_Processed_Data/distances.csv`
+6. `0-Raw_Data/regions.csv`
+7. `0-Raw_Data/sectors.csv`
+8. `1-Intermediate_Processed_Data/country_country_step_.csv`
+ - **Output:** 
+1. `1-Intermediate_Processed_Data/state_exp_rev_services.csv`
+2. `1-Intermediate_Processed_Data/data_services.csv`
+3. `1-Intermediate_Processed_Data/vector_lambda_.csv`
+4. `1-Intermediate_Processed_Data//matrix_B_.csv`
+5. `1-Intermediate_Processed_Data//vector_solution_.csv`
+6. `1-Intermediate_Processed_Data//Xij_matrix_services_.csv`
 
-*1-Data-Codes/5-Gravity_agriculture.Rmd*
+ *1-Data-Codes/5-Gravity_agriculture.Rmd*
 
  - **Goal:** Calculate state-state bilateral flows for agriculture using a gravity system approach. 
- - **Source:** `1-Data-Codes/0-Raw_Data`
-and `1-Data-Codes/1-Intermediate_Processed_Data` 
- - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` 
+ - **Input:** 
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `1-Intermediate_Processed_Data//wiot_full.csv`
+4. `1-Intermediate_Processed_Data/state_imports_exports.csv`
+5. `1-Intermediate_Processed_Data/country_country_step_.csv`
+6. `0-Raw_Data//Agriculture_Census/data_agriculture.csv`
+7. `0-Raw_Data//Agriculture_Census//data_fish.csv`
+8. `1-Intermediate_Processed_Data/data_services.csv`
+9. `1-Intermediate_Processed_Data/state_country_step_y_.csv`
+10. `1-Intermediate_Processed_Data/state_country_step_e_.csv`
+11. `1-Intermediate_Processed_Data/io_shares.csv`
+12. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
+13. `1-Intermediate_Processed_Data//state_cfs_step_.csv`
+ - **Output:** 
+1. `1-Intermediate_Processed_Data/data_agriculture.csv`
+2. `1-Intermediate_Processed_Data/agric_mat_B_.csv`
+3. `1-Intermediate_Processed_Data/agric_vec_lambda_.csv`
+4. `1-Intermediate_Processed_Data//vec_agric_solution_.csv`
+5. `1-Intermediate_Processed_Data//Xij_matrix_agric_.csv`
 
  *1-Data-Codes/6-Matrices_VA_shares_states.Rmd*
 
  - **Goal:** 
 1) Combine the results of the previous 5 scripts to obtain the final matrix of bilateral flows (for all sectors and regions) for the years 2000-2007.
 2) Calculate the share of value added in gross output for each US state and sector.
- - **Source:** `1-Data-Codes/0-Raw_Data`
-and `1-Data-Codes/1-Intermediate_Processed_Data`
- - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
+ - **Input:** 
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `1-Intermediate_Processed_Data//Xij_matrix_services_.csv`
+4. `1-Intermediate_Processed_Data//Xij_matrix_agric_.csv`
+5. `1-Intermediate_Processed_Data//country_country_step_.csv`
+6. `1-Intermediate_Processed_Data//state_cfs_step_.csv`
+7. `1-Intermediate_Processed_Data//state_country_step_e_.csv`
+8. `1-Intermediate_Processed_Data//state_country_step_y_.csv`
+9. `1-Intermediate_Processed_Data//value_added_countries.csv`
+10. `0-Raw_Data//Labor_shares//gdp_state_.csv`
+11. `0-Raw_Data//Labor_shares//taxes_state_.csv`
+12. `0-Raw_Data//Labor_shares//subsidies_state_.csv`
+ - **Output:** 
+1. `1-Intermediate_Processed_Data//final_matrix_.csv`
+2. `2-Final_Data/bilat_matrix_allyears.xlsx`
+3. `1-Intermediate_Processed_Data//labor_shares_states.csv`
+4. `2-Final_Data/va_shares_allyears.xlsx`
 
  *1-Data-Codes/7-Exposure.Rmd*
 
@@ -56,9 +137,17 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
 1) Calculate employment levels by state-sector for the year 2000 using BLS and CENSUS.
 2) Calculate the 2000-2007 change in imports from China to the US and other advanced economies to run a linear regression using the change of sector US imports from China as the dependent variable and the change of sector advanced economies' imports from China as the independent variable. 
 3) Compute the exposure measures of equation (16) from the manuscript.
- - **Source:** `1-Data-Codes/0-Raw_Data`
-and `1-Data-Codes/1-Intermediate_Processed_Data`
- - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
+ - **Input:**
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `0-Raw_Data/CENSUS_2000/employment_2000.xls`
+4. `0-Raw_Data/CENSUS_2000/PUMS5/PUMS5_`
+5. `0-Raw_Data/emp_SAEMP25S_BLS.csv`
+6. `1-Intermediate_Processed_Data/WIOD_countries.csv`
+7. `1-Intermediate_Processed_Data/state_emp_2000.dta`
+ - **Output:** 
+1. `1-Intermediate_Processed_Data/state_emp_share_2000.dta`
+2. `2-Final_Data/exposures.xlsx`
 
 *1-Data-Codes/8-Employment_1999_2000.Rmd*
 
@@ -66,9 +155,22 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
 1) Compute the employment level for each state and sector in 2000 using CBS data.
 2) Compute the employment level for each state and sector in 2000 and 1999 using BLS data.
 3) Compute the employment level for each country and sector in 1999 and year 2000 using ILO and SEA data.
-4) Combine the previous outputs and apply proportionality to ensure consistency with WIOD SEA.
- - **Source:** `1-Data-Codes/0-Raw_Data`
- - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data`
+4) Combine the previous Output and apply proportionality to ensure consistency with WIOD SEA.
+ - **Input:**
+1. `0-Raw_Data/sectors.csv`
+2. `0-Raw_Data/regions.csv`
+3. `0-Raw_Data/CENSUS_2000/REVISEDPUMS5/REVISEDPUMS5_.txt`
+4. `0-Raw_Data/CENSUS_2000/employment_2000.xls`
+5. `0-Raw_Data\L_1999\Sectors\sector_\1999.annual_.csv`
+6. `0-Raw_Data\L_2000\Sectors\sector_\2000.annual_.csv`
+7. `0-Raw_Data\staadata.xlsx`
+8. `0-Raw_Data/CENSUS_2000/L_1999_2000_countries.csv`
+9. `0-Raw_Data/CENSUS_2000/EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv`
+10. `0-Raw_Data/CENSUS_2000/P_World unemployment rates.xlsx`
+ - **Output:**
+1. `2-Final_Data//L_`2000CENSUS`.csv`   
+2. `2-Final_Data//L_`1999BLS`.csv`
+3. `2-Final_Data//L_`2000BLS`.csv`
 
 *1-Data-Codes/9-Migration_matrix.Rmd*
 
@@ -77,8 +179,20 @@ and `1-Data-Codes/1-Intermediate_Processed_Data`
 2) Compute IRS total state-to-state migration movements (not knowing the sector of origin nor the sector of destination) for 1999.
 3) Compute CPS total state-to-state migration movements (knowing both the sector of origin and the sector of destination) by year for 1999-2001. 
 4) Combine the data from the previous three steps to compute our final sector-state to-sector-state mobility flows. Then, we calculate the corresponding mobility sharesmigration and a case without migration (that is, not allowing state-to- in a case with state movements, just allowing sector reallocation).
- - **Source:** `1-Data-Codes/0-Raw_Data`
- - **Output:** `1-Data-Codes/1-Intermediate_Processed_Data` and `1-Data-Codes/2-Final_Data`
+ - **Input:**
+1. `0-Raw_Data/regions.csv`
+2. `0-Raw_Data/sectors.csv`
+3. `0-Raw_Data/Fips/states_fips_num.xlsx`
+4. `0-Raw_Data/ACS/20*/**.csv`
+5. `0-Raw_Data/IRS/1999to2000CountyMigration/1999to2000flow.dta`
+6. `0-Raw_Data/CPS/CPS_NBER/Inputs/cps_panel.dta`
+ - **Output:**
+1. `1-Intermediate_Processed_Data//acs_temp.csv`
+2. `1-Intermediate_Processed_Data/acs.csv`
+3. `1-Intermediate_Processed_Data/irs.csv`
+4. `1-Intermediate_Processed_Data/cps_nber_2_yearly.csv`
+5. `2-Final_Data/mu_1999.xlsx`
+6. `2-Final_Data/mu_1999_no_migration.xlsx`
 
 More detailed description
 ============================================================================================
@@ -165,4 +279,4 @@ The raw-data files that were not stored in the GitHub repository can be accessed
 1) For script 3: `0-Raw_Data/CFS/CF1200A24.csv`  was too heavy, so it was compressed in a .zip folder with the same name; it must be taken out of the folder to run the script.
 2) For script 5: the collection of `0-Raw_Data/CENSUS_2000/PUMS5/PUMS5_` .txt files for each US state was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download these files directly from  U.S. Census Bureau's page. The same comment applies to script 8 and the collection of `0-Raw_Data/CENSUS_2000/REVISEDPUMS5/REVISEDPUMS5_` .txt files.
 3) For script 9: the collection of `0-Raw_Data/ACS/20*/c2ssp**.csv` .txt files for each US state was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download these files directly from  U.S. Census Bureau's page.
-4) For script 9: `0-Raw_Data/CPS/CPS_NBER/Inputs/cps_panel.dta` was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download it.
+4) For script 9: `0-Raw_Data/CPS/CPS_NBER/Input/cps_panel.dta` was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download it.
