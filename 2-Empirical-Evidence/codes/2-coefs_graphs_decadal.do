@@ -73,8 +73,7 @@ forval year = 2006/2020 {
  * Gen ten-year equivalent changes in pop shares by employment status
 	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
 	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
-	}
-
+	}	
 ***
 *** end new Jan 2025
 ***
@@ -113,24 +112,25 @@ prog coef_graphs
 
 quiet{
 
-	foreach outcome in mfg nmfg unempl nilf lnpop empl unempl_seer {
+	foreach outcome in unempl_seer unempl mfg nmfg nilf lnpop empl {
 	
 	global estimates
 	forvalues i = 2006(1)2020 {
-
+	global outcome `outcome' 	
+	global i = `i'
+	replace d_sh_unempl_seer_$i = d_sh_unempl_$i if yr == 2000
 	* here we estimate the main regressions of adh13 for each outcome
-	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' $controls (d_tradeusch_pw=d_tradeotch_pw_lag) [aw=timepwt48], cluster(statefip) 
+	eststo mp_2000_$i : qui ivreg2 d_sh_${outcome}_$i $controls (d_tradeusch_pw=d_tradeotch_pw_lag) [aw=timepwt48], cluster(statefip) 
 
 		global b_mp_2000_`i' = _b[d_tradeusch_pw]
 		global se_mp_2000_`i' = _se[d_tradeusch_pw]
 		global estimates "${estimates} mp_2000_`i'"
-
 }
  * display coefficientes for log file
 	noi dis "Coefficients for `outcome' variable"
 	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , keep(d_tradeusch_pw) nostar
 	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, keep(d_tradeusch_pw) nostar
-
+hola
 
 		***
 		*** creates graph
@@ -209,7 +209,7 @@ end
 prog coef_graphs_and_models
 quiet{
 
-	foreach outcome in mfg nmfg unempl unempl_seer nilf  {
+	foreach outcome in unempl unempl_seer mfg nmfg nilf  {
 	
 	global estimates
 	forvalues i = 2006(1)2020 {

@@ -24,7 +24,7 @@ global outputs results
 ************************************************************************
 prog main
 
-foreach unit in state cz {
+foreach unit in cz state {
 global unit `unit'
 
 ****				   
@@ -154,11 +154,10 @@ prog state
 ***
 preserve 
 use "temp/unemp_pop.dta" , clear
-drop if pop == 0
 merge 1:1 czone yr using temp/workfile_china_RUV.dta, assert(3 1) keep(3) nogen	keepusing(statefip)
 collapse (sum) unemployment pop l_unemp_seer1990 l_pop_seer1990 l_pop_seer2000 l_unemp_seer2000 , by( statefip yr)
-gen l_sh_unemp_seer1990 = l_unemp_seer1990 / l_pop_seer1990
-gen l_sh_unemp_seer2000 = l_unemp_seer2000 / l_pop_seer2000
+gen l_sh_unemp_seer1990 = 100*l_unemp_seer1990 / l_pop_seer1990
+gen l_sh_unemp_seer2000 = 100*l_unemp_seer2000 / l_pop_seer2000
 
 gen sh_unempl_seer = 100*(unemployment / pop)
 gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
@@ -232,7 +231,6 @@ forval year = 2006/2020 {
 	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
 	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
 	}
-
 ***
 *** end new Jan 2025
 ***
@@ -256,35 +254,38 @@ end
 ************************************************************************
 program dnwr_figures_diff
 
-	foreach outcome in unempl unempl_seer {	
+	foreach outcome in unempl_seer unempl {	
 	global outc ""	
 	if "`outcome'" == "unempl_seer" {
-		global outc "_seer"
+		global outc "seer_"
 	}
 	
-	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
-	
+	foreach rig_measure of varlist dnwr_yjj_dmy2 dnwr_yjj_dmy1 r2w dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
+	estimates clear
+	global outcome `outcome' 
+	global rig_measure `rig_measure'
 	* create interaction with rigidity measure and trade shock
 	capture drop exposure_rig* 
 	capture drop inter_*
 	gen exposure_rig = d_tradeusch_pw 
 	gen exposure_rig_iv = d_tradeotch_pw_lag 
-    gen inter_rigidity = d_tradeusch_pw * (1-`rig_measure') // diff high vs low 
-    gen inter_rigidity_iv = d_tradeotch_pw_lag * (1-`rig_measure')
+    gen inter_rigidity = d_tradeusch_pw * (1-${rig_measure}) // diff high vs low 
+    gen inter_rigidity_iv = d_tradeotch_pw_lag * (1-${rig_measure})
 	
 	global estimates
 	global estimates2
 	forvalues i = 2006(1)2020 {
-
+	global i = `i'
 	* here we estimate the main regressions of adh13 for each outcome
-	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
+	replace d_sh_${outcome}_${i} = d_sh_unempl_${i} if yr == 2000
+	eststo mp_2000_`i' : qui ivreg2 d_sh_${outcome}_${i} ${rig_measure} l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
 
-		global b_mp_2000_`i' = _b[exposure_rig]
-		global se_mp_2000_`i' = _se[exposure_rig]
-		global b_rm_2000_`i' = _b[inter_rigidity]
-		global se_rm_2000_`i' = _se[inter_rigidity]
-		global estimates "${estimates} mp_2000_`i'"
-		global estimates2 "${estimates2} rm_2000_`i'"
+		global b_mp_2000_${i} = _b[exposure_rig]
+		global se_mp_2000_${i} = _se[exposure_rig]
+		global b_rm_2000_${i} = _b[inter_rigidity]
+		global se_rm_2000_${i} = _se[inter_rigidity]
+		global estimates "${estimates} mp_2000_${i}"
+		global estimates2 "${estimates2} rm_2000_${i}"
 
 }
 
@@ -353,9 +354,7 @@ program dnwr_figures_diff
 		 xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
 		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(order(1 ${legend})) yscale(r(-0.1 0.8))
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
-	
-	graph export "$outputs/figures/`rig_measure'_diff_${unit}${outc}.pdf", as(pdf) name("Graph") replace
-
+	graph export "$outputs/figures/${outc}`rig_measure'_diff_${unit}.pdf", as(pdf) name("Graph") replace
 	restore
 	} //quiet
 
@@ -372,35 +371,38 @@ end
 program dnwr_figures_both
 
 
-	foreach outcome in unempl unempl_seer {	
+	foreach outcome in unempl_seer unempl {	
 	global outc ""	
 	if "`outcome'" == "unempl_seer" {
-		global outc "_seer"
+		global outc "seer_"
 	}
 	
-	foreach rig_measure of varlist r2w dnwr_yjj_dmy1 dnwr_yjj_dmy2 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
-	
+	foreach rig_measure of varlist dnwr_yjj_dmy2 dnwr_yjj_dmy1 r2w dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
+	estimates clear 
+	global outcome `outcome' 
+	global rig_measure `rig_measure'
 	* create interaction with rigidity measure and trade shock
 	capture drop exposure_rig* 
 	capture drop inter_*
-	gen exposure_rig = d_tradeusch_pw * (1-`rig_measure') //effect high rigidity
-	gen exposure_rig_iv = d_tradeotch_pw_lag * (1-`rig_measure')
-    gen inter_rigidity = d_tradeusch_pw * `rig_measure' //effect low rigidity
-    gen inter_rigidity_iv = d_tradeotch_pw_lag * `rig_measure'
+	gen exposure_rig = d_tradeusch_pw * (1-${rig_measure}) //effect high rigidity
+	gen exposure_rig_iv = d_tradeotch_pw_lag * (1-${rig_measure})
+    gen inter_rigidity = d_tradeusch_pw * ${rig_measure} //effect low rigidity
+    gen inter_rigidity_iv = d_tradeotch_pw_lag * ${rig_measure}
 	
 	global estimates
 	global estimates2
 	forvalues i = 2006(1)2020 {
-
+	global i = `i'
+	replace d_sh_${outcome}_${i} = d_sh_unempl_${i} if yr == 2000
 	* here we estimate the main regressions of adh13 for each outcome
-	eststo mp_2000_`i' : qui ivreg2 d_sh_`outcome'_`i' `rig_measure' l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
+	eststo mp_2000_`i' : qui ivreg2 d_sh_${outcome}_${i} ${rig_measure} l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
 
-		global b_mp_2000_`i' = _b[exposure_rig]
-		global se_mp_2000_`i' = _se[exposure_rig]
-		global b_rm_2000_`i' = _b[inter_rigidity]
-		global se_rm_2000_`i' = _se[inter_rigidity]
-		global estimates "${estimates} mp_2000_`i'"
-		global estimates2 "${estimates2} rm_2000_`i'"
+		global b_mp_2000_${i} = _b[exposure_rig]
+		global se_mp_2000_${i} = _se[exposure_rig]
+		global b_rm_2000_${i} = _b[inter_rigidity]
+		global se_rm_2000_${i} = _se[inter_rigidity]
+		global estimates "${estimates} mp_2000_${i}"
+		global estimates2 "${estimates2} rm_2000_${i}"
 
 }
 
@@ -478,8 +480,7 @@ program dnwr_figures_both
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
 
 		
-	graph export "$outputs/figures/`rig_measure'_sep_${unit}${outc}.pdf", as(pdf) name("Graph") replace
-
+	graph export "$outputs/figures/${outc}`rig_measure'_sep_${unit}.pdf", as(pdf) name("Graph") replace
 	restore
 	} //quiet
 
