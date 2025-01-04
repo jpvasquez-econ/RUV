@@ -56,7 +56,8 @@ restore
 cap drop N_total total_neg total_nonzero 
 gen r2w= (yr>year_r2w)
 replace r2w = 1 if statefip == 40 & yr == 2000  //replace Oklahoma r2w law on 2nd period, since it was introduced in 2001
-
+drop yr 
+rename year yr
 
 ***
 *** define control variables for adh13 and dwrm descriptions
@@ -149,9 +150,7 @@ prog state
 * crete dummy for second period
 	gen t2 = (yr>2000)
 
-***
-*** new Jan 2025
-***
+*merge unemp / pop from SEER and LAUS
 preserve 
 use "temp/unemp_pop.dta" , clear
 merge 1:1 czone yr using temp/workfile_china_RUV.dta, assert(3 1) keep(3) nogen	keepusing(statefip)
@@ -179,9 +178,6 @@ tempfile temp_seer0
 save `temp_seer0', replace	
 restore
 merge 1:1 statefip yr using `temp_seer' , assert(3) nogen 
-***
-*** end new Jan 2025
-***
 	
 	*save data for log files (tables)
 	preserve
@@ -215,26 +211,6 @@ prog cz
 	* here we create the outcomes as shares of the working pop
 	gen sh_unempl = 100*(unempl/pop_1664) 
 
-***
-*** new Jan 2025
-***
-*merge unemp / pop from SEER and LAUS
-merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen
-gen sh_unempl_seer = 100*(unemployment / pop)
-gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
-replace l_sh_unempl_seer = l_sh_unemp_seer2000 if yr > 2000
-gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
-
-* here the 10 year differences are created (l_* vars are the lagged values")
-forval year = 2006/2020 {
- * Gen ten-year equivalent changes in pop shares by employment status
-	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
-	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
-	}
-***
-*** end new Jan 2025
-***
-	
 	* here the 10 year differences are created (l_* vars are data of 2000)
 	forval year = 2006/2020 {
 		* here we replace values from ADH 2013 for year 2007
@@ -246,7 +222,22 @@ forval year = 2006/2020 {
 		gen d_sh_unempl_`year' = (10/(`year'-2000)) * (sh_unempl - l_sh_unempl ) if yr == `year'
 		replace d_sh_unempl_`year' = d_sh_unempl if yr == 2000 
 		} 
-	} //year
+	} //year	
+	
+*merge unemp / pop from SEER and LAUS
+merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen
+gen sh_unempl_seer = 100*(unemployment / pop)
+gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
+replace l_sh_unempl_seer = l_sh_unemp_seer2000 if yr > 2000
+gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
+
+* here the 10 year differences are created (l_* vars are the lagged values")
+forval year = 2006/2020 {
+ * Gen ten-year equivalent changes in pop shares by employment status
+	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
+	replace d_sh_unempl_seer_`year' = d_sh_unempl if yr == 2000 
+	}
+	
 end
 
 ************************************************************************
@@ -277,7 +268,6 @@ program dnwr_figures_diff
 	forvalues i = 2006(1)2020 {
 	global i = `i'
 	* here we estimate the main regressions of adh13 for each outcome
-	replace d_sh_${outcome}_${i} = d_sh_unempl_${i} if yr == 2000
 	eststo mp_2000_`i' : qui ivreg2 d_sh_${outcome}_${i} ${rig_measure} l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
 
 		global b_mp_2000_${i} = _b[exposure_rig]
@@ -371,7 +361,7 @@ end
 program dnwr_figures_both
 
 
-	foreach outcome in unempl_seer unempl {	
+	foreach outcome in unempl_seer unempl  {	
 	global outc ""	
 	if "`outcome'" == "unempl_seer" {
 		global outc "seer_"
@@ -393,7 +383,6 @@ program dnwr_figures_both
 	global estimates2
 	forvalues i = 2006(1)2020 {
 	global i = `i'
-	replace d_sh_${outcome}_${i} = d_sh_unempl_${i} if yr == 2000
 	* here we estimate the main regressions of adh13 for each outcome
 	eststo mp_2000_`i' : qui ivreg2 d_sh_${outcome}_${i} ${rig_measure} l_shind_manuf_cbp l_sh_popedu_c l_sh_popfborn l_sh_empl_f l_sh_routine33 l_task_outsource t2 reg* (exposure_rig inter_rigidity = exposure_rig_iv inter_rigidity_iv) [aw=timepwt48] $cluster
 
@@ -479,7 +468,6 @@ program dnwr_figures_both
 		
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
 
-		
 	graph export "$outputs/figures/${outc}`rig_measure'_sep_${unit}.pdf", as(pdf) name("Graph") replace
 	restore
 	} //quiet

@@ -58,9 +58,6 @@ foreach var in empl mfg nmfg nilf unempl {
 gen sh_`var' = 100*(`var'/pop_1664) 
 }
 
-***
-*** new Jan 2025
-***
 *merge unemp / pop from SEER and LAUS
 merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen
 gen sh_unempl_seer = 100*(unemployment / pop)
@@ -72,11 +69,8 @@ gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
 forval year = 2006/2020 {
  * Gen ten-year equivalent changes in pop shares by employment status
 	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
-	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
+	replace d_sh_unempl_seer_`year' = d_sh_unempl if yr == 2000 
 	}	
-***
-*** end new Jan 2025
-***
 
 * here the 10 year differences are created (l_* vars are data of 2000)
 forval year = 2006/2020 {
@@ -113,12 +107,12 @@ prog coef_graphs
 quiet{
 
 	foreach outcome in unempl_seer unempl mfg nmfg nilf lnpop empl {
-	
-	global estimates
+	global outcome `outcome' 
+	global estimates 
+	estimates clear 
 	forvalues i = 2006(1)2020 {
-	global outcome `outcome' 	
+	
 	global i = `i'
-	replace d_sh_unempl_seer_$i = d_sh_unempl_$i if yr == 2000
 	* here we estimate the main regressions of adh13 for each outcome
 	eststo mp_2000_$i : qui ivreg2 d_sh_${outcome}_$i $controls (d_tradeusch_pw=d_tradeotch_pw_lag) [aw=timepwt48], cluster(statefip) 
 
@@ -130,7 +124,6 @@ quiet{
 	noi dis "Coefficients for `outcome' variable"
 	noi esttab mp_2000_2006 mp_2000_2007 mp_2000_2008 mp_2000_2009 mp_2000_2010 mp_2000_2011 mp_2000_2012 mp_2000_2013 , keep(d_tradeusch_pw) nostar
 	noi esttab mp_2000_2014 mp_2000_2015 mp_2000_2016 mp_2000_2017 mp_2000_2018 mp_2000_2019 mp_2000_2020, keep(d_tradeusch_pw) nostar
-hola
 
 		***
 		*** creates graph
@@ -175,7 +168,6 @@ hola
 		
 	*saving figure
 		graph export "results/figures/`outcome'_decadal_adh13${range_name}.pdf", as(pdf) name("Graph") replace
-
 	restore
 
 }
