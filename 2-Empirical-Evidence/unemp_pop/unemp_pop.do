@@ -24,6 +24,7 @@ keep if Age >= 15 & Age <= 65
 keep if Year >= 1990 & Year <= 2020
 *Sum to get county totals by year
 keep Year FIPS Population 
+replace Population = 0 if Population == .
 collapse (sum) Population, by(FIPS Year)
 save "raw_data\population.dta", replace
 
@@ -72,11 +73,26 @@ rename czone CZ
 rename Annual unemployment
 rename Year year
 rename Population pop
-drop if CZ == . | year == .
 replace unemployment = 0 if unemployment == .
 replace pop = 0 if pop == .
 collapse (sum) pop unemployment, by(CZ year)
 order CZ year unemployment pop
-save "unemp_pop\unemp_pop.dta", replace
+drop if CZ == . | year == .
+rename year yr 
+rename CZ czone
+foreach yr in 1990 2000 {
+
+gen l_seer_sh`yr' = 100* unemp / pop if yr == `yr'
+bys czone: egen l_sh_unemp_seer`yr' = mean( l_seer_sh`yr' )
+
+foreach v in unemp pop {
+
+gen l_seer_`v'_`yr' = `v' if yr == `yr'
+bys czone: egen l_`v'_seer`yr' = mean( l_seer_`v'_`yr')
+
+}
+}
+drop l_seer*
+save "temp\unemp_pop.dta", replace
 erase "raw_data\population.dta"
 erase "__000000.dta"
