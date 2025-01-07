@@ -21,12 +21,12 @@ infix ///
 *Ages (between 15 and 65).
 keep if Age >= 15 & Age <= 65
 *Years (between 1990 and 2020)
-keep if Year >= 1990 & Year <= 2020
+keep if Year >= 1989 & Year <= 2021
 *Sum to get county totals by year
 keep Year FIPS Population 
 replace Population = 0 if Population == .
 collapse (sum) Population, by(FIPS Year)
-save "raw_data\population.dta", replace
+save "raw_data\population_2.dta", replace
 
 *********************************
 *** Prepare unemployment data ***
@@ -59,8 +59,8 @@ reshape long Annual, i(FIPS) j(Year)
 *** Combine population and unemployment ***
 *******************************************
 
-keep if Year >= 1990 & Year <= 2020
-merge 1:1 FIPS Year using "raw_data\population.dta"
+keep if Year >= 1989 & Year <= 2021
+merge 1:1 FIPS Year using "raw_data\population_2.dta"
 drop _merge
 
 ***************************
@@ -81,7 +81,18 @@ order CZ year unemployment pop
 drop if CZ == . | year == .
 rename year yr 
 rename CZ czone
-foreach yr in 1990 2000 {
+
+*****************************************************************
+*** Replace the two variables with the 3-year moving averages ***
+*****************************************************************
+sort czone yr
+generate unempMA = (unemployment[_n-1] + unemployment[_n] + unemployment[_n+1])/3
+generate popMA = (pop[_n-1] + pop[_n] + pop[_n+1])/3
+drop if yr <= 1990 | yr == 2021
+drop unemployment pop
+rename (unempMA popMA) (unemployment pop)
+
+foreach yr in 1991 2000 {
 
 gen l_seer_sh`yr' = 100* unemp / pop if yr == `yr'
 bys czone: egen l_sh_unemp_seer`yr' = mean( l_seer_sh`yr' )
@@ -94,6 +105,6 @@ bys czone: egen l_`v'_seer`yr' = mean( l_seer_`v'_`yr')
 }
 }
 drop l_seer*
-save "temp\unemp_pop.dta", replace
-erase "raw_data\population.dta"
+save "temp\unemp_pop_2.dta", replace
+erase "raw_data\population_2.dta"
 erase "__000000.dta"
