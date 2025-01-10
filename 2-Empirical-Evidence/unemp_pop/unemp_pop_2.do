@@ -105,6 +105,9 @@ bys czone: egen l_`v'_seer`yr' = mean( l_seer_`v'_`yr')
 }
 }
 drop l_seer*
+/*We start the moving averages with 1991. But we want to keep the 
+names of 2-Empirical-Evidence\unemp_pop\unemp_pop*/
+rename (l_sh_unemp_seer1991 l_unemp_seer1991 l_pop_seer1991) (l_sh_unemp_seer1990 l_unemp_seer1990 l_pop_seer1990)
 save "temp\unemp_pop_2.dta", replace
 erase "raw_data\population_2.dta"
 erase "__000000.dta"

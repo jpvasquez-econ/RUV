@@ -528,8 +528,8 @@ R <- wiot_full %>%
 
 Calculating value added:
 
-$$VA_{i,k}= R_{i,k}- \sum_s X_{j,sk}, $$ 
-where $R_{i,k}$ denotes total revenues in sector $k$ of country $i$ and $X_{j,sk} = \sum_i X_{ij,sk}$ is the total purchases that sector k in region j makes from sector s.
+$$VA_{i,k}= R_{i,k}- \sum_s X_{i,sk}, $$ 
+where $R_{i,k}$ denotes total revenues in sector $k$ of country $i$ and $X_{i,sk} = \sum_j X_{ji,sk}$ is the total purchases that sector k in region i makes from sector s.
 
 ```{r value-added, warning=FALSE}
 sum_s_X_jsk <- wiot_inter %>%
