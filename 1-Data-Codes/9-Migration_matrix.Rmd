@@ -615,10 +615,7 @@ if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon)
   stop("mobility shares do not add to 1")
 
 #Save
-wb <- loadWorkbook("2-Final_Data/Output.xlsx")
-addWorksheet(wb, sheetName = "mu_1999")
-writeData(wb, sheet = "mu_1999", x = mu_1999_prime)
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+write_xlsx(mu_1999_prime, path = paste("2-Final_Data/mu_1999.xlsx", sep=""))
 ```
 
 ## Calculate mobility sharess "without migration".
@@ -663,7 +660,5 @@ if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon)
   stop("mobility shares do not add to 1")
 
 #Save
-addWorksheet(wb, sheetName = "mu_1999_no_migration")
-writeData(wb, sheet = "mu_1999_no_migration", x = mu_1999_prime)
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+write_xlsx(mu_1999_prime, path = paste("2-Final_Data/mu_1999_no_migration.xlsx", sep=""))
 ```

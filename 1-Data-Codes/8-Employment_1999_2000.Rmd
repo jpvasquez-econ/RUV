@@ -557,14 +557,27 @@ L_2000CENSUS <- rbind(states_2000CENSUS,countries_2000)
 
 #Save data sets
 
-wb <- loadWorkbook("2-Final_Data/Output.xlsx")
-addWorksheet(wb, sheetName = "L_2000CENSUS")
-writeData(wb, sheet = "L_2000CENSUS", x = L_2000CENSUS)
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
-addWorksheet(wb, sheetName = "L_1999BLS")
-writeData(wb, sheet = "L_1999BLS", x = L_1999BLS)
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
-addWorksheet(wb, sheetName = "L_2000BLS")
-writeData(wb, sheet = "L_2000BLS", x = L_2000BLS)
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+fwrite(
+  L_2000CENSUS,
+  file.path(
+    "2-Final_Data",
+    "L_2000CENSUS.csv"
+  )
+)
+
+fwrite(
+  L_1999BLS,
+  file.path(
+    "2-Final_Data",
+    "L_1999BLS.csv"
+  )
+)
+
+fwrite(
+  L_2000BLS,
+  file.path(
+    "2-Final_Data",
+    "L_2000BLS.csv"
+  )
+)
 ```

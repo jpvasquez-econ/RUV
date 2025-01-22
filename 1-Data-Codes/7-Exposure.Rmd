@@ -508,8 +508,5 @@ corr_employ_BLS <- cor(temp_L$share_L, state_emp_share_2000$share_bls)
 print(corr_employ_BLS)
 plot(x = temp_L$share_L, y = state_emp_share_2000$share_bls, xlab = "share_L", ylab = "share_bls")
 
-wb <- loadWorkbook("2-Final_Data/Output.xlsx")
-addWorksheet(wb, sheetName = "exposures")
-writeData(wb, sheet = "exposures", x = final)
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+write_xlsx(final, path = "2-Final_Data/exposures.xlsx")
 ```

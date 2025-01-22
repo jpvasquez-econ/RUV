@@ -324,14 +324,16 @@ if(abs(sum(cdp_ss$val)/sum(wiot_ss$value) -1)>epsilon)
 ## Exporting all bilateral flows matrices in a unique file 
 
 ```{r}
-wb <- loadWorkbook("2-Final_Data/Output.xlsx")
 for (i in 2000:2007) {
   current <- sprintf("1-Intermediate_Processed_Data/final_matrix_%d.csv", i)
   data <- read.csv(current)
-  addWorksheet(wb, sheetName = sprintf("bilat_matrix_year%d", i))
-  writeData(wb, sheet = sprintf("bilat_matrix_year%d", i), x = data)
+  if (i == 2000) {
+    wb <- createWorkbook()
+  }
+  addWorksheet(wb, sheetName = sprintf("year%d", i))
+  writeData(wb, sheet = sprintf("year%d", i), x = data)
 }
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+saveWorkbook(wb, file = "2-Final_Data/bilat_matrix_allyears.xlsx")
 ```
 
 # Calculating the share of value added in gross output
@@ -496,7 +498,5 @@ colnames(labor_countries) <- c("year", "region", "sector_101", "sector_102", "se
 all_shares <- rbind(labor_states, labor_countries)
 all <- rbind(all, all_shares)
 }
-addWorksheet(wb, sheetName = "va_shares_allyears")
-writeData(wb, sheet = "va_shares_allyears", x = all)
-saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+write_xlsx(all, paste("2-Final_Data/va_shares_allyears.xlsx"), col_names = TRUE)
 ```

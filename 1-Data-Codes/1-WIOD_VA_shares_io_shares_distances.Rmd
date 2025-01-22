@@ -461,10 +461,7 @@ all_targets <- data.frame(
   Targettim2007 = Targettim2007_col,
   Targettim2011 = Targettim2011_col
 )
-wb <- createWorkbook()
-addWorksheet(wb, "calibration_targets")
-writeData(wb, sheet = "calibration_targets", all_targets)
-saveWorkbook(wb, "2-Final_Data/Output.xlsx", overwrite = TRUE)
+write_xlsx(all_targets, path = "2-Final_Data/calibration_targets.xlsx")
 ```
 
 ## WIOD in matrix form
@@ -707,7 +704,7 @@ local y=`y'+1
 }
 order year country sector io*, first
  
-export excel using "2-Final_Data/Output.xlsx" ///
+export excel using "2-Final_Data/io_allyears.xlsx" ///
 	, sheet("IO`i'") firstrow(variables) sheetmodify
 }	
 

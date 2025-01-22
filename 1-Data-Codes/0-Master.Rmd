@@ -62,3 +62,62 @@ rmarkdown::render("8-Employment_1999_2000.Rmd")
 rmarkdown::render("9-Migration_matrix.Rmd")
 #WARNING: Depending on the memory capacity of your computer, R may throw the error "cannot allocate vector of size ..." in the "Generate cps_nber yearly" chunk. However, the error will disappear (and you will still get the output) if you go to the script and run directly the code since the moment the error appeared on.
 ```
+
+Join all the final data in a single file.
+```{r, warning=FALSE, message = FALSE}
+wb <- createWorkbook()
+
+calibration_targets <- read_excel("2-Final_Data/calibration_targets.xlsx")
+addWorksheet(wb, "calibration_targets")
+writeData(wb, sheet = "calibration_targets", calibration_targets)
+saveWorkbook(wb, "2-Final_Data/Output.xlsx", overwrite = TRUE)
+
+for (i in 1:8) {
+  io_allyears <- read_excel("2-Final_Data/io_allyears.xlsx", sheet = i)
+  addWorksheet(wb, sheetName = sprintf("IO%d", 2000 + i - 1))
+  writeData(wb, sheet = sprintf("IO%d", 2000 + i - 1), x = io_allyears)
+  saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+}
+
+for (i in 1:8) {
+  bilat_matrix_allyears <- read_excel("2-Final_Data/bilat_matrix_allyears.xlsx", sheet = i)
+  addWorksheet(wb, sheetName = sprintf("bilat_matrix%d", 2000 + i - 1))
+  writeData(wb, sheet = sprintf("bilat_matrix%d", 2000 + i - 1), x = bilat_matrix_allyears)
+  saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+}
+
+va_shares_allyears <- read_excel("2-Final_Data/va_shares_allyears.xlsx")
+addWorksheet(wb, sheetName = "va_shares_allyears")
+writeData(wb, sheet = "va_shares_allyears", x = va_shares_allyears)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+
+exposures <- read_excel("2-Final_Data/exposures.xlsx")
+addWorksheet(wb, sheetName = "exposures")
+writeData(wb, sheet = "exposures", x = exposures)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+
+L_2000CENSUS <- read.csv("2-Final_Data/L_2000CENSUS.csv")
+addWorksheet(wb, sheetName = "L_2000CENSUS")
+writeData(wb, sheet = "L_2000CENSUS", x = L_2000CENSUS)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+
+L_1999BLS <- read.csv("2-Final_Data/L_1999BLS.csv")
+addWorksheet(wb, sheetName = "L_1999BLS")
+writeData(wb, sheet = "L_1999BLS", x = L_1999BLS)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+
+L_2000BLS <- read.csv("2-Final_Data/L_2000BLS.csv")
+addWorksheet(wb, sheetName = "L_2000BLS")
+writeData(wb, sheet = "L_2000BLS", x = L_2000BLS)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+
+mu_1999 <- read_excel("2-Final_Data/mu_1999.xlsx")
+addWorksheet(wb, sheetName = "mu_1999")
+writeData(wb, sheet = "mu_1999", x = mu_1999)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+
+mu_1999_no_migration <- read_excel("2-Final_Data/mu_1999_no_migration.xlsx")
+addWorksheet(wb, sheetName = "mu_1999_no_migration")
+writeData(wb, sheet = "mu_1999_no_migration", x = mu_1999_no_migration)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+```
