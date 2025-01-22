@@ -72,7 +72,7 @@ n_c <- length(c_names)
 reclass_sectors <- read.csv("0-Raw_Data/sectors.csv")
 n_sec <- length(unique(reclass_sectors$final_sector)) -3
 reclass_sectors <- reclass_sectors %>% 
-  select(final_sector, wiod_sector) %>%
+  dplyr::select(final_sector, wiod_sector) %>%
   distinct(wiod_sector, .keep_all = TRUE)
 
 
@@ -90,19 +90,19 @@ services <- data.frame(services)
 colnames(services) <- regions$region
 services <- services %>%
   mutate(year = yr, sector = (n_sec + 1), importer = regions$region) %>%
-  select(year, importer, sector, everything())
+  dplyr::select(year, importer, sector, everything())
 ##Agriculture flows coming from gravity system (state to state)
 agriculture <- read.csv(paste('1-Intermediate_Processed_Data//Xij_matrix_agric_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
 agriculture <- data.frame(agriculture)
 colnames(agriculture) <- regions$region[1:n_s]
 agriculture <- agriculture %>%
   mutate(year = yr, sector = (n_sec + 2), importer = regions$region[1:n_s]) %>%
-  select(year, importer, sector, everything())
+  dplyr::select(year, importer, sector, everything())
 #country-country flows for all sectors
 country_country <- read.csv(paste('1-Intermediate_Processed_Data//country_country_step_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
 country_country <- country_country %>%
   filter(importer != "USA") %>%
-  select(-USA)
+  dplyr::select(-USA)
 #state-state flows for sectors excluding agriculture and services
 state_state <- read.csv(paste('1-Intermediate_Processed_Data//state_cfs_step_', yr, '.csv', sep= ""), header = TRUE, sep = ",", dec = ".")
 #state-country and country-state flows for all sectors excluding services
@@ -184,14 +184,14 @@ final_matrix=c()
 for (k in 1:(n_sec + 2)) {
   state_country_e_0 <- state_country_e %>%
     filter(sector == k) %>%
-    select(-importer, -sector)
+    dplyr::select(-importer, -sector)
   state_state_0 <- state_state %>%
     filter(sector == k)
   #Firs, state to state and state to country (i.e., the same order as the columns).
   matrix_top <- cbind(state_state_0, state_country_e_0)
   country_country_0 <- country_country %>%
     filter(sector == k) %>%
-    select(-importer, -sector)
+    dplyr::select(-importer, -sector)
   state_country_y_0 <- state_country_y %>%
     filter(sector == k)
   #Then, country to state and country to country (i.e., the same order as the columns).
@@ -247,7 +247,7 @@ cdp_base <- c()
 for (yr in 2000:2007) {
 matrix <- read.csv(paste("1-Intermediate_Processed_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 matrix$year <- yr
-matrix <- matrix %>% select(year, everything())
+matrix <- matrix %>% dplyr::select(year, everything())
 cdp_base <- rbind(cdp_base, matrix)
 }
 
@@ -324,16 +324,14 @@ if(abs(sum(cdp_ss$val)/sum(wiot_ss$value) -1)>epsilon)
 ## Exporting all bilateral flows matrices in a unique file 
 
 ```{r}
+wb <- loadWorkbook("2-Final_Data/Output.xlsx")
 for (i in 2000:2007) {
   current <- sprintf("1-Intermediate_Processed_Data/final_matrix_%d.csv", i)
   data <- read.csv(current)
-  if (i == 2000) {
-    wb <- createWorkbook()
-  }
-  addWorksheet(wb, sheetName = sprintf("year%d", i))
-  writeData(wb, sheet = sprintf("year%d", i), x = data)
+  addWorksheet(wb, sheetName = sprintf("bilat_matrix_year%d", i))
+  writeData(wb, sheet = sprintf("bilat_matrix_year%d", i), x = data)
 }
-saveWorkbook(wb, file = "2-Final_Data/bilat_matrix_allyears.xlsx")
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
 ```
 
 # Calculating the share of value added in gross output
@@ -357,7 +355,7 @@ for (yr in 2000:2007) {
 #Bilateral flows
 m <- read.csv(paste("1-Intermediate_Processed_Data//final_matrix_", yr, ".csv", sep=""), header = TRUE, sep = ",", dec = ".")
 m$year <- yr
-m <- m %>% select(year, everything())
+m <- m %>% dplyr::select(year, everything())
 base <- rbind(base, m)
 
 #Value added USA
@@ -369,9 +367,8 @@ gdp <- read.csv(paste("0-Raw_Data//Labor_shares//gdp_state_", yr, ".csv", sep=""
 gdp <- gdp[6:(dim(gdp)[1]-7),1:dim(gdp)[2]]
 gdp <- data.frame(gdp)
 gdp$year <- yr
-gdp <- gdp %>% select(year, everything())
+gdp <- gdp %>% dplyr::select(year, everything())
 GDP <- rbind(GDP, gdp)  
-#DUDA MARCO
 #These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP2. After choosing this information, select the NAICS option "All areas", "All statistics in table", and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 #Each of these annual bases needs an additional column that was added manually in excel. The column's name is "code" and contains the sectors' code in expanded form (1-24). If the base needs to be downloaded again in the future, all that has to be done to the new one is copy and paste this "code" column (as it is) to the new base.
 
@@ -380,9 +377,8 @@ taxes <- read.csv(paste("0-Raw_Data//Labor_shares//taxes_state_", yr, ".csv", se
 taxes <- taxes[6:(dim(taxes)[1]-6),1:dim(taxes)[2]]
 taxes <- data.frame(taxes)
 taxes$year <- yr
-taxes <- taxes %>% select(year, everything())
+taxes <- taxes %>% dplyr::select(year, everything())
 TAXES <- rbind(TAXES, taxes)  
-#DUDA MARCO
 #These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP6. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 
 #State subsidies
@@ -390,9 +386,8 @@ subsidies <- read.csv(paste("0-Raw_Data//Labor_shares//subsidies_state_", yr, ".
 subsidies <- subsidies[6:(dim(subsidies)[1]-6),1:dim(subsidies)[2]]
 subsidies <- data.frame(subsidies)
 subsidies$year <- yr
-subsidies <- subsidies %>% select(year, everything())
+subsidies <- subsidies %>% dplyr::select(year, everything())
 SUBSIDIES <- rbind(SUBSIDIES, subsidies)  
-#DUDA MARCO
 #These databases were downloaded from BEA, Regional Data section; specifically, the base is named SAGDP5. After choosing this information, select the NAICS option, All areas, All statistics in table, and each year from 2000 to 2007, separately (to download the next year just go to the previous time section window and change the selected year). Download each base in a csv file.
 }
 
@@ -443,18 +438,18 @@ VA_s <- value %>%
   #Mapping sectors and assign their codes.
   left_join(reclass_sectors, by=c('sector'='wiod_sector')) %>%
   mutate(sector = final_sector) %>%
-  select(-final_sector) %>%
+  dplyr::select(-final_sector) %>%
   mutate(sector = sector + 100) %>%
   #Keep relevant columns and calculate value added for each state-sector.
-  select(-id, -line, -description) %>%
+  dplyr::select(-id, -line, -description) %>%
   mutate(amount = (gdp) - (tax/1000) - (sub/1000)) %>% #Put everything in the same units
   group_by(year, state, sector) %>%
   mutate(value_added = sum(as.numeric(as.character(amount)))) %>%
   ungroup() %>%
   distinct(year, state, sector, .keep_all=TRUE ) %>%
-  select(-amount) %>%
+  dplyr::select(-amount) %>%
   arrange(year, state, sector) %>%
-  select(-gdp, -tax, -sub) %>%
+  dplyr::select(-gdp, -tax, -sub) %>%
   dplyr::rename(region = state)
 
 #Reshape and arrange (total) US value added.
@@ -501,6 +496,7 @@ colnames(labor_countries) <- c("year", "region", "sector_101", "sector_102", "se
 all_shares <- rbind(labor_states, labor_countries)
 all <- rbind(all, all_shares)
 }
-write_xlsx(all, paste("2-Final_Data/va_shares_allyears.xlsx"), col_names = TRUE)
-
+addWorksheet(wb, sheetName = "va_shares_allyears")
+writeData(wb, sheet = "va_shares_allyears", x = all)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
 ```

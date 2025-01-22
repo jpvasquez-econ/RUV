@@ -66,7 +66,7 @@ n_s <- length(s_names)
 # sector reclassification table (NAICS to final)
 sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 sectors_naics_final <- sectors_naics_final %>% 
-  select(final_sector, naics) %>%
+  dplyr::select(final_sector, naics) %>%
   mutate(naics = as.character(naics)) %>%
   distinct(final_sector, naics)
 
@@ -77,7 +77,7 @@ employment_pop <- employment_pop %>%
   filter(is.na(state) == FALSE) %>%
   mutate(state = gsub(" ", "", state)) %>% #taking out spaces
   filter(state %in% s_names) %>%
-  select(state, employed, Not_LF) %>%
+  dplyr::select(state, employed, Not_LF) %>%
   mutate(Not_LF = Not_LF/1000, employed = employed/1000) #units in thousands (as WIOD)
 
 # loading Census PUMS 2000
@@ -109,7 +109,7 @@ CENSUS_PUMS <- CENSUS_PUMS %>%
   left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
   dplyr::rename(sector = final_sector) %>%
   filter(is.na(sector) == FALSE) %>% #NAICS that are not in final sectors
-  select(-X1)
+  dplyr::select(-X1)
 census_list[[c]] <- CENSUS_PUMS #each list in census_list contains all the micro-info for each US state
 rm(CENSUS_PUMS)
 print(s_names[c])
@@ -125,7 +125,7 @@ census <- census %>%
   mutate(num_employ = sum(personweight)) %>%
   ungroup() %>%
   distinct(state, sector, .keep_all = TRUE) %>%
-  select(state, sector, num_employ) %>%
+  dplyr::select(state, sector, num_employ) %>%
   arrange(state, sector) %>%
   mutate(num_employ = ifelse(sector == 0, 0, num_employ)) %>% #non-participants total (not sample) will be added directly
   group_by(state) %>%
@@ -135,7 +135,7 @@ census <- census %>%
   left_join(employment_pop, by=c('state'='state')) %>% #total employed people
   mutate(employ = rel*employed) %>% #total employed people by sector (not sample)
   mutate(employ = ifelse(sector == 0, Not_LF, employ)) %>% #total non-participants
-  select(state, sector, employ)
+  dplyr::select(state, sector, employ)
 ```
 
 # Sector-State employment for 1999 and 2000 from BLS data
@@ -179,8 +179,8 @@ for (i in 1:14) {
 #Leave only one observation for each state for each of our sectors.
 for (i in 1:14) {
   sector <- paste0("sector_", i)
-  assign(sector, select(get(sector), employment, area_title) %>%
-           distinct()
+  assign(sector, dplyr::select(get(sector), employment, area_title) %>%
+           dplyr::distinct()
   )
 }
 #Leave only each state's name.
@@ -195,7 +195,7 @@ for (i in 1:14) {
   sector <- paste0("sector_", i)
   assign(sector, get(sector) %>%
            filter(state != "Puerto Rico" & state != "Virgin Islands") %>%
-           select(-area_title)
+           dplyr::select(-area_title)
   )
 }
 #Add columns to indicate year and sector.
@@ -257,7 +257,7 @@ for (i in 1:14) {
 #Leave only one observation for each state for each of our sectors.
 for (i in 1:14) {
   sector <- paste0("sector_", i)
-  assign(sector, select(get(sector), employment, area_title) %>%
+  assign(sector, dplyr::select(get(sector), employment, area_title) %>%
            distinct()
   )
 }
@@ -273,7 +273,7 @@ for (i in 1:14) {
   sector <- paste0("sector_", i)
   assign(sector, get(sector) %>%
            filter(state != "Puerto Rico" & state != "Virgin Islands") %>%
-           select(-area_title)
+           dplyr::select(-area_title)
   )
 }
 #Add columns to indicate year and sector.
@@ -315,14 +315,14 @@ PARTUS <- PARTUS %>%
 #Create 1999's sector 0 (non-participant).
 sector_0 <- subset(PARTUS, year == 1999)
 sector_0 <- sector_0 %>%
-  select(year, employment, state)
+  dplyr::select(year, employment, state)
 sector_0 <- sector_0  %>%
   mutate(sector="00")
 states_1999BLS <- rbind(states_1999BLS,sector_0)
 #Create 2000's sector 0 (non-participant).
 sector_0 <- subset(PARTUS, year == 2000)
 sector_0 <- sector_0 %>%
-  select(year, employment, state)
+  dplyr::select(year, employment, state)
 sector_0 <- sector_0  %>%
   mutate(sector="00")
 states_2000BLS <- rbind(states_2000BLS,sector_0)
@@ -392,11 +392,11 @@ participation <- participation %>%
 #Prepare u for each country.
 unemployment<- read_excel("0-Raw_Data/CENSUS_2000/P_World unemployment rates.xlsx")
 unemployment_1999 <- unemployment %>%
-  select(2, 5) %>%
+  dplyr::select(2, 5) %>%
   rename(region = colnames(.)[1], u_rate = colnames(.)[2])
 unemployment_1999$year <- 1999
 unemployment_2000 <- unemployment %>%
-  select(2, 6) %>%
+  dplyr::select(2, 6) %>%
   rename(region = colnames(.)[1], u_rate = colnames(.)[2])
 unemployment_2000$year <- 2000
 unemployment <- rbind(unemployment_1999,unemployment_2000)
@@ -519,7 +519,7 @@ countries_2000$year <- NULL
 countries_1999$sum2000 <- countries_2000$tot_employ
 countries_1999$employ <- countries_1999$employ*countries_1999$sum2000 / countries_1999$tot_employ
 countries_1999 <- countries_1999 %>%
-  select(-sum2000, -tot_employ)
+  dplyr::select(-sum2000, -tot_employ)
 countries_2000$tot_employ <- NULL
 
 #Reshape and append to get the complete datasets
@@ -557,27 +557,14 @@ L_2000CENSUS <- rbind(states_2000CENSUS,countries_2000)
 
 #Save data sets
 
-fwrite(
-  L_2000CENSUS,
-  file.path(
-    "2-Final_Data",
-    "L_2000CENSUS.csv"
-  )
-)
-
-fwrite(
-  L_1999BLS,
-  file.path(
-    "2-Final_Data",
-    "L_1999BLS.csv"
-  )
-)
-
-fwrite(
-  L_2000BLS,
-  file.path(
-    "2-Final_Data",
-    "L_2000BLS.csv"
-  )
-)
+wb <- loadWorkbook("2-Final_Data/Output.xlsx")
+addWorksheet(wb, sheetName = "L_2000CENSUS")
+writeData(wb, sheet = "L_2000CENSUS", x = L_2000CENSUS)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+addWorksheet(wb, sheetName = "L_1999BLS")
+writeData(wb, sheet = "L_1999BLS", x = L_1999BLS)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
+addWorksheet(wb, sheetName = "L_2000BLS")
+writeData(wb, sheet = "L_2000BLS", x = L_2000BLS)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
 ```

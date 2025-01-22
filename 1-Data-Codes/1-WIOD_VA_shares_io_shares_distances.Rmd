@@ -38,6 +38,7 @@ This file does the following:
 8. `2-Final_Data/io_allyears.xlsx`
 9. `1-Intermediate_Processed_Data//country_coordinates.csv`
 10. `1-Intermediate_Processed_Data/distances.csv`
+11. `2-Final_Data/calibration_targets.xlsx`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -251,10 +252,17 @@ write.table(final, file = paste("1-Intermediate_Processed_Data//wiot_full.csv", 
 
 This chunk computes the predicted sector-level and yearly-level changes in imports from China. These are going to be the calibration targets to calibrate the China Shock.
 
-```{r}
+```{r, warning=FALSE}
 #declare years
 first_year <- 2000
-last_year <-2007
+final2backup <- final2
+last_year <- 2007
+for (last_year in c(2007,2011)) {
+if (last_year == 2007) {
+    final2 <- final2
+  } else {
+    final2 <- final2backup
+  }
 #Preparing data for the regressions.
 calibration_target<-final2
 final2 <- subset(final2, year == first_year | year == last_year)
@@ -327,12 +335,29 @@ final2  <- subset(final2 , select = -c(year, t))
 
 # Run ADH regressions to predict changes in imports in USA from the ones in other countries
 
-robust_model <- rlm(diffchineseimportsUSA ~ 0 +  diffchineseimportsOCO, data = final2 )
+robust_model <- lm(diffchineseimportsUSA ~ diffchineseimportsOCO + 0, data = final2)
 final2$diffchineseimportsUSAPRE <- predict(robust_model)
 
 # Drop other countries changes
 final2  <- subset(final2, select = -c(chineseimportsOCO, diffchineseimportsOCO))
+final2  <- final2 %>%
+dplyr::select(1, 4)
 
+if (last_year == 2007) {
+    Targetsec_2007 <- final2
+    Targetsec_2007 <- Targetsec_2007 %>%
+  dplyr::rename(
+    sector = row_item,
+    Targesec2007 = diffchineseimportsUSAPRE
+  )
+  } else {
+    Targetsec_2011 <- final2
+    Targetsec_2011 <- Targetsec_2011 %>%
+  dplyr::rename(
+    sector = row_item,
+    Targesec2011 = diffchineseimportsUSAPRE
+  )
+}
 ##########################################################################
 #Computations across time
 # Keep observations for relevant countries (USA, AUS, DEU, DNK, ESP, FIN, JPN)
@@ -372,7 +397,7 @@ calibration_target$jcode[calibration_target$row_item == 16] <- 12
 calibration_target <- calibration_target %>% mutate(row_item=jcode) %>%
   dplyr::select(-jcode)
 
-# Droping NA
+# Dropping NA
 calibration_target<- calibration_target[!is.na(calibration_target$row_item), ] 
 
 #Collapsing data
@@ -399,12 +424,47 @@ calibration_target <- xts(calibration_target, order.by = as.POSIXct(calibration_
 calibration_target$diffimpUSA <- diff(calibration_target$sumchineseimportsUSA)
 calibration_target$diffimpOCO <- diff(calibration_target$sumchineseimportsOCO)
 # Keep only relevant years
-calibration_target <- subset(calibration_target, year > first_year & year < last_year)
+calibration_target <- subset(calibration_target, year > first_year & year <= last_year)
 
 # Run ADH regressions to predict changes in imports in USA from the ones in other countries
-robust_model <- rlm(diffimpUSA ~ diffimpOCO, data = calibration_target)
+robust_model <- lm(diffimpUSA ~ diffimpOCO, data = calibration_target)
 diffimpUSAPRE <- predict(robust_model )
 
+year_data <- data.frame(year = seq(first_year+1, last_year, by = 1))
+
+if (last_year == 2007) {
+    Targettim_2007 <- data.frame(diffimpUSAPRE)
+    Targettim_2007 <- cbind(year_data, Targettim_2007)
+    names(Targettim_2007)[names(Targettim_2007) == "diffimpUSAPRE"] <- "Targettim2007"
+  } else {
+    Targettim_2011 <- data.frame(diffimpUSAPRE)
+    Targettim_2011 <- cbind(year_data, Targettim2011 = Targettim_2011[,1])
+    names(Targettim_2011)[names(Targettim_2011) == "diffimpUSAPRE"] <- "Targettim2011"
+  }
+}
+
+#Save calibration targets
+max_rows <- max(
+  nrow(Targetsec_2007),
+  nrow(Targetsec_2011),
+  nrow(Targettim_2007),
+  nrow(Targettim_2011)
+)
+Targetsec2007_col <- c(Targetsec_2007[[2]], rep(NA, max_rows - nrow(Targetsec_2007)))
+Targetsec2011_col <- c(Targetsec_2011[[2]], rep(NA, max_rows - nrow(Targetsec_2011)))
+Targettim2007_col <- c(Targettim_2007[[2]], rep(NA, max_rows - nrow(Targettim_2007)))
+Targettim2011_col <- c(Targettim_2011[[2]], rep(NA, max_rows - nrow(Targettim_2011)))
+
+all_targets <- data.frame(
+  Targetsec2007 = Targetsec2007_col,
+  Targetsec2011 = Targetsec2011_col,
+  Targettim2007 = Targettim2007_col,
+  Targettim2011 = Targettim2011_col
+)
+wb <- createWorkbook()
+addWorksheet(wb, "calibration_targets")
+writeData(wb, sheet = "calibration_targets", all_targets)
+saveWorkbook(wb, "2-Final_Data/Output.xlsx", overwrite = TRUE)
 ```
 
 ## WIOD in matrix form
@@ -647,7 +707,7 @@ local y=`y'+1
 }
 order year country sector io*, first
  
-export excel using "2-Final_Data/io_allyears.xlsx" ///
+export excel using "2-Final_Data/Output.xlsx" ///
 	, sheet("IO`i'") firstrow(variables) sheetmodify
 }	
 
@@ -674,9 +734,9 @@ Note that for the case of Cyprus, a more precise statistic for the cities' popul
 
 ```{r}
 #Counties' coordinates and population for states.
-coordinates_counties <- read_excel(paste("0-Raw_Data/Fips/us_states_coordinates_counties.xlsx", sep=""))
+coordinates_counties <- read_excel("0-Raw_Data/Fips/us_states_coordinates_counties.xlsx")
 #States' codes.
-state_code <- read.csv(paste("0-Raw_Data/Fips/state_codes.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+state_code <- read.csv("0-Raw_Data/Fips/state_codes.csv", header = TRUE, sep = ",", dec = ".")
 state_code$state <- gsub(" ", "", state_code$state, fixed = TRUE)
 
 #Coordinates and populations for countries (their corresponding cities).

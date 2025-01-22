@@ -1,0 +1,116 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
+# libraries
+options( scipen=100, digits = 15, stringsAsFactors=FALSE ); # no scientific notation, up to 15 digits 
+
+# vector of libraries to be used
+libs <- c( 'dplyr', 'tidyr', 'readxl', 'writexl', 'readr', 'data.table', "openxlsx", "readxl","ggplot2");
+# Install libraries in case they are not installed
+for( i in seq_along(libs)) { 
+  if( !(libs[i] %in% installed.packages()) ) install.packages( libs[i] ) 
+};
+# Loading libraries
+lapply( libs, require, character.only=TRUE );
+```
+
+# Sector-State employment for 2000 from Census
+
+1. Construct employment levels for each US state from the 2000 Census, using person weights. 
+2. Take CBS total non-participants for each state directly as the sector 0 value.
+
+```{r message=FALSE, warning=FALSE}
+
+# Importing general data sets to R
+
+#US states
+regions <- read.csv("0-Raw_Data/regions.csv")  
+s_names <- regions %>% filter(status == "state") 
+s_names <- s_names$region
+n_s <- length(s_names)
+
+# sector reclassification table (NAICS to final)
+sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
+sectors_naics_final <- sectors_naics_final %>% 
+  dplyr::select(final_sector, naics) %>%
+  mutate(naics = as.character(naics)) %>%
+  distinct(final_sector, naics)
+
+# loading Census PUMS 2000
+list <- c("01")
+c <- 1
+census_list <- vector("list", length = n_s)
+
+for (i in list){
+  CENSUS_PUMS <- read_csv(paste("0-Raw_Data/CENSUS_2000/REVISEDPUMS5/REVISEDPUMS5_", i,".txt", sep=""), col_names = FALSE)
+  CENSUS_PUMS$state <- s_names[c]
+  
+  # creating variables: age, employment status, person weight, and industry info for each US state
+  CENSUS_PUMS <- CENSUS_PUMS %>%
+    mutate(len = nchar(X1)) %>% #only two len: Households and Persons; len matches with dictionary
+    mutate(type = substr(X1, start=1, stop=1)) %>%  #identify Households and Persons
+    filter(type=="P") %>% #keeping only Persons and NOT Households
+    mutate(personweight = substr(X1, start=13, stop=16)) %>%
+    mutate(age = as.numeric(substr(X1, start=25, stop=26))) %>% 
+    filter(age >=25 & age <=65) %>%
+    mutate(employ_status = as.numeric(substr(X1, start=154, stop=154))) %>%
+    filter(is.na(employ_status) == FALSE & ((employ_status>=1 & employ_status<=3)|employ_status==6)) %>%
+    mutate(employ_status = as.numeric(recode( as.character(employ_status), '6' ="0", '3' ="0", '2' = "1", '1' = "1"))) %>% 
+    mutate(naics = substr(X1, start=215, stop=217)) %>% #industry information
+    mutate(naics = ifelse(employ_status == 0, NA, naics)) %>%
+    filter((employ_status == 0 & is.na(naics) == TRUE)|(employ_status == 1 & is.na(naics) == FALSE)) %>%
+    mutate(naics = ifelse(naics == "23 ", "230", naics)) %>%
+    mutate(naics = ifelse(naics == "31M", "313", naics)) %>%
+    mutate(naics = ifelse(naics == "4MS", "423", naics)) %>%
+    left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
+    dplyr::rename(sector = final_sector) %>%
+    filter(is.na(sector) == FALSE) %>% #NAICS that are not in final sectors
+    dplyr::select(-X1)
+  census_list[[c]] <- CENSUS_PUMS #each list in census_list contains all the micro-info for each US state
+  rm(CENSUS_PUMS)
+  print(s_names[c])
+  c <- c + 1
+}
+census <- rbindlist(census_list)
+census$personweight <- as.numeric(census$personweight)
+rm(census_list)
+
+# computing employment, by sector and state
+census <- census %>%
+  group_by(age, state, sector) %>%
+  mutate(num_employ = sum(personweight)) %>%
+  ungroup() %>%
+  distinct(age, state, sector, .keep_all = TRUE) %>%
+  dplyr::select(age, state, sector, num_employ) %>%
+  arrange(state, sector, age)
+census_alabama <- census %>%
+  filter(!sector %in% c(0, 1, 8, 13, 14))
+census_alabama$cuartil <- with(census_alabama, ifelse(
+  age >= 25 & age <= 34, "25-34",
+  ifelse(age >= 35 & age <= 44, "35-44",
+         ifelse(age >= 45 & age <= 54, "45-54",
+                ifelse(age >= 55 & age <= 65, "55-65", NA)
+         )
+  )
+))
+dev.new()
+ggplot(census_alabama, aes(x = sector, weight = num_employ, fill = as.factor(sector))) +
+  geom_bar() +
+  facet_wrap(~cuartil, scales = "free_y") +
+  labs(
+    title = "REVISEDPUMS5",
+    x = "Sector",
+    y = "Número de empleos"
+  ) +
+  theme_classic() +  # Cambiar a un tema con fondo blanco
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.background = element_rect(fill = "white", color = "white"),  # Fondo completamente blanco
+    plot.background = element_rect(fill = "white", color = "white")   # Fondo blanco del gráfico completo
+  ) +
+  scale_fill_brewer(palette = "Set3")  # Paleta de colores para las barras
+ggsave("REVISEDPUMS5.png", width = 10, height = 7)
+```

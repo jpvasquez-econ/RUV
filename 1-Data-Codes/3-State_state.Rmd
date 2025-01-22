@@ -62,7 +62,7 @@ base <- base %>%
   dplyr::rename(NAICS2007_MEANING = NAICS2002_MEANING) %>%
   mutate(NAICS2007 = ifelse(NAICS2007 == "31-33", "3",NAICS2007)) %>%
   mutate(NAICS2007 = as.numeric(NAICS2007)) %>%
-  select(NAICS2007, NAICS2007_MEANING, COMM, COMM_MEANING, VAL)
+  dplyr::select(NAICS2007, NAICS2007_MEANING, COMM, COMM_MEANING, VAL)
 }
 if (yr == 2012){
 # Import CFS data with both NAICS and CFS codes.
@@ -80,7 +80,7 @@ base <- base %>%
   dplyr::rename(COMM = COMM.id) %>%
   dplyr::rename(COMM_MEANING = COMM.display.label) %>%
   mutate(VAL = as.numeric(VAL)) %>%
-  select(NAICS2012, NAICS2012_MEANING, COMM, COMM_MEANING, VAL)
+  dplyr::select(NAICS2012, NAICS2012_MEANING, COMM, COMM_MEANING, VAL)
 }
 
 #Re-code some commodity categories. Drop "all commodities" category and "unknown commodity" category.
@@ -136,14 +136,14 @@ base <- base %>%
   mutate(VAL = sum(VAL)) %>%
   ungroup() %>%
   distinct(cdp, COMM, .keep_all = TRUE) %>%
-  select(COMM, cdp, VAL) %>%
+  dplyr::select(COMM, cdp, VAL) %>%
   arrange(COMM, cdp, VAL) %>%
   group_by(COMM) %>%
   mutate(totalsent = sum(VAL)) %>%
   ungroup() %>%
   mutate(portion = VAL/totalsent) %>%
   mutate(portion = ifelse(is.na(portion)==TRUE, 0, portion)) %>%
-  select(-VAL, -totalsent)
+  dplyr::select(-VAL, -totalsent)
 #Reshape to matrix form.
 base <- spread(base, cdp, portion, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 base$year <- yr
@@ -157,9 +157,9 @@ final <- rbind(final, base1, base)
 }
 if (yr==2012){final <- rbind(final, base)}
 }
-#Select commodity categories and each sector portions.
+#select commodity categories and each sector portions.
 final <- final %>% 
-  select(COMM, portion1, portion2, portion3, portion4, portion5, portion6, portion7, portion8, portion9, portion10, portion11, portion12, portion13, year) %>%
+  dplyr::select(COMM, portion1, portion2, portion3, portion4, portion5, portion6, portion7, portion8, portion9, portion10, portion11, portion12, portion13, year) %>%
   arrange(year, COMM)
 write.table(final, file = paste("1-Intermediate_Processed_Data/CFSapportionment.csv", sep=""), sep = ",", row.names = FALSE)
 
@@ -244,7 +244,7 @@ base <- base %>%
 }
 #Convert origin/dest to fips codes  
 base <- base %>%
-  select(origin, destination, value, commodity) %>%
+  dplyr::select(origin, destination, value, commodity) %>%
   #Only states as origins.
   filter(origin != "United States" & origin != "Total" & origin != "District of Columbia") %>%
   #Only states as destinations.
@@ -256,7 +256,7 @@ base$destination <- gsub(" ", "", base$destination, fixed = TRUE)
 # Get two digit codes
 base <- base %>% 
   mutate(code= as.numeric(substr(x=commodity, start=1, stop=2))) %>%
-  select(origin, destination, code, value) %>%
+  dplyr::select(origin, destination, code, value) %>%
   dplyr::rename(COMM = code) %>%
   filter(COMM != 99 & COMM != 0) %>% #takes out NA as well
   mutate(year = yr) %>%
@@ -268,20 +268,20 @@ base <- melt(base, id.vars=c("origin", "destination", "COMM", "value", "year"), 
 base <- base %>%
   mutate(value = ifelse(is.na(value) == TRUE, 0, value)) %>%
   mutate(portion_value = portion_value * value) %>%
-  select(-value, -COMM) %>%
+  dplyr::select(-value, -COMM) %>%
   group_by(origin, destination, year, portion) %>%
   mutate(portion_value = sum(portion_value)) %>%
   ungroup() %>%
   distinct(origin, destination, year, portion, .keep_all = TRUE) %>%
   mutate(sector = as.numeric(substr(x=portion, start=8, stop=9))) %>%
-  select(-portion) %>%
+  dplyr::select(-portion) %>%
   mutate(origin = paste("trade",origin, sep=""))
 #Reshape to wide.
 base <- spread(base, origin, portion_value, fill = 0, convert = TRUE,  drop = TRUE, sep = NULL)
 base <- base %>%
   arrange(sector, destination) %>%
   dplyr::rename(importer = destination) %>%
-  select(year, everything())
+  dplyr::select(year, everything())
 
 #Appending years.
 final <- rbind(final, base)
@@ -386,7 +386,7 @@ xijkCFS <- XijkCFS_1/denominator
 # Create data frame for X_{US,US,k}^{WIOD}.
 df_wiod <- data.frame(wiod)
 # Ignore non-USA exporters
-df_wiod <- df_wiod %>% select(importer, sector, USA)
+df_wiod <- df_wiod %>% dplyr::select(importer, sector, USA)
 #Filter out non-USA importers
 USA_exporter_indices <- df_wiod$importer == "USA"
 # Take into account only the first 12 sectors 
@@ -401,10 +401,10 @@ for(i in 1:n_sec) {
 #Appropriate columns of sector and importer. And arrange. 
 Xijk$sector <- df$sector[1:(n_sec*n_s)]
 Xijk$importer <- df$importer[1:(n_sec*n_s)]
-Xijk <- Xijk %>% select(importer, sector, everything())
+Xijk <- Xijk %>% dplyr::select(importer, sector, everything())
 xijkCFS$sector <- df$sector[1:(n_sec*n_s)]
 xijkCFS$importer <- df$importer[1:(n_sec*n_s)]
-xijkCFS <- xijkCFS %>% select(importer, sector, everything())
+xijkCFS <- xijkCFS %>% dplyr::select(importer, sector, everything())
 ################################################################################
 #The sum over states of X_{ij,k} should sum up to X_{US,US,k}^{WIOD}.
 # Check for all  k
@@ -418,7 +418,7 @@ for(k in 1:n_sec) {
 Step2 <- Xijk 
 Step2 <- Step2 %>%
   mutate(year = yr) %>%
-  select(year, importer, sector, everything())
+  dplyr::select(year, importer, sector, everything())
 colnames(Step2)[4:dim(Step2)[2]] = cfs_base$importer[1:n_s]
 
   #Exporting

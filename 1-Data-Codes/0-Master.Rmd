@@ -36,7 +36,7 @@ rmarkdown::render("5-Gravity_agriculture.Rmd")
 1) Combine the results of the previous 5 scripts to obtain the final matrix of bilateral flows (for all sectors, for all regions) for years 2000-2007.
 2) Calculate the share of value added in gross output for each US state, for each sector.
 ```{r, warning=FALSE, message = FALSE}
-rmarkdown::render("6-Matrices_deficits_VA_shares_states.Rmd")
+rmarkdown::render("6-Matrices_VA_shares_states.Rmd")
 ```
 
 1) Calculate employment levels by state-sector for year 2000 using BLS and CENSUS.

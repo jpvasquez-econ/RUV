@@ -60,7 +60,7 @@ n_s <- length(s_names)
 #Sector reclassification table (NAICS to final)
 sectors_naics_final <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 sectors_naics_final <- sectors_naics_final %>% 
-  select(final_sector, naics) %>%
+  dplyr::select(final_sector, naics) %>%
   mutate(naics = as.character(naics)) %>%
   distinct(final_sector, naics)
 
@@ -72,7 +72,7 @@ employment_pop <- employment_pop %>%
   mutate(state = gsub(" ", "", state)) %>% #taking out spaces
   filter(state %in% s_names) %>% #only states
   mutate(unemployed = unemployed + Not_LF) %>% #out of sectors 1 to 13 
-  select(state, employed, unemployed) %>%
+  dplyr::select(state, employed, unemployed) %>%
   mutate(unemployed = unemployed/1000, employed = employed/1000) #units in thousands (as WIOD)
 
 #Loading Census PUMS
@@ -102,7 +102,7 @@ CENSUS_PUMS <- CENSUS_PUMS %>%
   left_join(sectors_naics_final, by=c('naics'='naics')) %>% #NAICS to final sector
   dplyr::rename(sector = final_sector) %>%
   filter(is.na(sector) == FALSE) %>% #NAICS that are not in final sectors
-  select(-X1)
+  dplyr::select(-X1)
 census_list[[c]] <- CENSUS_PUMS #each list in census_list contains all the micro-info for each US state
 rm(CENSUS_PUMS)
 print(s_names[c])
@@ -117,7 +117,7 @@ census <- census %>%
   mutate(num_employ = n()) %>%
   ungroup() %>%
   distinct(state, sector, .keep_all = TRUE) %>%
-  select(state, sector, num_employ) %>%
+  dplyr::select(state, sector, num_employ) %>%
   arrange(state, sector) %>%
   mutate(num_employ = ifelse(sector == 0, 0, num_employ)) %>% #non-employed total (not sample) will be added directly
   group_by(state) %>%
@@ -127,7 +127,7 @@ census <- census %>%
   left_join(employment_pop, by=c('state'='state')) %>% #total employed people
   mutate(employ = rel*employed) %>%
   mutate(employ = ifelse(sector == 0, unemployed, employ)) %>%
-  select(state, sector, employ)
+  dplyr::select(state, sector, employ)
 L_2000 <- spread(census, sector, employ, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
 #Calculate employment by state. And drop (from state-sector employment) agriculture, services, and non-employed.
@@ -200,7 +200,7 @@ if (mean(bls$tot_emp[bls$GeoName == "United States"], na.rm = TRUE) == 165370800
 }
 
 #Remove column for the number of indents, and remove indents from Description.
-bls <- bls %>% select(-indent)
+bls <- bls %>% dplyr::select(-indent)
 bls$Description <- str_trim(bls$Description)
 
 ## ASSIGNING WIOD SECTORS
@@ -351,7 +351,7 @@ regions <- ADH %>%
   group_by(region) %>%
   summarize(key = 1)
 bls <- left_join(bls, regions, by = "region")
-bls <- bls %>% filter(key == 1 | region == "alaska") %>% select(-key)
+bls <- bls %>% filter(key == 1 | region == "alaska") %>% dplyr::select(-key)
 
 #Computing employment shares.
 bls <- bls %>% group_by(region) %>%
@@ -368,7 +368,7 @@ bls <- bls %>% filter(ruv_sector <= 12)
 
 #Keep relevant variables
 bls <- bls %>% 
-  select(region, ruv_sector, share_sector_state)%>%
+  dplyr::select(region, ruv_sector, share_sector_state)%>%
   rename(sector = ruv_sector, share_bls = share_sector_state)
 bls$share_bls[is.na(bls$share_bls)] <- 0
 
@@ -402,7 +402,7 @@ adv_countries <- c("AUS", "DEU", "DNK", "ESP", "FIN", "JPN")
 WIOD_1 <- WIOD %>%
   filter(year == 2000 | year == 2007) %>%
   filter(importer_country %in% list_countries) %>%
-  select(-importer)
+  dplyr::select(-importer)
 
 #Drop all exporters but China, and select manufacture (sectors from 1 to 12). Then calculate imports from China for US and for OC.
 WIOD_1 <- melt(WIOD_1, id.vars=c("year", "importer_country", "sector"), variable.name="exporter", value.name = "value")
@@ -422,13 +422,13 @@ WIOD_1 <- WIOD_1 %>%
   ungroup() %>%
   distinct(importer_country, exporter, sector, .keep_all = TRUE) %>%
   mutate(M_change = value_2007 - value_2000) %>%
-  select(-year, -value, -value_2000, -value_2007)
+  dplyr::select(-year, -value, -value_2000, -value_2007)
 
 #Calculate change in imports. And prepare data set for regression.
 x_data <- WIOD_1 %>%
   filter(importer_country == "adv") %>%
   dplyr::rename(delta_M_others = M_change) %>%
-  select(sector, delta_M_others)
+  dplyr::select(sector, delta_M_others)
 data <- WIOD_1 %>%
   filter(importer_country == "USA") %>%
   dplyr::rename(delta_M_USA = M_change) %>%
@@ -447,7 +447,7 @@ summary(reg_nocons) #Note that the model without intercept has a 0.99 R^2.
 #predicted values
 data$hat_cons <- predict(reg_cons, data.frame(data$delta_M_others))
 data$hat_nocons <- predict(reg_nocons, data.frame(data$delta_M_others))
-data_reg <- data %>% select(sector, hat_cons, hat_nocons)
+data_reg <- data %>% dplyr::select(sector, hat_cons, hat_nocons)
 
 ```
 
@@ -463,7 +463,7 @@ where $L_{i,2000}\equiv\sum_sL_{i,s,2000}$
 #Total US sales by sector in year 2000 
 R_US <- WIOD %>% 
   filter(year == 2000 & sector <= 12) %>%
-  select(importer_country, sector, value_USA)
+  dplyr::select(importer_country, sector, value_USA)
 R_US <- melt(R_US, id.vars=c("importer_country", "sector"), variable.name="exporter", value.name = "value")
 R_US <- R_US %>%
   mutate(exporter = gsub("value_", "", exporter)) %>%
@@ -471,7 +471,7 @@ R_US <- R_US %>%
   mutate(sales = sum(value)) %>%
   ungroup() %>%
   distinct(exporter, sector, .keep_all = TRUE) %>%
-  select(sector, sales)
+  dplyr::select(sector, sales)
 
 #Calculate Exposure_i
 final <- L %>%
@@ -491,7 +491,7 @@ final <- L %>%
   ungroup() %>%
   distinct(state, .keep_all = TRUE) %>%
   dplyr::rename(region = state) %>%
-  select(region, ADH_EXP_pred_nocons, ADH_EXP_pred, ADH_EXP_pred_nocons_bls, ADH_EXP_pred_bls)
+  dplyr::select(region, ADH_EXP_pred_nocons, ADH_EXP_pred, ADH_EXP_pred_nocons_bls, ADH_EXP_pred_bls)
 
 #Correlation between Census and BLS exposures (with and without intercept)
 corr_cons <- cor(final$ADH_EXP_pred, final$ADH_EXP_pred_bls)
@@ -503,10 +503,13 @@ print(corr_nocons)
 temp_L <- L %>% 
   arrange(state, sector) %>%
   mutate(share_L = employ/employ_state) %>%
-  select(state, sector, share_L)
+  dplyr::select(state, sector, share_L)
 corr_employ_BLS <- cor(temp_L$share_L, state_emp_share_2000$share_bls)
 print(corr_employ_BLS)
 plot(x = temp_L$share_L, y = state_emp_share_2000$share_bls, xlab = "share_L", ylab = "share_bls")
 
-write_xlsx(final, path = "2-Final_Data/exposures.xlsx")
+wb <- loadWorkbook("2-Final_Data/Output.xlsx")
+addWorksheet(wb, sheetName = "exposures")
+writeData(wb, sheet = "exposures", x = final)
+saveWorkbook(wb, file = "2-Final_Data/Output.xlsx", overwrite = TRUE)
 ```

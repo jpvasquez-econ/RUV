@@ -52,7 +52,7 @@ lapply( libs, require, character.only=TRUE );
 reclass_sectors <- read.csv(paste("0-Raw_Data/sectors.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 reclass_sectors <- reclass_sectors %>% 
   filter(is.na(naics) == FALSE) %>%
-  select(final_sector, naics)
+  dplyr::select(final_sector, naics)
 
 #Exports by year.
 base_e <- c()
@@ -75,11 +75,11 @@ colnames(base_i) <- c("state", "naics3", "country", "year", "imports")
 
 base_e <- base_e %>%
   arrange(year, state) %>%
-  select(year, state, naics3, country, everything())
+  dplyr::select(year, state, naics3, country, everything())
 base_e$exports <- as.numeric(gsub(",","",base_e$exports))
 base_i <- base_i %>%
   arrange(year, state) %>%
-  select(year, state, naics3, country, everything())
+  dplyr::select(year, state, naics3, country, everything())
 base_i$imports <- as.numeric(gsub(",","",base_i$imports))
 
 #Saving as .csv
@@ -114,7 +114,7 @@ base <- base %>%
   mutate(country = ifelse(country %in% list_countries, as.character(country), "Rest of world")) %>%
   left_join(list, by=c('country'='list_countries')) %>% 
   dplyr::rename(region = list_codes) %>%
-  select(-country) %>%
+  dplyr::select(-country) %>%
   group_by(year, state, naics3, region) %>%
   mutate(value = sum(value)) %>%
   ungroup() %>%
@@ -138,7 +138,7 @@ base <- base %>%
     mutate(sec_naics = as.numeric(substr(x=naics3, start=1, stop=3))) %>%
     left_join(reclass_sectors, by=c('sec_naics'='naics')) %>% 
     dplyr::rename(sector = final_sector) %>%
-    select(-naics3, -sec_naics) %>%
+    dplyr::select(-naics3, -sec_naics) %>%
     filter(is.na(sector) == FALSE) %>%
     group_by(year, sector, destination, origin) %>%
     mutate(value = sum(value)) %>%
@@ -155,7 +155,7 @@ base <- base %>%
     mutate(file = "i not in US, j in US")
 }  
 base <- base %>% arrange(file, year, sector, destination)
-base <- base %>% select(origin, year, destination, sector, value, file)
+base <- base %>% dplyr::select(origin, year, destination, sector, value, file)
 base$origin <- gsub(" ", "", base$origin, fixed = TRUE)
 base$destination <- gsub(" ", "", base$destination, fixed = TRUE)
 final <- rbind(final, base)  
@@ -263,9 +263,9 @@ epsilon <- 0.0001;
 ```{r}
 # Base year for imports (2008)
 state_imp_exp <- data.frame(state_imp_exp_0) %>% 
-  #Select imports from each country to each state.
+  #select imports from each country to each state.
   filter(year == 2008, file == "i not in US, j in US") %>%
-  select(-year, -file)
+  dplyr::select(-year, -file)
 #Reshape to wide.
 state_imp_exp <-spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 base_e <- state_imp_exp %>% 
@@ -286,7 +286,7 @@ df_wiod <- df_wiod %>%
   filter(sector <= n_sec | sector == (n_sec + 2)) %>%
   filter(importer == 'USA')
 #Exclude USA from the group of exporters.
-df_wiod1 <- df_wiod %>% select(-USA, -importer)
+df_wiod1 <- df_wiod %>% dplyr::select(-USA, -importer)
 colnames(df_wiod1) <- c("sector", c_names)
 df_wiod1 <- melt(df_wiod1, id.vars=c("sector"), variable.name = "origin", value.name = "value")
 df_wiod1 <- df_wiod1 %>% arrange(sector, origin)
@@ -327,7 +327,7 @@ step3e <- melt(step3e, id.vars=c("origin", "sector"), variable.name="importer", 
 step3e <-spread(step3e, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 step3e <- step3e %>%
   mutate(year = yr) %>%
-  select(year, importer, sector, everything())
+  dplyr::select(year, importer, sector, everything())
 
   #Exporting data-sets
 write.table(step3e, file = paste("1-Intermediate_Processed_Data//state_country_step_e_", yr,".csv", sep=""), sep = ",", row.names = FALSE)
@@ -351,15 +351,15 @@ df_wiod <- df_wiod %>%
   filter(sector <= n_sec | sector == (n_sec + 2)) %>%
   #Exclude USA from the group of importers.
   filter(importer != 'USA') 
-df_wiod1 <- df_wiod %>% select(importer, sector, USA)
+df_wiod1 <- df_wiod %>% dplyr::select(importer, sector, USA)
 
 #Base year for exports (2002)
 yr. <- yr
 if(yr < 2002){yr. = 2002}
 state_imp_exp <- data.frame(state_imp_exp_0) %>% 
-  #Select exports from each state to each country
+  #select exports from each state to each country
   filter(year == yr., file == "i in US, j not in US") %>%
-  select(-year, -file)
+  dplyr::select(-year, -file)
 #Reshape to wide.
 state_imp_exp <- spread(state_imp_exp, origin, value, fill = NA, convert = TRUE,  drop = TRUE, sep = NULL)
 
@@ -419,7 +419,7 @@ if(sum(abs(rowSums(step3y[, 3:dim(step3y)[2]])/df_wiod1$USA -1))>epsilon)
 
 step3y <- step3y %>%
   mutate(year = yr) %>%
-  select(year, importer, sector, everything())
+  dplyr::select(year, importer, sector, everything())
 colnames(step3y) <- c("year", "importer", "sector", s_names)
 
 #Exporting data-sets.

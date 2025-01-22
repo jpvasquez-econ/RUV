@@ -16,7 +16,6 @@ This script does the following:
 6. `0-Raw_Data/regions.csv`
 7. `0-Raw_Data/sectors.csv`
 8. `1-Intermediate_Processed_Data/country_country_step_.csv`
-9. Coefficients from `Country_Gravity_WIOD`
 
 ## Output files
 
@@ -66,19 +65,19 @@ wiod_countries <- wiod_countries %>% filter(sector==13)
 
 # EXPORTS OF US (including exports to itself)
 wiod_us_all_exp <- wiod_countries %>%
-  select(year, importer_country, value_USA) %>%
+  dplyr::select(year, importer_country, value_USA) %>%
   group_by(year) %>%
   mutate(val_ = sum(value_USA)) %>% 
   ungroup() %>%
 #This is just to drop duplicates easier; because at this point all the countries (for a given year) have the same "val_". We could have also wrote "importer_country == "BEL"", for example.
   filter(importer_country == "USA") %>%
-  select(year, val_)
+  dplyr::select(year, val_)
 
 # IMPORTS OF US (including imports from itself)
 wiod_all_us_imp <- wiod_countries %>%
   filter(importer_country == "USA")
 wiod_all_us_imp$val_ <- rowSums(wiod_all_us_imp[, 5:dim(wiod_all_us_imp)[2]])  
-wiod_all_us_imp <- wiod_all_us_imp %>% select(year, val_)
+wiod_all_us_imp <- wiod_all_us_imp %>% dplyr::select(year, val_)
 
 # Constructs the data of production by state
 
@@ -87,7 +86,7 @@ all_states <- c()
 for (i in state_code$code) {
 state <- read.csv(paste("0-Raw_Data/SAGDP/SAGDP2N_",i,"_1997_2018.csv", sep=""), header = TRUE, sep = ",", dec = ".")
 state <- state %>% 
-  select(-TableName, -ComponentName, -Unit, -X2018) %>%
+  dplyr::select(-TableName, -ComponentName, -Unit, -X2018) %>%
   filter(is.na(Region) == FALSE) %>%
   mutate(code = i)
 all_states <- rbind(all_states, state)
@@ -135,7 +134,7 @@ all_states <- all_states %>%
   mutate(revenue = sum(revenue)) %>%
   ungroup() %>%
   distinct(state, code, year, .keep_all = TRUE) %>%
-  select(state, code, year, revenue) %>%
+  dplyr::select(state, code, year, revenue) %>%
   arrange(state, code)
 all_states$state <- gsub(" ", "", all_states$state, fixed = TRUE)
 
@@ -156,7 +155,7 @@ bea_raw$GeoFIPS <- as.numeric(bea_raw$GeoFIPS)
 bea_raw <- bea_raw %>%
   filter(GeoFIPS <= 90000 & GeoFIPS != 0) %>%
   filter(GeoName != "District of Columbia") %>%
-  select(-GeoFIPS, -Region, -TableName, -ComponentName, -Unit, -IndustryClassification) %>%
+  dplyr::select(-GeoFIPS, -Region, -TableName, -ComponentName, -Unit, -IndustryClassification) %>%
   dplyr::rename(state = GeoName)
 colnames(bea_raw) <- c("state", "line", "description", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017")
 
@@ -164,7 +163,7 @@ colnames(bea_raw) <- c("state", "line", "description", "1997", "1998", "1999", "
 # keeping services only
 bea_raw <- bea_raw %>%
   filter(line == 13) %>%
-  select(-line, -description) %>%
+  dplyr::select(-line, -description) %>%
   arrange(state)
 bea_raw$state <- gsub(" ", "", bea_raw$state, fixed = TRUE)
 bea_raw <- melt(bea_raw, id.vars=c("state"), variable.name="year", value.name = "expen")
@@ -176,7 +175,7 @@ bea_raw <- melt(bea_raw, id.vars=c("state"), variable.name="year", value.name = 
 bea_raw <- bea_raw %>%
   left_join(all_states, by=c('year'='year', 'state'='state')) %>%
   arrange(state, code, year, expen, revenue) %>%
-  select(state, code, year, expen, revenue)
+  dplyr::select(state, code, year, expen, revenue)
 
 #	Proportionality with WIOD (expenditure by states sums up to US imports; revenue by states sums up to US exports).
 bea_raw <- bea_raw %>%
@@ -189,11 +188,11 @@ bea_raw <- bea_raw %>%
   mutate(sh_revenue = revenue/tot_revenue) %>%
   left_join(wiod_all_us_imp, by=c('year'='year')) %>%
   mutate(expen = sh_expen*val_) %>%
-  select(-val_) %>%
+  dplyr::select(-val_) %>%
   left_join(wiod_us_all_exp, by=c('year'='year')) %>%
   mutate(revenue = sh_revenue*val_) %>%
-  select(-val_) %>%
-  select(state, year, revenue, expen) %>%
+  dplyr::select(-val_) %>%
+  dplyr::select(state, year, revenue, expen) %>%
   arrange(year, state)
   
 #check that expenditure by states sums up to US imports, and that revenue by states sums up to US exports
@@ -203,7 +202,7 @@ check <- bea_raw %>%
   mutate(tot_revenue = sum(revenue)) %>%
   ungroup() %>%
   distinct(year, .keep_all = TRUE) %>%
-  select(year, tot_expen, tot_revenue) %>%
+  dplyr::select(year, tot_expen, tot_revenue) %>%
   #Years with missing values are dropped.
   filter(year >= 2000 & year <= 2011)
 round(sum(check$tot_expen - wiod_all_us_imp$val_), 5) == 0
@@ -226,7 +225,7 @@ expen <- wiod_countries %>%
   filter(importer_country != "USA") %>%
   dplyr::rename(country = importer_country)
 expen$expen <- rowSums(expen[, 5:dim(expen)[2]])
-expen <- expen %>% select(country, year, expen)
+expen <- expen %>% dplyr::select(country, year, expen)
 
 # Services production
 country_rev_exp_services <- melt(wiod_countries, id.vars=c("year", "importer_country", "sector", "importer"), variable.name="country", value.name = "revenue")
@@ -237,7 +236,7 @@ country_rev_exp_services <- country_rev_exp_services %>%
   mutate(revenue = sum(revenue)) %>%
   ungroup() %>%
   distinct(year, country, .keep_all = TRUE) %>%
-  select(country, year, revenue) %>%
+  dplyr::select(country, year, revenue) %>%
   left_join(expen, by=c('year'='year', 'country'='country'))
 
 #  EXPENDITURE AND REVENUE   ***  
@@ -245,18 +244,18 @@ country_rev_exp_services <- country_rev_exp_services %>%
 revenue1 <- state_exp_rev_services %>% 
   filter(year >= 2000) %>%
   dplyr::rename(iso_o = state, R_i = revenue) %>%
-  select(iso_o, R_i, year)
+  dplyr::select(iso_o, R_i, year)
 expen1 <- state_exp_rev_services %>% 
   filter(year >= 2000) %>%
   dplyr::rename(iso_d = state, E_j = expen) %>%
-  select(iso_d, E_j, year)
+  dplyr::select(iso_d, E_j, year)
 # COUNTRIES
 revenue2 <- country_rev_exp_services %>% 
   dplyr::rename(iso_o = country, R_i = revenue) %>%
-  select(iso_o, R_i, year)
+  dplyr::select(iso_o, R_i, year)
 expen2 <- country_rev_exp_services %>% 
   dplyr::rename(iso_d = country, E_j = expen) %>%
-  select(iso_d, E_j, year)
+  dplyr::select(iso_d, E_j, year)
 
 revenue <- rbind(revenue1, revenue2)
 expen <- rbind(expen1, expen2)
@@ -266,7 +265,7 @@ final <- distances %>%
   left_join(revenue, by=c('year'='year', 'iso_o'='iso_o')) %>%
   left_join(expen, by=c('year'='year', 'iso_d'='iso_d')) %>%
   arrange(year, iso_o, iso_d) %>%
-  select(year, iso_o, iso_d, dist, R_i, E_j) %>%
+  dplyr::select(year, iso_o, iso_d, dist, R_i, E_j) %>%
   mutate(iso_o =  gsub(" ", "", iso_o, fixed = TRUE)) %>%
   mutate(iso_d =  gsub(" ", "", iso_d, fixed = TRUE))
 
@@ -392,27 +391,27 @@ wiod <- wiod_base
 us.us.wiod <- wiod %>% 
   filter( year == yr, sector == n_sec + 1 ) %>% 
   filter( importer == 'USA' ) %>% 
-  select( USA );
+  dplyr::select( USA );
 us.us.wiod <- as.numeric(us.us.wiod[1])
 # US exports
 us.exports.wiod <- wiod %>% 
   filter( year == yr, sector == n_sec + 1 ) %>% 
   filter( importer != 'USA' ) %>% 
-  select( USA );
+  dplyr::select( USA );
 # US imports
 us.imports.wiod <- wiod %>% 
   filter( year == yr, sector == n_sec + 1 ) %>% 
   filter( importer == 'USA' ) %>% 
-  select( -year, -USA, -sector, -importer)
+  dplyr::select( -year, -USA, -sector, -importer)
 ## WIOD without USA.
 wiod <- wiod_base %>% 
   filter( year == yr, sector == n_sec + 1 ) %>% 
   filter( importer != 'USA' ) %>% 
-  select( -year, -USA, -sector, -importer  ) 
+  dplyr::select( -year, -USA, -sector, -importer  ) 
 ## Gravity data set (distances, revenue, and expenditure)
 data_gravity_services <- data_gravity_services.base %>% 
   filter( year == yr ) %>% 
-  select( -year ) %>% 
+  dplyr::select( -year ) %>% 
   mutate( iso_o = as.character(iso_o), iso_d = as.character(iso_d) ) %>% 
   mutate( len_o = ifelse(nchar(iso_o)<4, 'COUNTRY', 'STATE'), 
           len_d = ifelse(nchar(iso_d)<4, 'COUNTRY', 'STATE') )
@@ -423,21 +422,21 @@ data_gravity_services <- data_gravity_services.base %>%
 # States
 id.states <- data_gravity_services %>% 
   filter( len_o == 'STATE' ) %>% 
-  select( iso_o ) %>% 
+  dplyr::select( iso_o ) %>% 
   distinct( iso_o ) %>% 
   arrange( iso_o ) %>% 
   mutate( id = row_number() ) %>% 
   dplyr::rename( region=iso_o ) %>% 
-  select( id, region )
+  dplyr::select( id, region )
 # Countries
 id.countries <- data_gravity_services %>% 
   filter( len_o == 'COUNTRY' ) %>% 
-  select( iso_o ) %>% 
+  dplyr::select( iso_o ) %>% 
   distinct( iso_o ) %>% 
   arrange( iso_o ) %>% 
   mutate( id = n_s + row_number() ) %>% 
   dplyr::rename( region = iso_o ) %>% 
-  select( id, region )
+  dplyr::select( id, region )
 # Total
 id.total <- rbind( id.states, id.countries )
 
@@ -448,12 +447,12 @@ id.total <- rbind( id.states, id.countries )
 ## 3.1. DISTANCE MATRIX
 ##
 dist.matrix <- data_gravity_services %>% 
-  select( iso_o, iso_d, dist ) %>% 
+  dplyr::select( iso_o, iso_d, dist ) %>% 
   left_join( y = id.total, by=c('iso_o'='region') ) %>% 
   dplyr::rename( id_o = id ) %>% 
   left_join( y = id.total, by=c('iso_d'='region') ) %>% 
   dplyr::rename( id_d = id ) %>% 
-  select( id_o, id_d, dist ) %>% 
+  dplyr::select( id_o, id_d, dist ) %>% 
   arrange( id_o, id_d ) %>% 
   spread( key = id_d, value = dist )
 dist.matrix <- as.matrix( dist.matrix[,2:(n_c+n_s+1)] )
@@ -469,20 +468,20 @@ dist.matrix <- phi
 ## 3.2. PRODUCTION/REVENUE (R_i) VECTOR
 ##
 gdp.vector <- data_gravity_services %>% 
-  select( iso_o, R_i ) %>% 
+  dplyr::select( iso_o, R_i ) %>% 
   distinct( iso_o, .keep_all=TRUE ) %>% 
   left_join( y = id.total, by=c('iso_o'='region') ) %>% 
-  select( id, R_i ) %>% 
+  dplyr::select( id, R_i ) %>% 
   arrange( id );
 gdp.vector <- as.vector( gdp.vector$R_i )
 ##
 ## 3.3. EXPENDITURE (E_j) VECTOR
 ##
 exp.vector <- data_gravity_services %>% 
-  select( iso_d, E_j ) %>% 
+  dplyr::select( iso_d, E_j ) %>% 
   distinct( iso_d, .keep_all=TRUE ) %>% 
   left_join( y = id.total, by=c('iso_d'='region') ) %>% 
-  select( id, E_j ) %>% 
+  dplyr::select( id, E_j ) %>% 
   arrange( id )
 exp.vector <- as.vector( exp.vector$E_j )
 
@@ -673,7 +672,7 @@ write.csv(Xij.matrix, file= paste('1-Intermediate_Processed_Data//Xij_matrix_ser
 value1 <- sum(Xij.matrix[(1:n_s), (1:n_s)])
 value2 <- wiod_base %>%
   filter(sector == n_sec + 1, year == yr, importer == "USA") %>%
-  select(-importer, -sector, -year)
+  dplyr::select(-importer, -sector, -year)
 value2=value2$USA;
 #checking
 if(abs(value1/value2-1)>epsilon) 
@@ -691,7 +690,7 @@ if(abs(value1/value2-1)>epsilon)
 value1 <- sum(Xij.matrix[(1:n_s), ((n_s + 1):(n_s + n_c))])
 value2 <- wiod_base %>%
   filter(year == yr, sector == n_sec + 1, importer == "USA") %>%
-  select(-year, -importer, -sector, - USA)
+  dplyr::select(-year, -importer, -sector, - USA)
 value2 <- sum(value2)
 if(abs(value1/value2-1)>epsilon) 
   stop(paste("states' imports from countries != WIOD US imports from countries for", yr, " value=", abs(value1/value2-1)))

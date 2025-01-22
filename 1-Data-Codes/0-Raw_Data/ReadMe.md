@@ -85,7 +85,7 @@ Flows (and levels) of workers
 Script 8 computes the employment level for each country and sector for year 1999 and year 2000 using ILO and SEA data. To get the necessary raw data, the steps to follow are:
 
 1. Download ILO estimate country unemployment rates $u$ from [here](https://databank.worldbank.org/World-unemployment-rates/id/c5765b65#), selecting only our years and countries of interest; that is how we get `0-Raw_Data\CENSUS_2000\P_World unemployment rates.xlsx`. 
-2. Download ILO estimates for country labor force participation rates $lfp$ from [here](https://www.ilo.org/shinyapps/bulkexplorer17/?lang=en&segment=indicator&id=EAP_2WAP_SEX_AGE_RT_A), selecting only "Total" rows and only for our years and countries of interest; that is how we get `0-Raw_Data\CENSUS_2000\EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv`.
+2. Download ILO estimates for country labor force participation rates $lfp$ from [here](https://rshiny.ilo.org/dataexplorer57/?lang=en&segment=indicator&id=EAP_2WAP_SEX_AGE_RT_A), selecting only "Total" rows and only for our years and countries of interest; that is how we get `0-Raw_Data\CENSUS_2000\EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv`.
 
 3. Employment for sectors 1-14 for each country are taken from WIOD's Socio Economic Accounts (SEA). We download SEA's release of July 2014 in Excel format from [here](https://www.rug.nl/ggdc/valuechain/wiod/wiod-2013-release?lang=en). 
 The only variable of interest is EMP (number of persons engaged in thousands); after reclassifying it into our 1-14 sectors, we get our `0-Raw_Data\CENSUS_2000\L_1999_2000_countries.csv` file.
@@ -123,7 +123,7 @@ The survey's variable dictionary can be accessed through this [link](https://www
 2. We only keep observations with age in between 25 and 65, and that are either employed, unemployed or not in the labor force; each observation has a person weight that comes with the survey. Unemployment plus not in the labor force will be considered an extra sector: sector 0 (this is inconsistent with script 8, which only includes non-participants in sector 0; script 8 has the classification we ultimately want to keep: we will correct script 9 in future revision). 
 We convert NAICS sectors into the final sectors of our paper. Following CDP (2019) advice, in order to estimate the transitions more precisely, we use not only the annual changes of each year of interest but also the ones from the two following years. Hence, three lists of changes are seen now as annual changes for the year of interest. The current sector, current state, and previous year state are used to compute partial transition matrices with state of origin and destination and destination sector (as we said earlier, there is no information about the sector of origin in the ACS data). 
 
-3. CPS data is stored in `0-Raw_Data/CPS/CPS_NBER/Inputs/cps_panel.dta`. To obtain it, the following steps must be followed:
+3. CPS data is stored in `0-Raw_Data/CPS/CPS_NBER/Inputs/cps_panel.dta`. To obtain it, the next steps must be followed:
 a) Login to [IPUMS CPS site](https://cps.ipums.org/cps/)
 b) Create an account at the *Register* option. 
 c) Go to *Data*->*Browse and select data*
