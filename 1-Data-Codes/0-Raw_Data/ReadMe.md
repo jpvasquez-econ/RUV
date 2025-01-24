@@ -1,4 +1,4 @@
-﻿Here we present a description of all the raw data files in `1-Data-Codes\`.
+Here we present a description of all the raw data files in `1-Data-Codes\`.
 
 Classification tables
 ===========================================================================================
@@ -72,7 +72,7 @@ To construct value added shares, script 6 needs BEA's GDP (SAGDP2), subsidies (S
 
 ## Data for labor shares by sectors
 
-To calculate our exposure measures, script 7 needs labor shares by state and sector. We calculate one version of labor shares using Census Bureau's data without person weights. We use the 5 % sample PUMS files of the 2000 Census. These files are available [here](https://www.census.gov/data/datasets/2000/dec/microdata.html). One needs to open the folder *All additional files for the PUMS 5-Percent Dataset* and download the file *PUMS5.txt* within each state's folder. These files are the content of our `0-Raw_Data\CENSUS_2000\PUMS5` folder (look at the penultimate section of this ReadMe file for more detail).
+To calculate our exposure measures, script 7 needs labor shares by state and sector. We calculate one version of labor shares using Census Bureau's data without person weights. We use the 5 % sample PUMS files of the 2000 Census. These files are available [here](https://www.census.gov/data/datasets/2000/dec/microdata.html). One needs to open the folder *All additional files for the PUMS 5-Percent Dataset* and download the file *PUMS5.txt* within each state's folder. These files are the content of our `0-Raw_Data\CENSUS_2000\PUMS5` folder (look at the penultimate section of this ReadMe file for more detail). However, for Alabama the PUMS5 file (`PUMS5_01.txt`) was incomplete. So we replace it with the corresponding REVISEDPUMS5 file (we rename it as `PUMS5_01.txt` to write an easier loop to import the files in script 7).
 
 We also use other two versions of labor shares using BLS-BEA data and ADH data. The ADH shares are already stored in `1-Intermediate_Processed_Data/state_emp_2000.dta` at this point. However, to get this file, one must first run the scripts of the `0-Raw_Data\ADH_employment` folder first. And to calculate BLS-BEA shares, we use `0-Raw_Data/emp_SAEMP25S_BLS.csv`, which can be accessed from [here](https://apps.bea.gov/iTable/?reqid=70&step=1&acrdn=4#eyJhcHBpZCI6NzAsInN0ZXBzIjpbMSwyOSwyNSwzMSwyNiwyNywzMF0sImRhdGEiOltbIlRhYmxlSWQiLCI0Il0sWyJNYWpvcl9BcmVhIiwiMCJdLFsiU3RhdGUiLFsiMCJdXSxbIkFyZWEiLFsiWFgiXV0sWyJTdGF0aXN0aWMiLFsiLTEiXV0sWyJVbml0X29mX21lYXN1cmUiLCJMZXZlbHMiXSxbIlllYXIiLFsiMjAwMCJdXSxbIlllYXJCZWdpbiIsIi0xIl0sWyJZZWFyX0VuZCIsIi0xIl1dfQ==) (together with [this link]( (https://www.bls.gov/lau/rdscnp16.htm) for sector 0)
 
