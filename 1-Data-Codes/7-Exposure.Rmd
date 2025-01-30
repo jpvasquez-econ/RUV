@@ -26,7 +26,7 @@ This script does the following (manufacture sectors only):
 ## Output files
 
 1. `1-Intermediate_Processed_Data/state_emp_share_2000.dta`
-2. `2-Final_Data/exposures.xlsx`
+2. `1-Intermediate_Processed_Data/exposures.xlsx`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -508,5 +508,5 @@ corr_employ_BLS <- cor(temp_L$share_L, state_emp_share_2000$share_bls)
 print(corr_employ_BLS)
 plot(x = temp_L$share_L, y = state_emp_share_2000$share_bls, xlab = "share_L", ylab = "share_bls")
 
-write_xlsx(final, path = "2-Final_Data/exposures.xlsx")
+write_xlsx(final, path = "1-Intermediate_Processed_Data/exposures.xlsx")
 ```

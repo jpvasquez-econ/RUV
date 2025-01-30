@@ -25,9 +25,9 @@ This script does the following:
 
 ## Output files
 
-1. `2-Final_Data//L_`2000CENSUS`.csv`   
-2. `2-Final_Data//L_`1999BLS`.csv`
-3. `2-Final_Data//L_`2000BLS`.csv`
+1. `1-Intermediate_Processed_Data//L_`2000CENSUS`.csv`   
+2. `1-Intermediate_Processed_Data//L_`1999BLS`.csv`
+3. `1-Intermediate_Processed_Data//L_`2000BLS`.csv`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -560,7 +560,7 @@ L_2000CENSUS <- rbind(states_2000CENSUS,countries_2000)
 fwrite(
   L_2000CENSUS,
   file.path(
-    "2-Final_Data",
+    "1-Intermediate_Processed_Data",
     "L_2000CENSUS.csv"
   )
 )
@@ -568,7 +568,7 @@ fwrite(
 fwrite(
   L_1999BLS,
   file.path(
-    "2-Final_Data",
+    "1-Intermediate_Processed_Data",
     "L_1999BLS.csv"
   )
 )
@@ -576,7 +576,7 @@ fwrite(
 fwrite(
   L_2000BLS,
   file.path(
-    "2-Final_Data",
+    "1-Intermediate_Processed_Data",
     "L_2000BLS.csv"
   )
 )

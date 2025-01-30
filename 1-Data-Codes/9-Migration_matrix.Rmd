@@ -27,8 +27,8 @@ This script does the following:
 2. `1-Intermediate_Processed_Data/acs.csv`
 3. `1-Intermediate_Processed_Data/irs.csv`
 4. `1-Intermediate_Processed_Data/cps_nber_2_yearly.csv`
-5. `2-Final_Data/mu_1999.xlsx`
-6. `2-Final_Data/mu_1999_no_migration.xlsx`
+5. `1-Intermediate_Processed_Data/mu_1999.xlsx`
+6. `1-Intermediate_Processed_Data/mu_1999_no_migration.xlsx`
 
 ```{r Clean environment, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -615,7 +615,7 @@ if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon)
   stop("mobility shares do not add to 1")
 
 #Save
-write_xlsx(mu_1999_prime, path = paste("2-Final_Data/mu_1999.xlsx", sep=""))
+write_xlsx(mu_1999_prime, path = paste("1-Intermediate_Processed_Data/mu_1999.xlsx", sep=""))
 ```
 
 ## Calculate mobility sharess "without migration".
@@ -660,5 +660,5 @@ if(sum(abs(as.matrix(rowSums(check)) - matrix(1, dim(check)[1], 1))) > epsilon)
   stop("mobility shares do not add to 1")
 
 #Save
-write_xlsx(mu_1999_prime, path = paste("2-Final_Data/mu_1999_no_migration.xlsx", sep=""))
+write_xlsx(mu_1999_prime, path = paste("1-Intermediate_Processed_Data/mu_1999_no_migration.xlsx", sep=""))
 ```

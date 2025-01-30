@@ -5,10 +5,11 @@ Summary and codes to run
 
  - **Goal:** 
 1) Calculate bilateral trade flows between countries for all sectors.
-2) Calculate the share of value-added for each sector in each country
-3) Calculate the input-output matrix shares for each country. 
-4) Calculate the distances between all regions.
-5) Calculate the distance elasticity and own dummy coefficients for trade flows in services and agriculture.
+2) Calculate calibration targets
+3) Calculate the share of value-added for each sector in each country
+4) Calculate the input-output matrix shares for each country. 
+5) Calculate the distances between all regions.
+6) Calculate the distance elasticity and own dummy coefficients for trade flows in services and agriculture.
  - **Input:** 
 1. `0-Raw_Data/regions.csv`
 2. `0-Raw_Data/sectors.csv`
@@ -25,9 +26,10 @@ Summary and codes to run
 5. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
 6. `1-Intermediate_Processed_Data//value_added_countries", yr, ".csv`
 7. `1-Intermediate_Processed_Data/io_shares.csv`
-8. `2-Final_Data/io_allyears.xlsx`
+8. `1-Intermediate_Processed_Data/io_allyears.xlsx`
 9. `1-Intermediate_Processed_Data//country_coordinates.csv`
 10. `1-Intermediate_Processed_Data/distances.csv`
+11. `2-Final_Data/calibration_targets.xlsx`
 
 *1-Data-Codes/2-State_country.Rmd*
 
@@ -127,9 +129,9 @@ Summary and codes to run
 12. `0-Raw_Data//Labor_shares//subsidies_state_.csv`
  - **Output:** 
 1. `1-Intermediate_Processed_Data//final_matrix_.csv`
-2. `2-Final_Data/bilat_matrix_allyears.xlsx`
+2. `1-Intermediate_Processed_Data/bilat_matrix_allyears.xlsx`
 3. `1-Intermediate_Processed_Data//labor_shares_states.csv`
-4. `2-Final_Data/va_shares_allyears.xlsx`
+4. `1-Intermediate_Processed_Data/va_shares_allyears.xlsx`
 
  *1-Data-Codes/7-Exposure.Rmd*
 
@@ -147,7 +149,7 @@ Summary and codes to run
 7. `1-Intermediate_Processed_Data/state_emp_2000.dta`
  - **Output:** 
 1. `1-Intermediate_Processed_Data/state_emp_share_2000.dta`
-2. `2-Final_Data/exposures.xlsx`
+2. `1-Intermediate_Processed_Data/exposures.xlsx`
 
 *1-Data-Codes/8-Employment_1999_2000.Rmd*
 
@@ -168,9 +170,9 @@ Summary and codes to run
 9. `0-Raw_Data/CENSUS_2000/EAP_2WAP_SEX_AGE_RT_A-filtered-2023-11-02.csv`
 10. `0-Raw_Data/CENSUS_2000/P_World unemployment rates.xlsx`
  - **Output:**
-1. `2-Final_Data//L_`2000CENSUS`.csv`   
-2. `2-Final_Data//L_`1999BLS`.csv`
-3. `2-Final_Data//L_`2000BLS`.csv`
+1. `1-Intermediate_Processed_Data//L_`2000CENSUS`.csv`   
+2. `1-Intermediate_Processed_Data//L_`1999BLS`.csv`
+3. `1-Intermediate_Processed_Data//L_`2000BLS`.csv`
 
 *1-Data-Codes/9-Migration_matrix.Rmd*
 
@@ -191,8 +193,8 @@ Summary and codes to run
 2. `1-Intermediate_Processed_Data/acs.csv`
 3. `1-Intermediate_Processed_Data/irs.csv`
 4. `1-Intermediate_Processed_Data/cps_nber_2_yearly.csv`
-5. `2-Final_Data/mu_1999.xlsx`
-6. `2-Final_Data/mu_1999_no_migration.xlsx`
+5. `1-Intermediate_Processed_Data/mu_1999.xlsx`
+6. `1-Intermediate_Processed_Data/mu_1999_no_migration.xlsx`
 
 More detailed description
 ============================================================================================

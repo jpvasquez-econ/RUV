@@ -24,9 +24,9 @@ This script does the following:
 ## Output files
 
 1. `1-Intermediate_Processed_Data//final_matrix_.csv`
-2. `2-Final_Data/bilat_matrix_allyears.xlsx`
+2. `1-Intermediate_Processed_Data/bilat_matrix_allyears.xlsx`
 3. `1-Intermediate_Processed_Data//labor_shares_states.csv`
-4. `2-Final_Data/va_shares_allyears.xlsx`
+4. `1-Intermediate_Processed_Data/va_shares_allyears.xlsx`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -333,7 +333,7 @@ for (i in 2000:2007) {
   addWorksheet(wb, sheetName = sprintf("year%d", i))
   writeData(wb, sheet = sprintf("year%d", i), x = data)
 }
-saveWorkbook(wb, file = "2-Final_Data/bilat_matrix_allyears.xlsx")
+saveWorkbook(wb, file = "1-Intermediate_Processed_Data/bilat_matrix_allyears.xlsx")
 ```
 
 # Calculating the share of value added in gross output
@@ -498,5 +498,5 @@ colnames(labor_countries) <- c("year", "region", "sector_101", "sector_102", "se
 all_shares <- rbind(labor_states, labor_countries)
 all <- rbind(all, all_shares)
 }
-write_xlsx(all, paste("2-Final_Data/va_shares_allyears.xlsx"), col_names = TRUE)
+write_xlsx(all, paste("1-Intermediate_Processed_Data/va_shares_allyears.xlsx"), col_names = TRUE)
 ```

@@ -35,7 +35,7 @@ This file does the following:
 5. `1-Intermediate_Processed_Data/labor_shares_countries.csv`
 6. `1-Intermediate_Processed_Data//value_added_countries", yr, ".csv`
 7. `1-Intermediate_Processed_Data/io_shares.csv`
-8. `2-Final_Data/io_allyears.xlsx`
+8. `1-Intermediate_Processed_Data/io_allyears.xlsx`
 9. `1-Intermediate_Processed_Data//country_coordinates.csv`
 10. `1-Intermediate_Processed_Data/distances.csv`
 11. `2-Final_Data/calibration_targets.xlsx`
@@ -704,7 +704,7 @@ local y=`y'+1
 }
 order year country sector io*, first
  
-export excel using "2-Final_Data/io_allyears.xlsx" ///
+export excel using "1-Intermediate_Processed_Data/io_allyears.xlsx" ///
 	, sheet("IO`i'") firstrow(variables) sheetmodify
 }	
 
