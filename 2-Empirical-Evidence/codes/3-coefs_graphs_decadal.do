@@ -265,7 +265,7 @@ quiet{
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
-		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(row(1) order(1 "Data" 2 "Model Shock 2011" 3 "Model Shock 2007"))
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(row(1) order(1 "Data" 2 "Model Shock 2011" 3 "Model Shock 2007") position(6))
 		
 		graph export "results/figures/`outcome'_models_coefs.pdf", as(pdf) name("Graph") replace
 
