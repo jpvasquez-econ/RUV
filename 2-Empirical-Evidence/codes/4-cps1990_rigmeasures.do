@@ -1,15 +1,17 @@
 /*
 General information: Data cleaning for CPS 86-90 and rigidity measures 
 Inputs
-	1. cps_86_90
-	2. morg`i'.dta
+	1. raw_data/cps_86_90.dta (from CPS webpage)
+	2. raw_data/morg`i'.dta (from NBER webpage)
 Ouputs:
-	1. cps1990_rigmeasures
+	1. temp/cps1990_rigmeasures.dta
 */
 
 
 clear
+cd "D:\RUV\2-Empirical-Evidence"
 set more off
+ssc install ivreg2
 ***
 *** CPS 86-90
 *** 

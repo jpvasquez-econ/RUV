@@ -1,17 +1,23 @@
-clear all
-set more off
-
 /*
 
 General information: this code runs regressions in the spirit of ADH 21 for 2006-2020 but using the data construction and exposure measures from ADH 13.
 
-Inputs
-	1. workfile_china_RUV (produced in 1-ipums_acs.do)
+Inputs:
+	1. temp/workfile_china_RUV.dta (produced in 1-ipums_acs.do)
 	
 Ouputs:
-	1. Figures
+	1. results/figures/Figure_1A.png
+	2. results/figures/Figure_1B.png
+	3. results/figures/Figure_1C.png
+	4. results/figures/Figure_7A.png
+	5. results/figures/Figure_7B.png
+	6. results/figures/Figure_7C.png
+	7. results/figures/Figure_7D.png
+	8. results/figures/Figure_A1.png
 */
-
+clear all
+set more off
+cd "D:\RUV\2-Empirical-Evidence"
 ********************************************************************************
 * define main program
 ********************************************************************************
@@ -46,12 +52,8 @@ prog data_cleaning
 use "temp/workfile_china_RUV.dta", clear
 
 * this rename command help us in the loops code
-rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz lnchg_popworkage ) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664 d_sh_lnpop)
+rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664)
 gen nmfg = empl - mfg
-
-* gen log popcount changes for working age population
-gen sh_lnpop = ln(pop_1664)*100
-gen l_sh_lnpop = ln(l_popcount)*100
 
 * here we create the outcomes as shares of the working pop
 foreach var in empl mfg nmfg nilf unempl {
@@ -74,7 +76,7 @@ forval year = 2006/2020 {
 
 * here the 10 year differences are created (l_* vars are data of 2000)
 forval year = 2006/2020 {
-foreach var in empl mfg nmfg unempl nilf lnpop {
+foreach var in empl mfg nmfg unempl nilf {
 
 	if `year' == 2007 {
 	gen d_sh_`var'_`year' = d_sh_`var' if  yr == 2007 | yr == 2000
@@ -106,7 +108,7 @@ prog coef_graphs
 
 quiet{
 
-	foreach outcome in unempl_seer unempl mfg nmfg nilf lnpop empl {
+	foreach outcome in unempl nilf empl {
 	global outcome `outcome' 
 	global estimates 
 	estimates clear 
@@ -159,6 +161,7 @@ quiet{
 	global pos = ${b_mp_2000_2007} + 0.05
 	local marker : display %9.3f ${b_mp_2000_2007}
 	* coeffplots	
+if "$range_name" == "" & "$outcome" ==  "empl" {
 	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
 		(rarea lb ub z , vertical col(navy%10)) ///
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
@@ -166,8 +169,28 @@ quiet{
 		legend(off) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
 		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") $range
 		
-	*saving figure
-		graph export "results/figures/`outcome'_decadal_adh13${range_name}.pdf", as(pdf) name("Graph") replace
+		graph export "results/figures/Figure_1A.png", as(png) name("Graph") replace
+}
+if "$range_name" == "_range" & "$outcome" ==  "nilf" {
+	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
+		(rarea lb ub z , vertical col(navy%10)) ///
+		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
+		xline(2007, lpattern(dash) lcolor(red)) ///
+		legend(off) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") $range
+		
+		graph export "results/figures/Figure_1B.png", as(png) name("Graph") replace
+}
+if "$range_name" == "_range" & "$outcome" ==  "unempl" {
+	tw	(connected b z, mcolor(navy) msymbol(O) lcolor(navy%20) lpattern(shortdash) ) ///
+		(rarea lb ub z , vertical col(navy%10)) ///
+		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
+		xline(2007, lpattern(dash) lcolor(red)) ///
+		legend(off) xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
+		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") $range
+		
+		graph export "results/figures/Figure_1C.png", as(png) name("Graph") replace
+}
 	restore
 
 }
@@ -176,8 +199,9 @@ quiet{
 cap log close 
 capture translate "results/log/ACS_coefs_adh13${range_name}.smcl" "results/log/ACS_coefs_adh13${range_name}.txt", 	replace linesize(250)
 capture erase "results/log/ACS_coefs_adh13${range_name}.smcl"
-
 end 
+
+
 *******************************************************************************
 **************************** SECOND SECTION  **********************************
 ********************** COMPARING MODELS AND DATA ******************************
@@ -202,7 +226,7 @@ prog coef_graphs_and_models
 quiet{
 
 	foreach outcome in unempl unempl_seer mfg nmfg nilf  {
-	
+	global outcome `outcome' 
 	global estimates
 	forvalues i = 2006(1)2020 {
 
@@ -266,11 +290,28 @@ quiet{
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
 		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(row(1) order(1 "Data" 2 "Model Shock 2011" 3 "Model Shock 2007") position(6))
-		
-		graph export "results/figures/`outcome'_models_coefs.pdf", as(pdf) name("Graph") replace
+if "$outcome" == "mfg" {
+		graph export "results/figures/Figure_7A.png", as(png) name("Graph") replace
+	
+}
+if "$outcome" == "nmfg" {
+		graph export "results/figures/Figure_7B.png", as(png) name("Graph") replace
+	
+}
+if "$outcome" == "nilf" {
+		graph export "results/figures/Figure_7C.png", as(png) name("Graph") replace
+	
+}
+if "$outcome" == "unempl" {
+		graph export "results/figures/Figure_7D.png", as(png) name("Graph") replace
+	
+}
+if "$outcome" == "unempl_seer" {
+		graph export "results/figures/Figure_A1.png", as(png) name("Graph") replace
+	
+}
 
 	restore
-
 }
 }
 end

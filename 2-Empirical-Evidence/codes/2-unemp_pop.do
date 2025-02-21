@@ -1,3 +1,15 @@
+/*
+
+General information: Create a panel of employment indicators by CZ from 2006 to 2020. Using LAU and SEER data.
+
+Inputs:
+	1. raw_data/us.1969_2022.singleages.adjusted.txt (from SEER webpage)
+	2. raw_data/LAU/`state'.xlsx (from LAU webpage)
+	3. raw_data/cw_cty_czone.dta (from David Dorn data webpage)
+Outputs:
+	1. temp/unemp_pop.dta
+*/
+
 *******************************
 *** Prepare population data ***
 *******************************
@@ -37,7 +49,7 @@ cd "D:\RUV\2-Empirical-Evidence\"
 local states "Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada New_Hampshire New_Jersey New_Mexico New_York North_Carolina North_Dakota Ohio Oklahoma Oregon Pennsylvania Rhode_Island South_Carolina South_Dakota Tennessee Texas1 Texas2 Utah Vermont Virginia Washington West_Virginia Wisconsin Wyoming"
 tempname unemployment
 save `unemployment', emptyok replace
-local folder "D:\RUV\2-Empirical-Evidence\raw_data\"
+local folder "D:\RUV\2-Empirical-Evidence\raw_data\LAU\"
 foreach state in `states' {
     local filepath "`folder'\`state'.xlsx"
     import excel "`filepath'", sheet("BLS Data Series") cellrange(A4) firstrow clear
@@ -81,6 +93,11 @@ order CZ year unemployment pop
 drop if CZ == . | year == .
 rename year yr 
 rename CZ czone
+
+******************************************************************
+*** Average of unemployment, population and unemployment share ***
+******************************************************************
+
 foreach yr in 1990 2000 {
 
 gen l_seer_sh`yr' = 100* unemp / pop if yr == `yr'

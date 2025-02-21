@@ -1,17 +1,32 @@
 /*
+General information:
 ADH13 extension to 2006-2020 using 3-year pooled ACS data
-General information: Recreated econometric analysis for each year and creates coefficient graphs with interaction of downward wage rigidity measures. Changes in emp/pop outcomes are in decadal changes. 
-Unit of analysis are define in globals: Statefip (48 obs per year x 2 periods) or Community Zones (722 obs per year x 2 periods). 
+Recreated econometric analysis for each year; and coefficient graphs with interaction of downward wage rigidity measures. Changes in emp/pop outcomes are in decadal changes. 
 
 Inputs:
-	1. temp/workfile_china_RUV (produced in 1-ipums_acs.do)
-	2. raw_data/right2work.xlsx //from https://nrtwc.org/facts/state-right-to-work-timeline-2016/
-	3. "temp/cps_rigmeasures" (produced in code 3-cps1990_rigmeasures)
+	1. temp/workfile_china_RUV.dta (produced in 1-ipums_acs.do)
+	2. temp/cps_rigmeasures.dta (produced in code 4-cps1990_rigmeasures)
 Outputs:
-	1. Figures and tables 
+	1. results/figures/Figure_2A.png
+	2. results/figures/Figure_2B.png
+	3. results/figures/Figure_A2A.png
+	4. results/figures/Figure_A2B.png
+	5. results/figures/Figure_A3A.png
+	6. results/figures/Figure_A3B.png
+	7. results/figures/Figure_A4A.png
+	8. results/figures/Figure_A4B.png
+	9. results/figures/Figure_A5A.png
+	10. results/figures/Figure_A5B.png
+	11. results/figures/Figure_A6A.png
+	12. results/figures/Figure_A6B.png
+	13. results/figures/Figure_A7A.png
+	14. results/figures/Figure_A7B.png
+	15. results/figures/Figure_A8A.png
+	16. results/figures/Figure_A8B.png
 */
 program drop _all
 clear
+cd "D:\RUV\2-Empirical-Evidence"
 set more off
 capture log close
 global outputs results
@@ -33,29 +48,15 @@ global unit `unit'
 use temp/workfile_china_RUV.dta, clear			  		
 	quiet $unit
 
-*** Generate dta from excel file (right2work) 
-*** from https://nrtwc.org/facts/state-right-to-work-timeline-2016/
-preserve
-import excel "raw_data/right2work.xlsx", sheet("Hoja1") firstrow clear
-destring year_r2w, replace 
-save "raw_data/right2work.dta", replace
-restore
-
 ***	
-*** Rigidity measures from Right-to-work and CPS
+*** Rigidity measures from CPS
 ***
 		rename yr year
 		gen yr = 1990 if year == 2000
 		replace yr = 2000 if year > 2000
-		* right-to-work laws
-		merge m:1 statefip using "raw_data/right2work.dta" , assert(1 3) nogen 
 		* CPS rigidity measures for 2000 from Joo-Jo,Y.(2022) and for 1990 (constructed)
 		merge m:1 statefip yr using "temp/cps_rigmeasures.dta", assert(1 3) nogen 
-		
-* RIGHT TO WORK DUMMY BY YEAR
-cap drop N_total total_neg total_nonzero 
-gen r2w= (yr>year_r2w)
-replace r2w = 1 if statefip == 40 & yr == 2000  //replace Oklahoma r2w law on 2nd period, since it was introduced in 2001
+		cap drop N_total total_neg total_nonzero 
 drop yr 
 rename year yr
 
@@ -64,7 +65,6 @@ rename year yr
 *** 
  * rigidity measures descriptions for graphs
     
-global r2w "Indicator variable ==1 if state has right-to-work laws"
 global dnwr_yjj_dmy1 "Indicator==1 if state dnwr (share of neg changes in pop CPS) is above MEDIAN"
 global dnwr_yjj_dmy2 "Indicator==1 if state dnwr (share of neg changes in pop CPS) is above MEAN"
 global dnwr_nonzero_yjj_dmy1 "Indicator==1 if state neg share in nonzero wage changes CPS above MEDIAN"
@@ -72,7 +72,7 @@ global dnwr_nonzero_yjj_dmy2 "Indicator==1 if state neg share in nonzero wage ch
 		
 
 * order rigidity measures
-order dnwr_yjj dnwr_nonzero_yjj r2w 
+order dnwr_yjj dnwr_nonzero_yjj
 
 ***
 *** create estimates and coef graphs
@@ -148,36 +148,7 @@ prog state
 }
 
 * crete dummy for second period
-	gen t2 = (yr>2000)
-
-*merge unemp / pop from SEER and LAUS
-preserve 
-use "temp/unemp_pop.dta" , clear
-merge 1:1 czone yr using temp/workfile_china_RUV.dta, assert(3 1) keep(3) nogen	keepusing(statefip)
-collapse (sum) unemployment pop l_unemp_seer1990 l_pop_seer1990 l_pop_seer2000 l_unemp_seer2000 , by( statefip yr)
-gen l_sh_unemp_seer1990 = 100*l_unemp_seer1990 / l_pop_seer1990
-gen l_sh_unemp_seer2000 = 100*l_unemp_seer2000 / l_pop_seer2000
-
-gen sh_unempl_seer = 100*(unemployment / pop)
-gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
-replace l_sh_unempl_seer = l_sh_unemp_seer2000 if yr > 2000
-gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
-
-* here the 10 year differences are created (l_* vars are the lagged values")
-forval year = 2006/2020 {
- * Gen ten-year equivalent changes in pop shares by employment status
-	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
-	replace d_sh_unempl_seer_`year' = d_sh_unempl_seer if yr == 2000 
-	}
-tempfile temp_seer
-save `temp_seer', replace		
-	keep if inlist(yr,2000,2007)
-	drop if statefip == .
-	drop d_sh_unempl_seer	
-tempfile temp_seer0
-save `temp_seer0', replace	
-restore
-merge 1:1 statefip yr using `temp_seer' , assert(3) nogen 
+	gen t2 = (yr>2000) 
 	
 	*save data for log files (tables)
 	preserve
@@ -186,7 +157,6 @@ merge 1:1 statefip yr using `temp_seer' , assert(3) nogen
 	drop d_sh_unempl
 	rename d_sh_unempl_2007 d_sh_unempl
 	drop d_sh_unempl_*
-	merge 1:1 statefip yr using `temp_seer0' , assert(3) nogen 
 	save temp/state_workfile_china, replace
 	restore
 end 
@@ -206,7 +176,7 @@ prog cz
 	***
 
 	* this rename command help us in the loops code
-	rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz) (    d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664)
+	rename (d_sh_empl_mfg d_sh_empl_nmfg l_sh_empl_mfg l_sh_empl_nmfg pop_cz) (d_sh_mfg d_sh_nmfg l_sh_mfg l_sh_nmfg pop_1664)
 
 	* here we create the outcomes as shares of the working pop
 	gen sh_unempl = 100*(unempl/pop_1664) 
@@ -222,22 +192,7 @@ prog cz
 		gen d_sh_unempl_`year' = (10/(`year'-2000)) * (sh_unempl - l_sh_unempl ) if yr == `year'
 		replace d_sh_unempl_`year' = d_sh_unempl if yr == 2000 
 		} 
-	} //year	
-	
-*merge unemp / pop from SEER and LAUS
-merge 1:1 czone yr using "temp/unemp_pop.dta", assert(3 2) keep(3) nogen
-gen sh_unempl_seer = 100*(unemployment / pop)
-gen l_sh_unempl_seer = l_sh_unemp_seer1990 if yr == 2000
-replace l_sh_unempl_seer = l_sh_unemp_seer2000 if yr > 2000
-gen d_sh_unempl_seer = l_sh_unemp_seer2000 - l_sh_unemp_seer1990
-
-* here the 10 year differences are created (l_* vars are the lagged values")
-forval year = 2006/2020 {
- * Gen ten-year equivalent changes in pop shares by employment status
-	gen d_sh_unempl_seer_`year' = (10/(`year'-2000)) * (sh_unempl_seer - l_sh_unempl_seer ) if yr == `year'
-	replace d_sh_unempl_seer_`year' = d_sh_unempl if yr == 2000 
-	}
-	
+	} //year		
 end
 
 ************************************************************************
@@ -245,13 +200,9 @@ end
 ************************************************************************
 program dnwr_figures_diff
 
-	foreach outcome in unempl_seer unempl {	
-	global outc ""	
-	if "`outcome'" == "unempl_seer" {
-		global outc "seer_"
-	}
-	
-	foreach rig_measure of varlist dnwr_yjj_dmy2 dnwr_yjj_dmy1 r2w dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
+	foreach outcome in unempl {	
+	global outc ""		
+	foreach rig_measure of varlist dnwr_yjj_dmy2 dnwr_yjj_dmy1 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
 	estimates clear
 	global outcome `outcome' 
 	global rig_measure `rig_measure'
@@ -335,16 +286,44 @@ program dnwr_figures_diff
 	*** difference high vs low
 	***
 	global legend ""Difference high vs low DNWR""
-	if "`rig_measure'" == "r2w"{
-	global legend ""Difference non-RTW vs RTW""	
-	}
 	tw	(connected b_rm z, mcolor(cranberry) msymbol (D) lcolor(red%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(red%10)) ///
 		, yline(0, lpattern(solid)) xtitle("Year") ytitle("") ///
 		xline(2007, lpattern(dash) lcolor(red)) ///
 		 xlabel(`xlabline', grid gstyle(dot)) ylab(#5,labsize(small) grid gstyle(dot) ) ///
 		graphregion(fcolor(white)) text(${pos} 2007 "`marker'") legend(order(1 ${legend})) yscale(r(-0.1 0.8))
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
-	graph export "$outputs/figures/${outc}`rig_measure'_diff_${unit}.pdf", as(pdf) name("Graph") replace
+if "$rig_measure" == "dnwr_yjj_dmy2" {
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_2A.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A5A.png", as(png) name("Graph") replace				
+	}
+}
+if "$rig_measure" == "dnwr_yjj_dmy1" {
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_A2A.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A6A.png", as(png) name("Graph") replace				
+	}
+}
+if "$rig_measure" == "dnwr_nonzero_yjj_dmy2"{
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_A3A.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A7A.png", as(png) name("Graph") replace				
+	}
+}
+if "$rig_measure" == "dnwr_nonzero_yjj_dmy1" {
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_A4A.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A8A.png", as(png) name("Graph") replace				
+	}
+}
 	restore
 	} //quiet
 
@@ -361,13 +340,9 @@ end
 program dnwr_figures_both
 
 
-	foreach outcome in unempl_seer unempl  {	
+	foreach outcome in unempl  {	
 	global outc ""	
-	if "`outcome'" == "unempl_seer" {
-		global outc "seer_"
-	}
-	
-	foreach rig_measure of varlist dnwr_yjj_dmy2 dnwr_yjj_dmy1 r2w dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
+	foreach rig_measure of varlist dnwr_yjj_dmy2 dnwr_yjj_dmy1 dnwr_nonzero_yjj_dmy1 dnwr_nonzero_yjj_dmy2 {
 	estimates clear 
 	global outcome `outcome' 
 	global rig_measure `rig_measure'
@@ -454,10 +429,6 @@ program dnwr_figures_both
 	***
 	global legend1 ""High rigidity""
 	global legend2 ""Low rigidity""
-	if "`rig_measure'" == "r2w"{
-	global legend1 ""non-RTW""
-	global legend2 ""RTW""
-	}
 	tw (connected b z, mcolor(forest_green) msymbol(O) lcolor(forest_green%20) lpattern(shortdash) ) ///
 		(rarea lb ub z , vertical col(forest_green%10)) /// 
 		|| (connected b_rm z, mcolor(midblue) msymbol (Th) lcolor(midblue%20) lpattern(shortdash)) (rarea lb_rm ub_rm z, vertical col(midblue%10)) ///
@@ -467,8 +438,38 @@ program dnwr_figures_both
 		graphregion(fcolor(white)) yscale(r(-0.1 0.8))
 		
 		*note("Ten-year equivalent changes" "Specification: ADH13 with rigidity measure interaction" "Unit: ${uofa}", size(*0.9)) caption("Interaction: ${`rig_measure'}", size(*0.65)) 
-
-	graph export "$outputs/figures/${outc}`rig_measure'_sep_${unit}.pdf", as(pdf) name("Graph") replace
+if "$rig_measure" == "dnwr_yjj_dmy2" {
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_2B.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A5B.png", as(png) name("Graph") replace				
+	}
+}
+if "$rig_measure" == "dnwr_yjj_dmy1" {
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_A2B.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A6B.png", as(png) name("Graph") replace				
+	}
+}
+if "$rig_measure" == "dnwr_nonzero_yjj_dmy2"{
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_A3B.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A7B.png", as(png) name("Graph") replace				
+	}
+}
+if "$rig_measure" == "dnwr_nonzero_yjj_dmy1" {
+	if "$unit" == "czs" {
+		graph export "$outputs/figures/Figure_A4B.png", as(png) name("Graph") replace		
+	}
+	if "$unit" == "state"{
+		graph export "$outputs/figures/Figure_A8B.png", as(png) name("Graph") replace				
+	}
+}
 	restore
 	} //quiet
 

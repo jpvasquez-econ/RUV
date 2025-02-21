@@ -3,12 +3,12 @@
 General information: this code creates a panel of employment indicators by CZ from 2006 to 2020. It follows the data construction from ADH 2013.
 
 Inputs:
-	1. workfile_china (from ADH 2013 replication package)
-	2. ipums_2005_2021 (from IPUMS-ACS webpage)
-	3. cw_puma2000_czone.dta (from David Dorn data webpage)
-	4. cw_puma2010_czone.dta (from David Dorn data webpage)
+	1. raw_data/workfile_china.dta (from ADH 2013 replication package)
+	2. raw_data/ipums_2005_2021.dta (from IPUMS-ACS webpage)
+	3. raw_data/cw_puma2000_czone.dta (from David Dorn data webpage)
+	4. raw_data/cw_puma2010_czone.dta (from David Dorn data webpage)
 Outputs:
-	1. workfile_china_RUV
+	1. temp/workfile_china_RUV.dta
 */
 
 clear
@@ -16,7 +16,7 @@ clear all
 clear mata
 set more off
 set matsize 1000
-
+cd "D:\RUV\2-Empirical-Evidence"
 * This dataset has pooled ACS data from 2005 to 2021 for people with ages betweeen 16 and 64
 
 quiet{

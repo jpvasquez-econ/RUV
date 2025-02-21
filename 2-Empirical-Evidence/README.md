@@ -1,16 +1,106 @@
-# ReadMe
+*codes/1-ipums_acs.do*
 
-## Raw data
+ - **Goal:** 
+Create a panel of employment indicators by CZ from 2006 to 2020 following the data construction from ADH (2013).
+ - **Input:** 
+1. `raw_data/workfile_china.dta`
+2. `raw_data/ipums_2005_2021.dta`
+3. `raw_data/cw_puma2000_czone.dta`
+4. `raw_data/cw_puma2010_czone.dta`
 
--   **right2work.dta:** Right-to-work laws by state were taken from [here](https://nrtwc.org/facts/state-right-to-work-timeline-2016/).
--   ACS data was taken from [here](https://usa.ipums.org/usa). (**not in GitHub because it is too heavy**) We pooled the 2005-2021 ACS 1-year samples for people between 16 and 64 years of age. The name of this file is **ipums_2005_2021.dta** in the data file. A codebook file is available in **ipums_2005_2021_query.txt**. This document contains the query requested from the IPUMS USA webpage. A login is necessary to download the data. After an account is created, data can be downloaded from the "Select Data"-> "Select samples" window. The dataset was downloaded as a .dta for STATA. Tick on all ACS files (we use 1% sample)
+ - **Output:**
+1. `temp/workfile_china_RUV.dta`
+
+*codes/2-unemp_pop.do*
+
+ - **Goal:** 
+Create a panel of employment indicators by CZ from 2006 to 2020. Using LAU and SEER data.
+ - **Input:** 
+1. `raw_data/us.1969_2022.singleages.adjusted.txt`
+2. `raw_data/LAU/state.xlsx`
+3. `raw_data/cw_cty_czone.dta`
+
+ - **Output:**
+1. `temp/unemp_pop.dta.dta`
+
+*codes/3-coefs_graphs_decadal.do*
+
+ - **Goal:** 
+Run regressions in the spirit of ADH 21 for 2006-2020 but using the data construction and exposure measures from ADH 13.
+ - **Input:** 
+1. `temp/workfile_china_RUV.dta`
+
+ - **Output:**
+1. `results/figures/Figure_1A.png`
+2. `results/figures/Figure_1B.png`
+3. `results/figures/Figure_1C.png`
+4. `results/figures/Figure_7A.png`
+5. `results/figures/Figure_7B.png`
+6. `results/figures/Figure_7C.png`
+7. `results/figures/Figure_7D.png`
+8. `results/figures/Figure_A1.png`
+
+*codes/4-cps1990_rigmeasures.do*
+
+ - **Goal:** 
+Create downward nominal wage rigidity measures.
+ - **Input:** 
+1. `raw_data/cps_86_90.dta`
+2. `raw_data/morgyear.dta`
+
+ - **Output:**
+1. `temp/cps1990_rigmeasures.dta`
+
+*codes/5-dnwr_figures.do*
+
+ - **Goal:** 
+Create trade exposure coef graphs on outcomes with rigidity interaction.
+ - **Input:** 
+1. `temp/workfile_china_RUV.dta`
+2. `temp/cps_rigmeasures.dta`
+
+ - **Output:**
+1. `results/figures/Figure_2A.png`
+2. `results/figures/Figure_2B.png`
+3. `results/figures/Figure_A2A.png`
+4. `results/figures/Figure_A2B.png`
+5. `results/figures/Figure_A3A.png`
+6. `results/figures/Figure_A3B.png`
+7. `results/figures/Figure_A4A.png`
+8. `results/figures/Figure_A4B.png`
+9. `results/figures/Figure_A5A.png`
+10. `results/figures/Figure_A5B.png`
+11. `results/figures/Figure_A6A.png`
+12. `results/figures/Figure_A6B.png`
+13. `results/figures/Figure_A7A.png`
+14. `results/figures/Figure_A7B.png`
+15. `results/figures/Figure_A8A.png`
+16. `results/figures/Figure_A8B.png`
+
+More detailed description
+============================================================================================
+Here we present a description of all the raw data files that we need to construct `2-Empirical-Evidence\unemp_pop\unemp_pop.dta`: our dataset for 1990-2020 unemployment and population at the CZ level.
+
+We take the population between 15 and 65 years old for each county from the [Surveillance, Epidemiology, and End Results (SEER) Program](https://seer.cancer.gov/popdata/download.html#single).  Select `County-level Population Files -Single-year Age Groups` and download the `.gz` file for "1969-2022  
+White, Black, Other" (specifically, the "All States Combined" file). That is how we get `2-Empirical-Evidence\raw_data\us.1969_2022.singleages.adjusted.txt`. 
+
+We take the unemployment for each county
+from the [Local Area Unemployment Statistics (LAUS)](https://data.bls.gov/PDQWeb/la). We select all the counties for each state (after choosing `F Counties and equivalents`), and we save them in `.xlsx` files with the name of each state (since you can only download 200 counties per selection, we had to save the Texas' counties in `Texas1.xlsx` and `Texas2.xlsx`).
+
+To go from the county level to the CZ level, we follow David Autor and David Dorn. "The Growth of Low Skill Service Jobs and the Polarization of the U.S. Labor Market." American Economic Review, 103(5), 1553-1597, 2013. The E8 crosswalk file [here](https://www.ddorn.net/data.htm#Local%20Labor%20Market%20Geography) is `2-Empirical-Evidence\raw_data\cw_cty_czone.dta`.
+
+-   ACS data was taken from [here](https://usa.ipums.org/usa). (**not in GitHub because it is too heavy**) We pooled the 2005-2021 ACS 1-year samples for people between 16 and 64 years of age. The name of this file is **ipums_2005_2021.dta** in the data file.
 -   **workfile_china.dta:** data taken from the replication package of ADH13, from the dta folder. This file contains the data to replicate the main results of the paper.
 -   David Dorn's crosswalk files from PUMAs to CZ were taken from his [webpage](https://www.ddorn.net/). The files are named **cw_puma2000_czone.dta** and **cw_puma2010_czone.dta.**
 -   **CPS 1986-1990:** (file name cps_00006.dta) data taken from IPUMS CPS [webpage](https://cps.ipums.org/cps/).  (**not in GitHub because it is too heavy**) The file name is *cps_86_90.dta* The query is available in the file *cps86_90_query.txt*. We followed Yoon Joo Jo (2021) on the data processing procedures.
 -   **Merged Outgoing Rotation Groups: 86-90:** these files are taken from [NBER](https://www.nber.org/research/data/current-population-survey-cps-merged-outgoing-rotation-group-earnings-data) webpage, from the "Stata dta files" link. These files are merged into the CPS to obtain the hourly wage allocation flag variable. Download morg86.dta - morg90.dta.
 -   **Jo_state_level_dnwr.dta**: dataset provided by Yoon Joo Jo from her paper "Establishing downward nominal wage rigidity through cyclical changes in the wage distribution" (2022)
 
+## Titulo
+The first script ...
 
+## Titulo
+The second script ...
 ## Codes
 
 -   **1-ipums_acs.do** This dofile takes as an input the pooled 2005-2021 ACS 1-year samples, subsets 3-year samples, creates intermediate variables, and then merges the information to ADH2013's dataset workfile_china.dta.
@@ -26,3 +116,11 @@
 -   **6-dnwr_tables.do:** creates and saves the coefficent tables of the rigidity measures and local CPI regressions. 
 
 -   **subfile_ind1990dd:** This dofile was taken from David Dorn's data [webpage](https://www.ddorn.net/data.htm). It recodes the ind1990 variable into ind1990dd. This crosswalk code helps replicate the classification of employment into manufacture and non-manufacture.
+
+Note: Raw data not in GitHub
+============================================================================================
+
+The raw-data files that were not stored in the GitHub repository can be accessed [here](https://drive.google.com/drive/folders/1wo3HIw_xe_nfOfvvxMD2j_NY4UKLhFYq?usp=sharing). These files are the following:
+
+1) For script 1: `raw_data/ipums_2005_2021.dta` was too heavy to be uploaded. However, a codebook file is available in `raw_data/ipums_2005_2021_query.txt`. This document contains the query requested from the IPUMS USA webpage. A log-in is necessary to download the data. After an account is created, data can be downloaded from the "Select Data"->"Select samples"" window. Tick on all ACS files (we use 1% sample)
+2) For script 9: `0-Raw_Data/CPS/CPS_NBER/Input/cps_panel.dta` was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download it.
