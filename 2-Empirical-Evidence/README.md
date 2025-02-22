@@ -29,6 +29,7 @@ Create a panel of employment indicators by CZ from 2006 to 2020. Using LAU and S
 Run regressions in the spirit of ADH 21 for 2006-2020 but using the data construction and exposure measures from ADH 13.
  - **Input:** 
 1. `temp/workfile_china_RUV.dta`
+2. `raw_data/ToPlotwithADH2021.xlsx`
 
  - **Output:**
 1. `results/figures/Figure_1A.png`
@@ -96,11 +97,26 @@ To go from the county level to the CZ level, we follow David Autor and David Dor
 -   **Merged Outgoing Rotation Groups: 86-90:** these files are taken from [NBER](https://www.nber.org/research/data/current-population-survey-cps-merged-outgoing-rotation-group-earnings-data) webpage, from the "Stata dta files" link. These files are merged into the CPS to obtain the hourly wage allocation flag variable. Download morg86.dta - morg90.dta.
 -   **Jo_state_level_dnwr.dta**: dataset provided by Yoon Joo Jo from her paper "Establishing downward nominal wage rigidity through cyclical changes in the wage distribution" (2022)
 
-## Titulo
-The first script ...
+## DNWR and Persistence in the Employment Effects of the China Shock
+We estimate the dynamic effect of the China Shock following a regression specification in the spirit of Autor et al. (2021):
 
-## Titulo
-The second script ...
+$$
+\Delta Y_{i, t+h}=\alpha_{t}+\beta_{1 h} \Delta I P_{i, \tau}^{c u}+X_{i, t}^{\prime} \beta_{2}+\varepsilon_{i, t+h} \tag{1}
+$$
+
+where $\Delta Y_{i, t+h}$ is a vector of ten-year equivalent changes in outcome $Y$ for $\mathrm{CZ} i$ between 1990 and 2000 stacked with the changes in the same outcome between years 2000 and $2000+h$, for $h=1, \ldots, 20$. The term $I P_{i, \tau}^{c u}$ is the growth in Chinese import competition in the $\tau$ intervals 1990-2000 and 2000-2007, respectively (which, as in Autor et al. (2021), we keep fixed regardless of $h$ ).
+
+We use the American Community Survey (ACS) for employment data, which is processed in our first script (and the second script uses an alternative construction of the unemployment-to population ratio, based on BLS county-level unemployment data and SEER working-age population data). We use the exact import exposure definition in ADH. We use the same controls $X_{i, t}^{\prime}$ as in ADH , which we take from ADH's replication file.
+
+The third script creates the outcome variables and estimates one regression per year using equation $(1)$ for $h=6, \ldots, 20$, implementing the same two-stage least squares strategy as in ADH. The third script also plots the coefficient estimates (with respect to $h$); in the case of Figure 7, it also plots the effects in our model when the China shock lasts between 2001 and 2011, and the effects in our baseline model when the China shock lasts between 2001 and 2007.
+
+## Cross-sectional Evidence for DNWR in the Adjustment to the China Shock
+We borrow measures of DNWR from the empirical macro literature (e.g., Jo, 2022; Jo and Zubairy, 2023) and show that regions (CZs or States) with more stringent preshock measures of DNWR experienced significantly higher unemployment effects from the China Shock. To do so, we enrich the regression specification in equation (1) to add a differential effect depending on the degree of DNWR:
+$$
+\begin{equation*}
+\Delta U_{i, t+h}=\gamma_{t}+\beta_{1, h} \Delta I P_{i, \tau}^{c u}+\beta_{2, h} \operatorname{Rig}_{s(i), \tau}+\beta_{3, h} \operatorname{Rig}_{s(i), \tau} \times \Delta I P_{i, \tau}^{c u}+X_{i, t}^{\prime} \beta_{4}+\varepsilon_{i, t+h} \tag{2}
+\end{equation*}
+$$
 ## Codes
 
 -   **1-ipums_acs.do** This dofile takes as an input the pooled 2005-2021 ACS 1-year samples, subsets 3-year samples, creates intermediate variables, and then merges the information to ADH2013's dataset workfile_china.dta.
@@ -120,7 +136,8 @@ The second script ...
 Note: Raw data not in GitHub
 ============================================================================================
 
-The raw-data files that were not stored in the GitHub repository can be accessed [here](https://drive.google.com/drive/folders/1wo3HIw_xe_nfOfvvxMD2j_NY4UKLhFYq?usp=sharing). These files are the following:
+The raw-data files that were not stored in the GitHub repository can be accessed [here](https://www.dropbox.com/scl/fo/82behprekhrbmlcw60mbr/h?rlkey=040evytauyt2pah44xo1q1pcq&e=1&dl=0). These files are the following:
 
 1) For script 1: `raw_data/ipums_2005_2021.dta` was too heavy to be uploaded. However, a codebook file is available in `raw_data/ipums_2005_2021_query.txt`. This document contains the query requested from the IPUMS USA webpage. A log-in is necessary to download the data. After an account is created, data can be downloaded from the "Select Data"->"Select samples"" window. Tick on all ACS files (we use 1% sample)
-2) For script 9: `0-Raw_Data/CPS/CPS_NBER/Input/cps_panel.dta` was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download it.
+2) For script 2: `raw_data/us.1969_2022.singleages.adjusted.txt` was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download it.
+3) 
