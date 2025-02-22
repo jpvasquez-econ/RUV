@@ -100,9 +100,7 @@ To go from the county level to the CZ level, we follow David Autor and David Dor
 ## DNWR and Persistence in the Employment Effects of the China Shock
 We estimate the dynamic effect of the China Shock following a regression specification in the spirit of Autor et al. (2021):
 
-$$
-\Delta Y_{i, t+h}=\alpha_{t}+\beta_{1 h} \Delta I P_{i, \tau}^{c u}+X_{i, t}^{\prime} \beta_{2}+\varepsilon_{i, t+h} \tag{1}
-$$
+$$\Delta Y_{i, t+h}=\alpha_{t}+\beta_{1 h} \Delta I P_{i, \tau}^{c u}+X_{i, t}^{\prime} \beta_{2}+\varepsilon_{i, t+h} \tag{1}$$
 
 where $\Delta Y_{i, t+h}$ is a vector of ten-year equivalent changes in outcome $Y$ for $\mathrm{CZ} i$ between 1990 and 2000 stacked with the changes in the same outcome between years 2000 and $2000+h$, for $h=1, \ldots, 20$. The term $I P_{i, \tau}^{c u}$ is the growth in Chinese import competition in the $\tau$ intervals 1990-2000 and 2000-2007, respectively (which, as in Autor et al. (2021), we keep fixed regardless of $h$ ).
 
@@ -112,11 +110,7 @@ The third script creates the outcome variables and estimates one regression per 
 
 ## Cross-sectional Evidence for DNWR in the Adjustment to the China Shock
 We borrow measures of DNWR from the empirical macro literature (e.g., Jo, 2022; Jo and Zubairy, 2023) and show that regions (CZs or States) with more stringent preshock measures of DNWR experienced significantly higher unemployment effects from the China Shock. To do so, we enrich the regression specification in equation (1) to add a differential effect depending on the degree of DNWR:
-$$
-\begin{equation*}
-\Delta U_{i, t+h}=\gamma_{t}+\beta_{1, h} \Delta I P_{i, \tau}^{c u}+\beta_{2, h} \operatorname{Rig}_{s(i), \tau}+\beta_{3, h} \operatorname{Rig}_{s(i), \tau} \times \Delta I P_{i, \tau}^{c u}+X_{i, t}^{\prime} \beta_{4}+\varepsilon_{i, t+h} \tag{2}
-\end{equation*}
-$$
+$$\Delta U_{i, t+h}=\gamma_{t}+\beta_{1, h} \Delta I P_{i, \tau}^{c u}+\beta_{2, h} \operatorname{Rig}_{s(i), \tau}+\beta_{3, h} \operatorname{Rig}_{s(i), \tau} \times \Delta I P_{i, \tau}^{c u}+X_{i, t}^{\prime} \beta_{4}+\varepsilon_{i, t+h} \tag{2}$$
 ## Codes
 
 -   **1-ipums_acs.do** This dofile takes as an input the pooled 2005-2021 ACS 1-year samples, subsets 3-year samples, creates intermediate variables, and then merges the information to ADH2013's dataset workfile_china.dta.
