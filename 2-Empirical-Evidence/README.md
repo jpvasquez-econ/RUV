@@ -95,12 +95,12 @@ The third script estimates one regression per year using equation $(1)$ for $h=6
 
 ## Cross-sectional Evidence for DNWR in the Adjustment to the China Shock
 
-We borrow measures of DNWR from the empirical macro literature (e.g., Jo, 2022; Jo and Zubairy, 2023) and show that regions (CZs or States) with more stringent preshock measures of DNWR experienced significantly higher unemployment effects from the China Shock. We enrich the regression specification in equation $(1)$ to add a differential effect depending on the degree of DNWR:
+We borrow measures of DNWR from the empirical macro literature (e.g., Jo, 2022; Jo and Zubairy, 2023) and show that regions (CZs or States) with more stringent pre-shock measures of DNWR experienced significantly higher unemployment effects from the China Shock. We enrich the regression specification in equation $(1)$ to add a differential effect depending on the degree of DNWR:
 
 $$\Delta U_{i, t+h}=\gamma_{t}+\beta_{1, h} \Delta I P_{i, \tau}^{c u}+\beta_{2, h} Rig_{s(i), \tau}+\beta_{3, h} Rig_{s(i), \tau} \times \Delta I P_{i, \tau}^{c u}+X_{i, t}^{\prime} \beta_{4}+\varepsilon_{i, t+h} (2)$$
 
 
-where $\Delta U_{i, t+h}$ now refers to the change in unemployment-to-population ratio in a region (CZ or state). The variable $Rig_{s(i), \tau}$ represents a state-level proxy for the DNWR present in the state $s$ to which $\mathrm{CZ} i$ belongs.
+where $\Delta U_{i, t+h}$ now refers to the change in unemployment-to-population ratio in a region (CZ or state). The variable $Rig_{s(i), \tau}$ represents a state-level proxy for the DNWR present in the state $s$ to which CZ $i$ belongs.
 
 We use two main proxies for DNWR following Jo and Zubairy (2023). The first one is based on the share of workers with negative year-over-year hourly wage changes among all workers. The second one is based on the share of individuals with negative wage changes to total individuals with nonzero wage changes. Both measures are constructed based on individual-level year-over-year wage changes from CPS data. We pool observations from 1987 to 1990 to define the rigidity shares for the 1990-2000 decade and observations from 1997 to 2000 to determine the rigidity shares post 2000. We then define $Ri g_{s(i), \tau}$ as a dummy, taking a value of one if a given state is below the mean share. Script 4 calculates the rigidity measures and script 5 estimates $(2)$ and plots the coefficients of interest.
 
