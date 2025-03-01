@@ -16,7 +16,7 @@ clear all
 clear mata
 set more off
 set matsize 1000
-cd "D:\RUV\2-Empirical-Evidence"
+
 * This dataset has pooled ACS data from 2005 to 2021 for people with ages betweeen 16 and 64
 
 quiet{

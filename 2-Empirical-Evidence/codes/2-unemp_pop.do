@@ -15,7 +15,7 @@ Outputs:
 *******************************
 
 clear all
-cd "D:\RUV\2-Empirical-Evidence"
+
 /*The file format is fixed length ASCII text records (one population per 
 record/line). You can consult the data dictionary using the following link:
 https://seer.cancer.gov/popdata/popdic.html*/
@@ -29,7 +29,7 @@ infix ///
 	float Sex 16 ///
 	float Age 17-18 ///
 	float Population 19-26 ///
-	using "raw_data\us.1969_2022.singleages.adjusted.txt"
+	using "raw_data/us.1969_2022.singleages.adjusted.txt"
 *Ages (between 15 and 65).
 keep if Age >= 15 & Age <= 65
 *Years (between 1990 and 2020)
@@ -38,20 +38,19 @@ keep if Year >= 1990 & Year <= 2020
 keep Year FIPS Population 
 replace Population = 0 if Population == .
 collapse (sum) Population, by(FIPS Year)
-save "raw_data\population.dta", replace
+save "raw_data/population.dta", replace
 
 *********************************
 *** Prepare unemployment data ***
 *********************************
 
 clear all
-cd "D:\RUV\2-Empirical-Evidence\"
 local states "Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware Florida Georgia Hawaii Idaho Illinois Indiana Iowa Kansas Kentucky Louisiana Maine Maryland Massachusetts Michigan Minnesota Mississippi Missouri Montana Nebraska Nevada New_Hampshire New_Jersey New_Mexico New_York North_Carolina North_Dakota Ohio Oklahoma Oregon Pennsylvania Rhode_Island South_Carolina South_Dakota Tennessee Texas1 Texas2 Utah Vermont Virginia Washington West_Virginia Wisconsin Wyoming"
 tempname unemployment
 save `unemployment', emptyok replace
-local folder "D:\RUV\2-Empirical-Evidence\raw_data\LAU\"
+local folder "raw_data/LAU/"
 foreach state in `states' {
-    local filepath "`folder'\`state'.xlsx"
+    local filepath "`folder'/`state'.xlsx"
     import excel "`filepath'", sheet("BLS Data Series") cellrange(A4) firstrow clear
     append using `unemployment'
     save `unemployment', replace
@@ -72,7 +71,7 @@ reshape long Annual, i(FIPS) j(Year)
 *******************************************
 
 keep if Year >= 1990 & Year <= 2020
-merge 1:1 FIPS Year using "raw_data\population.dta"
+merge 1:1 FIPS Year using "raw_data/population.dta"
 drop _merge
 
 ***************************
@@ -80,7 +79,7 @@ drop _merge
 ***************************
 
 rename FIPS cty_fips
-merge m:1 cty_fips using "raw_data\cw_cty_czone.dta"
+merge m:1 cty_fips using "raw_data/cw_cty_czone.dta"
 drop _merge cty_fips
 rename czone CZ
 rename Annual unemployment
@@ -111,6 +110,6 @@ bys czone: egen l_`v'_seer`yr' = mean( l_seer_`v'_`yr')
 }
 }
 drop l_seer*
-save "temp\unemp_pop.dta", replace
-erase "raw_data\population.dta"
+save "temp/unemp_pop.dta", replace
+erase "raw_data/population.dta"
 erase "__000000.dta"
