@@ -116,7 +116,7 @@ The raw-data files that were not stored in the GitHub repository can be accessed
 
 1) For script 1: `raw_data/ipums_2005_2021.dta` was too heavy to be uploaded. However, a code-book file is available in `raw_data/ipums_2005_2021_query.txt`. This document contains the query requested from the IPUMS USA  [webpage](https://usa.ipums.org/usa). A log-in is necessary to download the data. After an account is created, data can be downloaded from the "Select Data"->"Select samples"" window. Tick on all ACS files (we use 1% sample).
 2) For script 2: `raw_data/us.1969_2022.singleages.adjusted.txt` was too heavy to be uploaded. However, we explain in the raw data ReadMe file how to download it.
-3) For script 4: `raw_data/ipums_2005_2021.dta` was too heavy to be uploaded. However, the query is available in the file `raw_data/cps86_90_query.txt`, the data is taken from IPUMS CPS [webpage](https://cps.ipums.org/cps/).
+3) For script 4: `raw_data/cps_86_90.dta` was too heavy to be uploaded. However, the query is available in the file `raw_data/cps_86_90_query.txt`, the data is taken from IPUMS CPS [webpage](https://cps.ipums.org/cps/).
 
 Note 2: The script without number
 ============================================================================================
