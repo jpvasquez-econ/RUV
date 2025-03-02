@@ -27,7 +27,6 @@ Outputs:
 */
 program drop _all
 clear
-cd "D:\RUV\2-Empirical-Evidence"
 set more off
 capture log close
 global outputs results

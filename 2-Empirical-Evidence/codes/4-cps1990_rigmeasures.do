@@ -12,7 +12,6 @@ Ouputs:
 
 
 clear
-cd "D:\RUV\2-Empirical-Evidence"
 set more off
 ssc install ivreg2
 ***
