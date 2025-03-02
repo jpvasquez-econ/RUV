@@ -29,17 +29,19 @@ Create a panel of employment indicators by CZ from 2006 to 2020. Using LAU and S
 Run regressions in the spirit of ADH 21 for 2006-2020 but using the data construction and exposure measures from ADH 13.
  - **Input:** 
 1. `temp/workfile_china_RUV.dta`
-2. `raw_data/ToPlotwithADH2021.xlsx`
+2. `temp/unemp_pop.dta`
+3. `raw_data/ToPlotwithADH2021.xlsx`
 
  - **Output:**
-1. `results/figures/Figure_1A.png`
-2. `results/figures/Figure_1B.png`
-3. `results/figures/Figure_1C.png`
-4. `results/figures/Figure_7A.png`
-5. `results/figures/Figure_7B.png`
-6. `results/figures/Figure_7C.png`
-7. `results/figures/Figure_7D.png`
-8. `results/figures/Figure_A1.png`
+1. `temp/models_coefs.dta`
+2. `results/figures/Figure_1A.png`
+3. `results/figures/Figure_1B.png`
+4. `results/figures/Figure_1C.png`
+5. `results/figures/Figure_7A.png`
+6. `results/figures/Figure_7B.png`
+7. `results/figures/Figure_7C.png`
+8. `results/figures/Figure_7D.png`
+9. `results/figures/Figure_A1.png`
 
 *codes/4-cps1990_rigmeasures.do*
 
@@ -48,14 +50,17 @@ Create downward nominal wage rigidity measures.
  - **Input:** 
 1. `raw_data/cps_86_90.dta`
 2. `raw_data/morgyear.dta`
+3. `raw_data/Jo_state_level_dnwr.dta`
 
  - **Output:**
-1. `temp/cps1990_rigmeasures.dta`
+1. `temp/Jo_state_level_dnwr_proc.dta`
+2. `temp/cps1990_rigmeasures.dta`
+3. `temp/cps_rigmeasures.dta`
 
 *codes/5-dnwr_figures.do*
 
  - **Goal:** 
-Create trade exposure coef graphs on outcomes with rigidity interaction.
+Create trade exposure coefficient graphs on outcomes with rigidity interaction.
  - **Input:** 
 1. `temp/workfile_china_RUV.dta`
 2. `temp/cps_rigmeasures.dta`

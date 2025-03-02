@@ -4,9 +4,11 @@ General information: this code runs regressions in the spirit of ADH 21 for 2006
 
 Inputs:
 	1. temp/workfile_china_RUV.dta (produced in 1-ipums_acs.do)
-	2. raw_data/ToPlotwithADH2021.xlsx (from the model simulations)
+	2. temp/unemp_pop.dta (produced in 2-unemp_pop.do)
+	3. raw_data/ToPlotwithADH2021.xlsx (from the model simulations)
 	
 Ouputs:
+	0. temp/models_coefs.dta (intermediate data)
 	1. results/figures/Figure_1A.png
 	2. results/figures/Figure_1B.png
 	3. results/figures/Figure_1C.png

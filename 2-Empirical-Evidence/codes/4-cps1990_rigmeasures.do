@@ -3,8 +3,11 @@ General information: Data cleaning for CPS 86-90 and rigidity measures
 Inputs
 	1. raw_data/cps_86_90.dta (from CPS webpage)
 	2. raw_data/morg`i'.dta (from NBER webpage)
+	3. raw_data/Jo_state_level_dnwr.dta (provided by Yoon Joo Jo)
 Ouputs:
-	1. temp/cps1990_rigmeasures.dta
+	1. temp/Jo_state_level_dnwr_proc.dta
+	2. temp/cps1990_rigmeasures.dta
+	3. temp/cps_rigmeasures.dta
 */
 
 
@@ -87,7 +90,7 @@ clear
 *                               (2022)                         
 ************************************************************************
 * General Information
-* This codes uses data providad by Yoon Joo Joo for the period 1997-2020 and creates rigidity measures
+* This codes uses data provided by Yoon Joo Joo for the period 1997-2020 and creates rigidity measures
 * Input: Jo_state_level_dnwr.dta
 * Output: Jo_state_level_dnwr_proc.dta
 

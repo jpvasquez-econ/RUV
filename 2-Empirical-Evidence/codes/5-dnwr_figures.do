@@ -5,8 +5,9 @@ Recreated econometric analysis for each year; and coefficient graphs with intera
 
 Inputs:
 	1. temp/workfile_china_RUV.dta (produced in 1-ipums_acs.do)
-	2. temp/cps_rigmeasures.dta (produced in code 4-cps1990_rigmeasures)
+	2. temp/cps_rigmeasures.dta (produced in 4-cps1990_rigmeasures.do)
 Outputs:
+	0. temp/state_workfile_china
 	1. results/figures/Figure_2A.png
 	2. results/figures/Figure_2B.png
 	3. results/figures/Figure_A2A.png
